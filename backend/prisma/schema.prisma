@@ -1,0 +1,359 @@
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+enum Role {
+  TRAVELER
+  OPERATOR
+  ADMIN
+}
+
+enum TripStatus {
+  DRAFT
+  CONFIRMED
+  IN_PROGRESS
+  COMPLETED
+  CANCELLED
+}
+
+enum VaultCategory {
+  passport
+  visa
+  flight
+  hotel
+  insurance
+  id
+  activity
+  transit
+  permit
+  emergency
+  other
+}
+
+enum ItineraryItemCategory {
+  activity
+  hotel
+  transport
+  meal
+  experience
+}
+
+enum AlertSeverity {
+  critical
+  high
+  moderate
+  resolved
+}
+
+enum PaymentStatus {
+  SETTLED
+  PROCESSING
+  HELD
+  FAILED
+}
+
+model User {
+  id              String           @id @default(uuid())
+  email           String           @unique
+  passwordHash    String
+  name            String
+  role            Role             @default(TRAVELER)
+  avatarUrl       String?
+  phone           String?
+  membershipTier  String           @default("Concierge Elite Member")
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime         @updatedAt
+
+  trips           TripItinerary[]
+  bookedTrips     BookedTrip[]
+  vaultDocuments  VaultDocument[]
+  savedJourneys   SavedJourney[]
+  transactions    PaymentTransaction[]
+}
+
+model TripItinerary {
+  id              String          @id @default(uuid())
+  userId          String
+  title           String
+  destination     String
+  country         String
+  dates           String
+  startDate       DateTime
+  travelers       Int             @default(2)
+  currency        String          @default("USD")
+  totalPrice      Decimal         @db.Decimal(12, 2)
+  heroImageUrl    String?
+  isPremade       Boolean         @default(false)
+  status          TripStatus      @default(DRAFT)
+  createdAt       DateTime        @default(now())
+  updatedAt       DateTime        @updatedAt
+
+  user            User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  routeStops      RouteStop[]
+  days            ItineraryDay[]
+  bookedTrip      BookedTrip?
+}
+
+model RouteStop {
+  id              String          @id @default(uuid())
+  itineraryId     String
+  stopOrder       Int
+  city            String
+  weatherInfo     String?
+  hotelName       String?
+  transitMode     String?         // flight, train, car
+
+  itinerary       TripItinerary   @relation(fields: [itineraryId], references: [id], onDelete: Cascade)
+}
+
+model ItineraryDay {
+  id              String          @id @default(uuid())
+  itineraryId     String
+  dayNumber       Int
+  dateStr         String
+  title           String
+  subtitle        String?
+  
+  itinerary       TripItinerary   @relation(fields: [itineraryId], references: [id], onDelete: Cascade)
+  items           ItineraryItem[]
+}
+
+model ItineraryItem {
+  id              String                 @id @default(uuid())
+  dayId           String
+  catalogItemId   String?
+  title           String
+  category        ItineraryItemCategory
+  price           Decimal                @db.Decimal(10, 2)
+  timeSlot        String
+  duration        String?
+  location        String
+  description     String
+  imageUrl        String
+  rating          Decimal?               @db.Decimal(3, 2)
+  reviewsCount    Int?                   @default(0)
+  tags            String[]
+  notes           String?
+  transitToNext   Json?                  // { mode: 'car' | 'flight' | 'walk', duration: string, distance?: string }
+
+  day             ItineraryDay           @relation(fields: [dayId], references: [id], onDelete: Cascade)
+  catalogItem     CatalogItem?           @relation(fields: [catalogItemId], references: [id], onDelete: SetNull)
+}
+
+model CatalogItem {
+  id              String                 @id @default(uuid())
+  title           String
+  category        ItineraryItemCategory
+  price           Decimal                @db.Decimal(10, 2)
+  timeSlotDefault String
+  duration        String
+  location        String
+  description     String
+  imageUrl        String
+  rating          Decimal                @db.Decimal(3, 2)
+  reviewsCount    Int                    @default(0)
+  tags            String[]
+  isActive        Boolean                @default(true)
+  createdAt       DateTime               @default(now())
+
+  itineraryItems  ItineraryItem[]
+}
+
+model BookedTrip {
+  id              String          @id @default(uuid())
+  itineraryId     String          @unique
+  userId          String
+  bookingRef      String          @unique
+  title           String
+  destination     String
+  dates           String
+  duration        String
+  travelers       Int
+  totalPrice      Decimal         @db.Decimal(12, 2)
+  currency        String          @default("USD")
+  status          TripStatus      @default(CONFIRMED)
+  bookedAt        DateTime        @default(now())
+  heroImageUrl    String
+
+  // Logistics Bento JSONB Data
+  flightDetails   Json            // { airline, flightNumber, pnr, route, departureTime, arrivalTime, terminal, gate, seat, baggage, status }
+  hotelCheckIn    Json            // { hotelName, roomType, checkInDate, checkInTime, checkOutDate, voucherRef, address, inclusions: [], nights }
+  carDetails      Json            // { vehicleType, vehicleModel, licensePlate, chauffeurName, chauffeurPhone, chauffeurRating, pickupLocation, pickupTime, serviceScope, gpsTrackingActive }
+
+  itinerary       TripItinerary   @relation(fields: [itineraryId], references: [id])
+  user            User            @relation(fields: [userId], references: [id])
+  vaultDocuments  VaultDocument[]
+  transactions    PaymentTransaction[]
+}
+
+model VaultDocument {
+  id              String          @id @default(uuid())
+  userId          String
+  tripId          String?
+  bookedTripId    String?
+  category        VaultCategory
+  title           String
+  travelerName    String
+  documentNumber  String?
+  issueDate       String?
+  expiryDate      String?
+  status          String          @default("verified") // verified | valid | expiring-soon | confirmed
+  fileUrl         String          // Cloudinary secure_url
+  filePublicId    String          // Cloudinary public_id
+  fileType        String          // pdf | png | jpg | qr
+  fileSize        String
+  uploadedAt      DateTime        @default(now())
+  notes           String?
+  verifiedBy      String?         @default("TripFlow AI Optical OCR")
+  offlineReady    Boolean         @default(true)
+  fields          Json?           // Extracted MRZ, Seat, Room, PNR fields
+  isEncrypted     Boolean         @default(true)
+
+  user            User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  bookedTrip      BookedTrip?     @relation(fields: [bookedTripId], references: [id], onDelete: SetNull)
+}
+
+model EmergencyContact {
+  id              String          @id @default(uuid())
+  tripId          String?
+  role            String
+  name            String
+  phone           String
+  availableHours  String          @default("24/7")
+  badge           String
+  location        String?
+  notes           String?
+  isGlobal        Boolean         @default(false)
+}
+
+model SavedJourney {
+  id              String          @id @default(uuid())
+  userId          String
+  title           String
+  origin          String
+  destination     String
+  dates           String
+  duration        String
+  travelers       Int
+  price           String
+  imageUrl        String
+  description     String
+  category        String          // domestic | international
+  isBookmarked    Boolean         @default(true)
+  rating          String?
+  amenities       Json?           // [{ icon: string, label: string }]
+
+  user            User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+// -------------------------------------------------------------
+// OPERATOR COMMAND HUB MODELS
+// -------------------------------------------------------------
+
+model TourCohort {
+  id              String          @id @default(uuid())
+  name            String
+  circuit         String
+  dates           String
+  leadGuideId     String?
+  paxCount        Int
+  maxPax          Int
+  progressPercent Int             @default(0)
+  currentStop     String
+  nextMilestone   String
+  status          String          @default("In Progress") // In Progress | Upcoming | Completed
+  vipCount        Int             @default(0)
+  createdAt       DateTime        @default(now())
+
+  leadGuide       TourGuide?      @relation(fields: [leadGuideId], references: [id])
+  alerts          DisruptionAlert[]
+}
+
+model TourGuide {
+  id              String          @id @default(uuid())
+  name            String
+  role            String          // Master Guide | Private Concierge | Licensed Chauffeur | Cultural Specialist
+  languages       String[]
+  rating          Decimal         @db.Decimal(3, 2)
+  totalTours      Int             @default(0)
+  status          String          @default("Available") // On Tour | Available | Off-Duty
+  location        String
+  phone           String
+  avatarUrl       String
+  certifications  String[]
+
+  cohorts         TourCohort[]
+}
+
+model Vendor {
+  id               String         @id @default(uuid())
+  name             String
+  category         String         // hotel | flight | train | fleet | dining | experience
+  region           String
+  rating           Decimal        @db.Decimal(3, 2)
+  slaCompliance    Int            @default(99)
+  activeContracts  Int            @default(1)
+  contactPerson    String
+  phone            String
+  email            String
+  status           String         @default("Active") // Active | Under Review | Suspended
+  contractRenewal  DateTime
+  imageUrl         String?
+
+  transactions     PaymentTransaction[]
+}
+
+model DisruptionAlert {
+  id                 String       @id @default(uuid())
+  cohortId           String?
+  tourTitle          String
+  severity           AlertSeverity
+  title              String
+  description        String
+  affectedTravelers  Int
+  category           String       // flight | weather | transport | hotel | medical
+  actionSuggested    String
+  isResolved         Boolean      @default(false)
+  resolvedAt         DateTime?
+  resolvedBy         String?
+  createdAt          DateTime     @default(now())
+
+  cohort             TourCohort?  @relation(fields: [cohortId], references: [id], onDelete: SetNull)
+}
+
+model PaymentTransaction {
+  id              String          @id @default(uuid())
+  transactionRef  String          @unique
+  bookedTripId    String?
+  vendorId        String?
+  userId          String?
+  party           String
+  type            String          // inbound | outbound | escrow
+  amount          Decimal         @db.Decimal(12, 2)
+  currency        String          @default("USD")
+  status          PaymentStatus   @default(SETTLED)
+  paymentMethod   String
+  description     String
+  createdAt       DateTime        @default(now())
+
+  bookedTrip      BookedTrip?     @relation(fields: [bookedTripId], references: [id])
+  vendor          Vendor?         @relation(fields: [vendorId], references: [id])
+  user            User?           @relation(fields: [userId], references: [id])
+}
+
+model CalendarTourEvent {
+  id              String          @id @default(uuid())
+  title           String
+  cohortName      String
+  eventDate       DateTime
+  timeSlot        String
+  eventType       String          // departure | checkin | transfer | experience | return
+  location        String
+  color           String
+  pax             Int
+}

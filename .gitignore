@@ -1,8 +1,22 @@
+# Dependencies
 node_modules/
-build/
+*/node_modules/
+
+# Production builds
 dist/
-coverage/
-.DS_Store
+*/dist/
+
+# Environment files
+.env
+.env.local
+*.env
+*/.env
+*/.env.local
+
+# Logs
 *.log
-.env*
-!.env.example
+npm-debug.log*
+
+# OS Files
+.DS_Store
+Thumbs.db
