@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
-import { OPERATOR_COHORTS } from '../../data/operatorSuiteData';
 import { TourCohortItem } from '../../types/travel';
+import { useOperator } from '../../context/OperatorContext';
 
 interface TourCohortsScreenProps {
   onInspectTour: (tourId: string) => void;
@@ -11,7 +11,7 @@ export const TourCohortsScreen: React.FC<TourCohortsScreenProps> = ({
   onInspectTour,
   showToast,
 }) => {
-  const [cohorts] = useState<TourCohortItem[]>(OPERATOR_COHORTS);
+  const { cohorts } = useOperator();
   const [selectedCohort, setSelectedCohort] = useState<TourCohortItem | null>(null);
   const [broadcastMessage, setBroadcastMessage] = useState('');
   const [isBroadcastOpen, setIsBroadcastOpen] = useState(false);

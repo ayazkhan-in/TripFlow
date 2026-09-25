@@ -1,13 +1,13 @@
 import React, { useState, useMemo } from 'react';
-import { OPERATOR_GUIDES } from '../../data/operatorSuiteData';
 import { TourGuideStaffItem } from '../../types/travel';
+import { useOperator } from '../../context/OperatorContext';
 
 interface TourGuidesScreenProps {
   showToast: (msg: string) => void;
 }
 
 export const TourGuidesScreen: React.FC<TourGuidesScreenProps> = ({ showToast }) => {
-  const [guides] = useState<TourGuideStaffItem[]>(OPERATOR_GUIDES);
+  const { guides } = useOperator();
   const [searchQuery, setSearchQuery] = useState('');
   const [roleFilter, setRoleFilter] = useState<string>('all');
   const [selectedGuide, setSelectedGuide] = useState<TourGuideStaffItem | null>(null);

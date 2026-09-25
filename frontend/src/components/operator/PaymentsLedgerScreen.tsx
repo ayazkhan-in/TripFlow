@@ -1,14 +1,14 @@
 import React, { useState, useMemo } from 'react';
-import { OPERATOR_PAYMENTS } from '../../data/operatorSuiteData';
 import { PaymentLedgerItem } from '../../types/travel';
 import { formatCurrency } from '../../utils/pricing';
+import { useOperator } from '../../context/OperatorContext';
 
 interface PaymentsLedgerScreenProps {
   showToast: (msg: string) => void;
 }
 
 export const PaymentsLedgerScreen: React.FC<PaymentsLedgerScreenProps> = ({ showToast }) => {
-  const [payments, setPayments] = useState<PaymentLedgerItem[]>(OPERATOR_PAYMENTS);
+  const { payments } = useOperator();
   const [searchQuery, setSearchQuery] = useState('');
   const [typeFilter, setTypeFilter] = useState<'all' | 'inbound' | 'disbursement'>('all');
   const [statusFilter, setStatusFilter] = useState<'all' | 'Settled' | 'Processing'>('all');

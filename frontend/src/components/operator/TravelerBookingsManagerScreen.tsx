@@ -1,9 +1,5 @@
 import React, { useState, useMemo } from 'react';
 import {
-  OPERATOR_FLIGHT_TICKETS,
-  OPERATOR_STAY_BOOKINGS,
-  OPERATOR_TRANSFER_BOOKINGS,
-  OPERATOR_ACTIVITY_BOOKINGS,
   OperatorFlightTicket,
   OperatorStayBooking,
   OperatorTransferBooking,
@@ -11,6 +7,7 @@ import {
 } from '../../data/operatorBookingsData';
 import { OperatorTab } from '../../types/travel';
 import { formatCurrency } from '../../utils/pricing';
+import { useOperator } from '../../context/OperatorContext';
 
 interface TravelerBookingsManagerScreenProps {
   activeTab: OperatorTab;
@@ -23,6 +20,8 @@ export const TravelerBookingsManagerScreen: React.FC<TravelerBookingsManagerScre
   onTabChange,
   showToast,
 }) => {
+  const { flightTickets, stayBookings, transferBookings, activityBookings } = useOperator();
+
   const currentSection =
     activeTab === 'stay_bookings'
       ? 'stays'
@@ -46,7 +45,7 @@ export const TravelerBookingsManagerScreen: React.FC<TravelerBookingsManagerScre
   };
 
   const filteredFlights = useMemo(() => {
-    return OPERATOR_FLIGHT_TICKETS.filter(t => {
+    return flightTickets.filter(t => {
       const matchesStatus = statusFilter === 'All' || t.status === statusFilter;
       const q = searchQuery.toLowerCase();
       const matchesSearch =
@@ -61,10 +60,10 @@ export const TravelerBookingsManagerScreen: React.FC<TravelerBookingsManagerScre
         t.tourTitle.toLowerCase().includes(q);
       return matchesStatus && matchesSearch;
     });
-  }, [searchQuery, statusFilter]);
+  }, [flightTickets, searchQuery, statusFilter]);
 
   const filteredStays = useMemo(() => {
-    return OPERATOR_STAY_BOOKINGS.filter(s => {
+    return stayBookings.filter(s => {
       const matchesStatus = statusFilter === 'All' || s.status === statusFilter;
       const q = searchQuery.toLowerCase();
       const matchesSearch =
@@ -77,10 +76,10 @@ export const TravelerBookingsManagerScreen: React.FC<TravelerBookingsManagerScre
         s.roomType.toLowerCase().includes(q);
       return matchesStatus && matchesSearch;
     });
-  }, [searchQuery, statusFilter]);
+  }, [stayBookings, searchQuery, statusFilter]);
 
   const filteredTransfers = useMemo(() => {
-    return OPERATOR_TRANSFER_BOOKINGS.filter(tr => {
+    return transferBookings.filter(tr => {
       const matchesStatus = statusFilter === 'All' || tr.status === statusFilter;
       const q = searchQuery.toLowerCase();
       const matchesSearch =
@@ -93,10 +92,10 @@ export const TravelerBookingsManagerScreen: React.FC<TravelerBookingsManagerScre
         tr.dropoff.toLowerCase().includes(q);
       return matchesStatus && matchesSearch;
     });
-  }, [searchQuery, statusFilter]);
+  }, [transferBookings, searchQuery, statusFilter]);
 
   const filteredActivities = useMemo(() => {
-    return OPERATOR_ACTIVITY_BOOKINGS.filter(a => {
+    return activityBookings.filter(a => {
       const matchesStatus = statusFilter === 'All' || a.status === statusFilter;
       const q = searchQuery.toLowerCase();
       const matchesSearch =
@@ -109,7 +108,7 @@ export const TravelerBookingsManagerScreen: React.FC<TravelerBookingsManagerScre
         a.destination.toLowerCase().includes(q);
       return matchesStatus && matchesSearch;
     });
-  }, [searchQuery, statusFilter]);
+  }, [activityBookings, searchQuery, statusFilter]);
 
   return (
     <div className="flex-1 flex flex-col bg-slate-50/50 min-h-screen">
@@ -272,7 +271,7 @@ export const TravelerBookingsManagerScreen: React.FC<TravelerBookingsManagerScre
                   Total Tickets
                 </span>
                 <div className="text-xl font-bold text-slate-900 mt-0.5">
-                  {OPERATOR_FLIGHT_TICKETS.length}
+                  {flightTickets.length}
                 </div>
                 <div className="text-[11px] text-slate-400">5 Flights · 1 Rail</div>
               </div>
@@ -299,7 +298,7 @@ export const TravelerBookingsManagerScreen: React.FC<TravelerBookingsManagerScre
                 </span>
                 <div className="text-xl font-bold text-slate-900 mt-0.5">
                   {formatCurrency(
-                    OPERATOR_FLIGHT_TICKETS.reduce((acc, t) => acc + t.amount, 0)
+                    flightTickets.reduce((acc: number, t) => acc + t.amount, 0)
                   )}
                 </div>
                 <div className="text-[11px] text-slate-400">Operator wholesale</div>
@@ -437,7 +436,7 @@ export const TravelerBookingsManagerScreen: React.FC<TravelerBookingsManagerScre
                   Hotel Vouchers
                 </span>
                 <div className="text-xl font-bold text-slate-900 mt-0.5">
-                  {OPERATOR_STAY_BOOKINGS.length}
+                  {stayBookings.length}
                 </div>
                 <div className="text-[11px] text-slate-400">5 Luxury Properties</div>
               </div>
@@ -447,7 +446,7 @@ export const TravelerBookingsManagerScreen: React.FC<TravelerBookingsManagerScre
                   Room Nights
                 </span>
                 <div className="text-xl font-bold text-slate-900 mt-0.5">
-                  {OPERATOR_STAY_BOOKINGS.reduce((acc, s) => acc + s.nights, 0)} Nights
+                  {stayBookings.reduce((acc: number, s) => acc + s.nights, 0)} Nights
                 </div>
                 <div className="text-[11px] text-slate-400">Tokyo, Kyoto, Paris</div>
               </div>
@@ -466,7 +465,7 @@ export const TravelerBookingsManagerScreen: React.FC<TravelerBookingsManagerScre
                 </span>
                 <div className="text-xl font-bold text-slate-900 mt-0.5">
                   {formatCurrency(
-                    OPERATOR_STAY_BOOKINGS.reduce((acc, s) => acc + s.totalAmount, 0)
+                    stayBookings.reduce((acc: number, s) => acc + s.totalAmount, 0)
                   )}
                 </div>
                 <div className="text-[11px] text-slate-400">Net partner spend</div>
@@ -564,7 +563,7 @@ export const TravelerBookingsManagerScreen: React.FC<TravelerBookingsManagerScre
                   Active Dispatches
                 </span>
                 <div className="text-xl font-bold text-slate-900 mt-0.5">
-                  {OPERATOR_TRANSFER_BOOKINGS.length}
+                  {transferBookings.length}
                 </div>
                 <div className="text-[11px] text-slate-400">Chauffeur Rosters</div>
               </div>
@@ -668,7 +667,7 @@ export const TravelerBookingsManagerScreen: React.FC<TravelerBookingsManagerScre
                   Booked Passes
                 </span>
                 <div className="text-xl font-bold text-slate-900 mt-0.5">
-                  {OPERATOR_ACTIVITY_BOOKINGS.length}
+                  {activityBookings.length}
                 </div>
                 <div className="text-[11px] text-slate-400">Cultural & Nature Tours</div>
               </div>
@@ -691,7 +690,7 @@ export const TravelerBookingsManagerScreen: React.FC<TravelerBookingsManagerScre
                   Total Guests
                 </span>
                 <div className="text-xl font-bold text-slate-900 mt-0.5">
-                  {OPERATOR_ACTIVITY_BOOKINGS.reduce((acc, a) => acc + a.guestsCount, 0)} Pax
+                  {activityBookings.reduce((acc: number, a) => acc + a.guestsCount, 0)} Pax
                 </div>
                 <div className="text-[11px] text-slate-400">Private parties</div>
               </div>

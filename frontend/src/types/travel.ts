@@ -58,6 +58,7 @@ export interface BookedTrip {
 
 export type OperatorTab =
   | 'hub'
+  | 'packages'
   | 'bookings'
   | 'flight_bookings'
   | 'stay_bookings'
@@ -75,6 +76,35 @@ export type OperatorTab =
   | 'operations'
   | 'customers';
 
+export interface BookingCustomizationDetail {
+  isCustomized: boolean;
+  basePackageTitle?: string;
+  basePrice?: number;
+  customPrice?: number;
+  deltaPrice?: number;
+  customRequests?: string;
+  dietaryRestrictions?: string;
+  transferPreference?: string;
+  roomPreference?: string;
+  customItemsAdded?: Array<{
+    id: string;
+    title: string;
+    category: string;
+    dayNumber: number;
+    price: number;
+    description?: string;
+    location?: string;
+  }>;
+  upgrades?: string[];
+  fulfillmentStatus: {
+    hotelBooked: boolean;
+    flightBooked: boolean;
+    transferBooked: boolean;
+    activityBooked: boolean;
+    guideAssigned: boolean;
+  };
+}
+
 export interface BookingItem {
   id: string;
   ref: string;
@@ -91,6 +121,10 @@ export interface BookingItem {
   vipStatus?: boolean;
   notes?: string;
   bookedAt: string;
+  isCustomized?: boolean;
+  customization?: BookingCustomizationDetail;
+  itinerarySnapshot?: TripItinerary;
+  needsFulfillment?: boolean;
 }
 
 export interface VendorSupplyItem {

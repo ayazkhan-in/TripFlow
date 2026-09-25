@@ -19,7 +19,7 @@ interface ItineraryBuilderScreenProps {
   showToast: (msg: string) => void;
   isModifyingBookedTrip?: boolean;
   originalBookedPrice?: number;
-  onProceedToBooking?: (itinerary: TripItinerary, total: number) => void;
+  onProceedToBooking?: (itinerary: TripItinerary, total: number, customizations?: any) => void;
   onSaveModifications?: (itinerary: TripItinerary, total: number) => void;
 }
 
@@ -599,11 +599,43 @@ export const ItineraryBuilderScreen: React.FC<ItineraryBuilderScreenProps> = ({
         pricing={pricing}
         isModifying={isModifyingBookedTrip}
         originalPrice={originalBookedPrice}
-        onConfirmBooking={() => {
+        onConfirmBooking={customPref => {
+          const customItems = itinerary.days
+            .flatMap(d => d.items.map(it => ({ ...it, dayNumber: d.dayNumber })))
+            .filter(it => it.tags?.includes('Custom') || it.price > 0 || it.category === 'activity')
+            .map(it => ({
+              id: it.id,
+              title: it.title,
+              category: it.category,
+              dayNumber: it.dayNumber,
+              price: it.price,
+              description: it.description,
+              location: it.location,
+            }));
+
+          const customizationDetails = {
+            isCustomized: true,
+            basePackageTitle: itinerary.title,
+            basePrice: originalBookedPrice || Math.round(pricing.total * 0.8),
+            customPrice: pricing.total,
+            deltaPrice: Math.round(pricing.total - (originalBookedPrice || pricing.total * 0.8)),
+            customRequests: customPref?.customRequests || 'Customized circuit with added experiences & preferences.',
+            dietaryRestrictions: customPref?.dietaryRestrictions || 'Strict Vegetarian',
+            transferPreference: customPref?.transferPreference || 'Toyota Vellfire Executive Lounge',
+            customItemsAdded: customItems,
+            fulfillmentStatus: {
+              hotelBooked: false,
+              flightBooked: false,
+              transferBooked: false,
+              activityBooked: false,
+              guideAssigned: false,
+            },
+          };
+
           if (isModifyingBookedTrip && onSaveModifications) {
             onSaveModifications(itinerary, pricing.total);
           } else if (onProceedToBooking) {
-            onProceedToBooking(itinerary, pricing.total);
+            onProceedToBooking(itinerary, pricing.total, customizationDetails);
           } else {
             showToast(`Trip booked! All ${pricing.itemCount} reservations held with 24/7 concierge.`);
           }

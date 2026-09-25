@@ -3,6 +3,7 @@ import {
   DisruptionIssue,
   DispatchTransfer,
   RealtimeFeedEvent,
+  OperatorTab,
 } from '../../types/travel';
 import {
   DISPATCH_TRANSFERS,
@@ -10,10 +11,13 @@ import {
   RADAR_MAP_IMAGE,
   REALTIME_EVENTS,
 } from '../../data/mockData';
+import { useOperator } from '../../context/OperatorContext';
 
 interface OpsCommandHubProps {
   onInspectTour: (tourId: string) => void;
   onOpenNewTour: () => void;
+  onOpenCreatePackage?: () => void;
+  onNavigateToTab?: (tab: OperatorTab) => void;
   onOpenCommandPalette: () => void;
   isDisruptionResolved: boolean;
   onResolveDisruption: () => void;
@@ -22,10 +26,13 @@ interface OpsCommandHubProps {
 export const OpsCommandHub: React.FC<OpsCommandHubProps> = ({
   onInspectTour,
   onOpenNewTour,
+  onOpenCreatePackage,
+  onNavigateToTab,
   onOpenCommandPalette,
   isDisruptionResolved,
   onResolveDisruption,
 }) => {
+  const { pendingCustomizedCount } = useOperator();
   const [disruptions, setDisruptions] = useState<DisruptionIssue[]>(INITIAL_DISRUPTIONS);
   const [transfers, setTransfers] = useState<DispatchTransfer[]>(DISPATCH_TRANSFERS);
   const [eventCategoryFilter, setEventCategoryFilter] = useState<
@@ -146,12 +153,21 @@ export const OpsCommandHub: React.FC<OpsCommandHubProps> = ({
             )}
           </button>
           <div className="h-6 w-px bg-slate-200 mx-1"></div>
+          {onOpenCreatePackage && (
+            <button
+              onClick={onOpenCreatePackage}
+              className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold shadow-xs transition-all cursor-pointer"
+            >
+              <span className="material-symbols-outlined text-[16px]">add_business</span>
+              <span>Create Package</span>
+            </button>
+          )}
           <button
             onClick={onOpenNewTour}
-            className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg bg-slate-900 hover:bg-slate-800 text-white text-xs font-medium transition-colors"
+            className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg bg-slate-900 hover:bg-slate-800 text-white text-xs font-medium transition-colors cursor-pointer"
           >
             <span className="material-symbols-outlined text-[16px]">add</span>
-            <span>Create Tour</span>
+            <span>New Dispatch</span>
           </button>
         </div>
       </header>
@@ -201,6 +217,87 @@ export const OpsCommandHub: React.FC<OpsCommandHubProps> = ({
               <span className="material-symbols-outlined text-[16px] text-slate-400">refresh</span>
               <span>Live Sync</span>
             </button>
+          </div>
+        </div>
+
+        {/* Pending Traveler Customized Package Booking Alert */}
+        {pendingCustomizedCount > 0 && (
+          <div className="p-4 bg-gradient-to-r from-amber-500/10 via-indigo-500/10 to-blue-500/10 border border-amber-300 rounded-2xl flex flex-col md:flex-row md:items-center justify-between gap-4 animate-in fade-in duration-200 shadow-xs">
+            <div className="flex items-start gap-3">
+              <span className="w-9 h-9 rounded-xl bg-amber-500 text-white flex items-center justify-center shrink-0 shadow-xs">
+                <span className="material-symbols-outlined text-xl">edit_notifications</span>
+              </span>
+              <div>
+                <div className="flex items-center gap-2">
+                  <span className="text-xs font-bold text-slate-900">
+                    ⚡ {pendingCustomizedCount} Traveler Customized Tour Booking(s) Awaiting Fulfillment!
+                  </span>
+                  <span className="text-[10px] bg-amber-200 text-amber-900 px-2 py-0.5 rounded-full font-bold">
+                    Action Required
+                  </span>
+                </div>
+                <p className="text-xs text-slate-600 mt-0.5">
+                  A traveler has customized a tour package from Discover with personalized stays, chauffeur requests, and extra experiences. Review customizations and dispatch bookings to respective tabs.
+                </p>
+              </div>
+            </div>
+
+            {onNavigateToTab && (
+              <button
+                type="button"
+                onClick={() => onNavigateToTab('bookings')}
+                className="px-4 py-2 bg-slate-900 hover:bg-slate-800 text-white rounded-xl text-xs font-bold shadow-xs transition-all flex items-center gap-1.5 self-start md:self-auto cursor-pointer"
+              >
+                <span className="material-symbols-outlined text-sm text-amber-400">tune</span>
+                <span>Open Package Bookings</span>
+              </button>
+            )}
+          </div>
+        )}
+
+        {/* Tour Package Creator Callout Banner */}
+        <div className="p-4 bg-gradient-to-r from-blue-900 via-indigo-900 to-slate-900 text-white rounded-2xl flex flex-col md:flex-row md:items-center justify-between gap-4 shadow-sm">
+          <div className="flex items-start gap-3.5">
+            <span className="w-10 h-10 rounded-xl bg-blue-600 flex items-center justify-center text-white shrink-0 shadow-xs">
+              <span className="material-symbols-outlined text-xl">card_travel</span>
+            </span>
+            <div>
+              <div className="flex items-center gap-2">
+                <span className="text-xs font-bold tracking-tight">
+                  Tour Package Creator & Discover Marketplace
+                </span>
+                <span className="text-[10px] bg-blue-500/30 text-blue-200 px-2 py-0.5 rounded-full font-bold border border-blue-400/30">
+                  Live Dispatch
+                </span>
+              </div>
+              <p className="text-xs text-slate-300 mt-0.5">
+                Curate signature multi-day tour packages, publish them to travelers in Discover, and manage bookings when travelers customize activities & stays.
+              </p>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-2 self-start md:self-auto shrink-0">
+            {onNavigateToTab && (
+              <button
+                type="button"
+                onClick={() => onNavigateToTab('packages')}
+                className="px-3.5 py-2 bg-white/10 hover:bg-white/20 text-white rounded-xl text-xs font-semibold border border-white/20 transition-all flex items-center gap-1.5 cursor-pointer"
+              >
+                <span className="material-symbols-outlined text-sm">inventory_2</span>
+                <span>Tour Packages Studio</span>
+              </button>
+            )}
+
+            {onOpenCreatePackage && (
+              <button
+                type="button"
+                onClick={onOpenCreatePackage}
+                className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-bold shadow-xs transition-all flex items-center gap-1.5 cursor-pointer active:scale-95"
+              >
+                <span className="material-symbols-outlined text-sm">add_business</span>
+                <span>+ Create Tour Package</span>
+              </button>
+            )}
           </div>
         </div>
 

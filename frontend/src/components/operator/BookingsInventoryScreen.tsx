@@ -1,26 +1,45 @@
 import React, { useState, useMemo } from 'react';
-import { OPERATOR_BOOKINGS } from '../../data/operatorSuiteData';
-import { BookingItem } from '../../types/travel';
+import { BookingItem, OperatorTab } from '../../types/travel';
 import { formatCurrency } from '../../utils/pricing';
+import { useOperator } from '../../context/OperatorContext';
+import { CreateTourPackageModal } from './CreateTourPackageModal';
+import { CustomizedBookingFulfillmentModal } from './CustomizedBookingFulfillmentModal';
 
 interface BookingsInventoryScreenProps {
   onInspectTour: (tourId: string) => void;
   showToast: (msg: string) => void;
   activeCategory?: 'all' | 'flights' | 'stays' | 'transfers' | 'activities';
+  onNavigateToTab?: (tab: OperatorTab) => void;
 }
 
 export const BookingsInventoryScreen: React.FC<BookingsInventoryScreenProps> = ({
   onInspectTour,
   showToast,
+  onNavigateToTab,
 }) => {
-  const [bookings, setBookings] = useState<BookingItem[]>(OPERATOR_BOOKINGS);
+  const { packageBookings, pendingCustomizedCount, highlightedBookingId } = useOperator();
+
   const [searchQuery, setSearchQuery] = useState('');
-  const [statusFilter, setStatusFilter] = useState<'All' | 'Confirmed' | 'Pending' | 'Waitlist'>('All');
+  const [statusFilter, setStatusFilter] = useState<'All' | 'Customized' | 'Confirmed' | 'Pending' | 'Waitlist'>('All');
   const [selectedBooking, setSelectedBooking] = useState<BookingItem | null>(null);
+  const [customizedModalBooking, setCustomizedModalBooking] = useState<BookingItem | null>(null);
+  const [isCreatePackageOpen, setIsCreatePackageOpen] = useState(false);
+
+  // If there's a highlighted booking, find it
+  const highlightedBooking = useMemo(() => {
+    if (!highlightedBookingId) return null;
+    return packageBookings.find(b => b.id === highlightedBookingId) || null;
+  }, [packageBookings, highlightedBookingId]);
 
   const filteredBookings = useMemo(() => {
-    return bookings.filter(b => {
-      const matchesStatus = statusFilter === 'All' || b.status === statusFilter;
+    return packageBookings.filter(b => {
+      let matchesStatus = true;
+      if (statusFilter === 'Customized') {
+        matchesStatus = Boolean(b.isCustomized);
+      } else if (statusFilter !== 'All') {
+        matchesStatus = b.status === statusFilter;
+      }
+
       const q = searchQuery.toLowerCase();
       const matchesSearch =
         !q ||
@@ -30,47 +49,87 @@ export const BookingsInventoryScreen: React.FC<BookingsInventoryScreenProps> = (
         b.destination.toLowerCase().includes(q);
       return matchesStatus && matchesSearch;
     });
-  }, [bookings, statusFilter, searchQuery]);
-
-  const handleConfirm = (id: string, ref: string) => {
-    setBookings(prev =>
-      prev.map(b => (b.id === id ? { ...b, status: 'Confirmed' } : b))
-    );
-    showToast(`Booking ${ref} confirmed.`);
-  };
+  }, [packageBookings, statusFilter, searchQuery]);
 
   return (
     <div className="flex-1 bg-slate-50/50 min-h-screen p-6 sm:p-8 space-y-6 select-none">
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-xl sm:text-2xl font-bold text-slate-900 tracking-tight">
-            Package Bookings & Traveler Manifest
-          </h1>
+          <div className="flex items-center gap-2">
+            <h1 className="text-xl sm:text-2xl font-bold text-slate-900 tracking-tight">
+              Package Bookings & Traveler Manifest
+            </h1>
+            {pendingCustomizedCount > 0 && (
+              <span className="px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-amber-500 text-white shadow-xs animate-pulse">
+                {pendingCustomizedCount} Needs Fulfillment
+              </span>
+            )}
+          </div>
           <p className="text-xs text-slate-500 mt-0.5">
-            Master manifest tracking travelers who booked tour packages, guest counts per circuit, and capacity clearance.
+            Master manifest tracking travelers who booked tour packages with customizations and operator vendor dispatch.
           </p>
         </div>
 
         <div className="flex items-center gap-2">
+          {/* New Tour Package Button */}
+          <button
+            type="button"
+            onClick={() => setIsCreatePackageOpen(true)}
+            className="px-3.5 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-bold flex items-center gap-1.5 transition-all shadow-xs cursor-pointer active:scale-95"
+          >
+            <span className="material-symbols-outlined text-sm">add_business</span>
+            <span>Create Tour Package</span>
+          </button>
+
           <button
             type="button"
             onClick={() => showToast('Exported bookings manifest to CSV')}
-            className="px-3.5 py-2 bg-white border border-slate-200 hover:bg-slate-50 text-slate-700 rounded-lg text-xs font-medium flex items-center gap-1.5 transition-colors"
+            className="px-3.5 py-2 bg-white border border-slate-200 hover:bg-slate-50 text-slate-700 rounded-xl text-xs font-medium flex items-center gap-1.5 transition-colors cursor-pointer"
           >
             <span className="material-symbols-outlined text-sm text-slate-400">download</span>
             <span>Export Manifest</span>
           </button>
-          <button
-            type="button"
-            onClick={() => showToast('Inventory synchronized across properties')}
-            className="px-3.5 py-2 bg-slate-900 hover:bg-slate-800 text-white rounded-lg text-xs font-medium flex items-center gap-1.5 transition-colors"
-          >
-            <span className="material-symbols-outlined text-sm">sync</span>
-            <span>Sync Inventory</span>
-          </button>
         </div>
       </div>
+
+      {/* PENDING CUSTOMIZED BOOKING CALLOUT BANNER */}
+      {pendingCustomizedCount > 0 && (
+        <div className="p-4 bg-gradient-to-r from-amber-500/10 via-indigo-500/10 to-blue-500/10 border border-amber-300 rounded-2xl flex flex-col md:flex-row md:items-center justify-between gap-4 animate-in fade-in duration-200">
+          <div className="flex items-start gap-3">
+            <span className="w-9 h-9 rounded-xl bg-amber-500 text-white flex items-center justify-center shrink-0 shadow-xs">
+              <span className="material-symbols-outlined text-xl">edit_notifications</span>
+            </span>
+            <div>
+              <div className="flex items-center gap-2">
+                <span className="text-xs font-bold text-slate-900">
+                  ⚡ Traveler Customized Package Booking Received!
+                </span>
+                <span className="text-[10px] bg-amber-200 text-amber-900 px-2 py-0.5 rounded-full font-bold">
+                  Action Required
+                </span>
+              </div>
+              <p className="text-xs text-slate-600 mt-0.5">
+                A traveler customized and confirmed a tour package with custom experiences, hotel upgrades, and dietary instructions. Review customizations and dispatch bookings to respective tabs.
+              </p>
+            </div>
+          </div>
+
+          <button
+            type="button"
+            onClick={() => {
+              const pendingOne = packageBookings.find(b => b.isCustomized && b.needsFulfillment);
+              if (pendingOne) {
+                setCustomizedModalBooking(pendingOne);
+              }
+            }}
+            className="px-4 py-2 bg-slate-900 hover:bg-slate-800 text-white rounded-xl text-xs font-bold shadow-xs transition-all flex items-center gap-1.5 self-start md:self-auto cursor-pointer"
+          >
+            <span className="material-symbols-outlined text-sm text-amber-400">tune</span>
+            <span>Review Customizations & Fulfill</span>
+          </button>
+        </div>
+      )}
 
       {/* KPI Cards Row - Clean and Minimal */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
@@ -78,32 +137,44 @@ export const BookingsInventoryScreen: React.FC<BookingsInventoryScreenProps> = (
           <span className="text-[11px] font-medium text-slate-400 uppercase tracking-wider">
             Total Active Bookings
           </span>
-          <div className="text-2xl font-bold text-slate-900 mt-1">128</div>
-          <div className="text-[11px] text-slate-400 mt-0.5">+12% vs last month</div>
+          <div className="text-2xl font-bold text-slate-900 mt-1">
+            {packageBookings.length} Bookings
+          </div>
+          <div className="text-[11px] text-slate-400 mt-0.5">
+            {packageBookings.filter(b => b.isCustomized).length} customized circuits
+          </div>
         </div>
 
         <div className="bg-white border border-slate-200/80 rounded-xl p-4">
           <span className="text-[11px] font-medium text-slate-400 uppercase tracking-wider">
             Capacity Utilization
           </span>
-          <div className="text-2xl font-bold text-slate-900 mt-1">88.4%</div>
-          <div className="text-[11px] text-slate-400 mt-0.5">Optimal load across 8 circuits</div>
+          <div className="text-2xl font-bold text-slate-900 mt-1">91.2%</div>
+          <div className="text-[11px] text-slate-400 mt-0.5">Optimal load across circuits</div>
         </div>
 
         <div className="bg-white border border-slate-200/80 rounded-xl p-4">
           <span className="text-[11px] font-medium text-slate-400 uppercase tracking-wider">
             Gross Booked Value
           </span>
-          <div className="text-2xl font-bold text-slate-900 mt-1">$428,950</div>
-          <div className="text-[11px] text-slate-400 mt-0.5">Average $3,351 per traveler</div>
+          <div className="text-2xl font-bold text-slate-900 mt-1">
+            ${packageBookings.reduce((acc, b) => acc + (b.amount || 0), 0).toLocaleString()}
+          </div>
+          <div className="text-[11px] text-emerald-600 font-semibold mt-0.5">
+            100% Escrow Cleared
+          </div>
         </div>
 
         <div className="bg-white border border-slate-200/80 rounded-xl p-4">
           <span className="text-[11px] font-medium text-slate-400 uppercase tracking-wider">
-            Waitlist In Queue
+            Pending Fulfillment
           </span>
-          <div className="text-2xl font-bold text-slate-900 mt-1">14</div>
-          <div className="text-[11px] text-slate-400 mt-0.5">Auto-clear on cancellations</div>
+          <div className={`text-2xl font-bold mt-1 ${pendingCustomizedCount > 0 ? 'text-amber-600' : 'text-slate-900'}`}>
+            {pendingCustomizedCount}
+          </div>
+          <div className="text-[11px] text-slate-400 mt-0.5">
+            {pendingCustomizedCount > 0 ? 'Awaiting operator dispatch' : 'All circuits dispatched'}
+          </div>
         </div>
       </div>
 
@@ -123,26 +194,26 @@ export const BookingsInventoryScreen: React.FC<BookingsInventoryScreenProps> = (
         </div>
 
         {/* Clean Segmented Status Tabs */}
-        <div className="flex items-center border border-slate-200 rounded-lg p-0.5 bg-slate-50">
-          {(['All', 'Confirmed', 'Pending', 'Waitlist'] as const).map(st => (
+        <div className="flex items-center border border-slate-200 rounded-lg p-0.5 bg-slate-50 overflow-x-auto">
+          {(['All', 'Customized', 'Confirmed', 'Pending', 'Waitlist'] as const).map(st => (
             <button
               key={st}
               type="button"
               onClick={() => setStatusFilter(st)}
-              className={`px-3 py-1 rounded-md text-xs font-medium transition-colors ${
+              className={`px-3 py-1 rounded-md text-xs font-medium transition-colors whitespace-nowrap ${
                 statusFilter === st
                   ? 'bg-white text-slate-900 font-semibold shadow-2xs'
                   : 'text-slate-600 hover:text-slate-900'
               }`}
             >
-              {st}
+              {st} {st === 'Customized' && pendingCustomizedCount > 0 && `(${pendingCustomizedCount})`}
             </button>
           ))}
         </div>
       </div>
 
       {/* Bookings Table Card */}
-      <div className="bg-white border border-slate-200/80 rounded-xl overflow-hidden">
+      <div className="bg-white border border-slate-200/80 rounded-xl overflow-hidden shadow-xs">
         <div className="overflow-x-auto">
           <table className="w-full text-left border-collapse text-xs">
             <thead>
@@ -153,7 +224,7 @@ export const BookingsInventoryScreen: React.FC<BookingsInventoryScreenProps> = (
                 <th className="py-3 px-4">Dates & Pax</th>
                 <th className="py-3 px-4">Inventory Allocated</th>
                 <th className="py-3 px-4">Amount</th>
-                <th className="py-3 px-4">Status</th>
+                <th className="py-3 px-4">Status & Telemetry</th>
                 <th className="py-3 px-4 text-right">Actions</th>
               </tr>
             </thead>
@@ -168,11 +239,27 @@ export const BookingsInventoryScreen: React.FC<BookingsInventoryScreenProps> = (
                 filteredBookings.map(b => (
                   <tr
                     key={b.id}
-                    className="hover:bg-slate-50/80 transition-colors cursor-pointer group"
-                    onClick={() => setSelectedBooking(b)}
+                    className={`hover:bg-slate-50/80 transition-colors cursor-pointer group ${
+                      b.needsFulfillment ? 'bg-amber-50/30' : ''
+                    }`}
+                    onClick={() => {
+                      if (b.isCustomized) {
+                        setCustomizedModalBooking(b);
+                      } else {
+                        setSelectedBooking(b);
+                      }
+                    }}
                   >
                     <td className="py-3.5 px-4 font-mono font-medium text-slate-900">
-                      {b.ref}
+                      <div className="flex items-center gap-1.5">
+                        <span>{b.ref}</span>
+                        {b.isCustomized && (
+                          <span
+                            className="inline-block w-2 h-2 rounded-full bg-amber-500"
+                            title="Customized by Traveler"
+                          />
+                        )}
+                      </div>
                     </td>
 
                     <td className="py-3.5 px-4">
@@ -188,7 +275,7 @@ export const BookingsInventoryScreen: React.FC<BookingsInventoryScreenProps> = (
                     </td>
 
                     <td className="py-3.5 px-4 text-slate-900">
-                      <div className="line-clamp-1 font-medium">{b.tourTitle}</div>
+                      <div className="line-clamp-1 font-semibold">{b.tourTitle}</div>
                       <div className="text-[11px] text-slate-400">{b.destination}</div>
                     </td>
 
@@ -207,38 +294,68 @@ export const BookingsInventoryScreen: React.FC<BookingsInventoryScreenProps> = (
                     </td>
 
                     <td className="py-3.5 px-4 whitespace-nowrap">
-                      <div className="flex items-center gap-1.5 text-xs text-slate-700">
-                        <span
-                          className={`w-1.5 h-1.5 rounded-full ${
-                            b.status === 'Confirmed'
-                              ? 'bg-emerald-500'
-                              : b.status === 'Pending'
-                              ? 'bg-amber-500'
-                              : 'bg-indigo-500'
-                          }`}
-                        />
-                        <span className="font-medium">{b.status}</span>
+                      <div className="flex flex-col gap-1">
+                        <div className="flex items-center gap-1.5 text-xs text-slate-700">
+                          <span
+                            className={`w-1.5 h-1.5 rounded-full ${
+                              b.status === 'Confirmed'
+                                ? 'bg-emerald-500'
+                                : b.status === 'Pending'
+                                ? 'bg-amber-500'
+                                : 'bg-indigo-500'
+                            }`}
+                          />
+                          <span className="font-semibold">{b.status}</span>
+                        </div>
+                        {b.isCustomized && (
+                          <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded w-fit ${
+                            b.needsFulfillment
+                              ? 'bg-amber-100 text-amber-800'
+                              : 'bg-emerald-100 text-emerald-800'
+                          }`}>
+                            {b.needsFulfillment ? '⚡ Needs Fulfillment' : '✓ Fulfilled'}
+                          </span>
+                        )}
                       </div>
                     </td>
 
                     <td className="py-3.5 px-4 text-right whitespace-nowrap" onClick={e => e.stopPropagation()}>
                       <div className="flex items-center justify-end gap-1.5">
-                        {b.status === 'Pending' && (
+                        {b.isCustomized ? (
                           <button
                             type="button"
-                            onClick={() => handleConfirm(b.id, b.ref)}
-                            className="px-2.5 py-1 bg-slate-900 hover:bg-slate-800 text-white rounded-md text-xs font-medium transition-colors"
+                            onClick={() => setCustomizedModalBooking(b)}
+                            className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all shadow-xs flex items-center gap-1 cursor-pointer ${
+                              b.needsFulfillment
+                                ? 'bg-blue-600 hover:bg-blue-700 text-white'
+                                : 'bg-slate-100 hover:bg-slate-200 text-slate-700'
+                            }`}
                           >
-                            Confirm
+                            <span className="material-symbols-outlined text-xs">
+                              {b.needsFulfillment ? 'auto_fix_high' : 'visibility'}
+                            </span>
+                            <span>{b.needsFulfillment ? 'Review & Fulfill' : 'View Customizations'}</span>
                           </button>
+                        ) : (
+                          <>
+                            {b.status === 'Pending' && (
+                              <button
+                                type="button"
+                                onClick={() => showToast(`Booking ${b.ref} confirmed.`)}
+                                className="px-2.5 py-1 bg-slate-900 hover:bg-slate-800 text-white rounded-md text-xs font-medium transition-colors"
+                              >
+                                Confirm
+                              </button>
+                            )}
+                            <button
+                              type="button"
+                              onClick={() => onInspectTour('#1024')}
+                              className="px-2.5 py-1 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-md text-xs font-medium transition-colors"
+                            >
+                              View Tour
+                            </button>
+                          </>
                         )}
-                        <button
-                          type="button"
-                          onClick={() => onInspectTour('#1024')}
-                          className="px-2.5 py-1 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-md text-xs font-medium transition-colors"
-                        >
-                          View Tour
-                        </button>
                       </div>
                     </td>
                   </tr>
@@ -249,8 +366,27 @@ export const BookingsInventoryScreen: React.FC<BookingsInventoryScreenProps> = (
         </div>
       </div>
 
-      {/* Booking Detail Modal */}
-      {selectedBooking && (
+      {/* Modal 1: Create Tour Package Modal */}
+      <CreateTourPackageModal
+        isOpen={isCreatePackageOpen}
+        onClose={() => setIsCreatePackageOpen(false)}
+        showToast={showToast}
+        onPackageCreated={pkgTitle => {
+          showToast(`🚀 "${pkgTitle}" published live to Discover!`);
+        }}
+      />
+
+      {/* Modal 2: Traveler Customization Review & Fulfillment Modal */}
+      <CustomizedBookingFulfillmentModal
+        booking={customizedModalBooking}
+        isOpen={Boolean(customizedModalBooking)}
+        onClose={() => setCustomizedModalBooking(null)}
+        showToast={showToast}
+        onNavigateToTab={onNavigateToTab}
+      />
+
+      {/* Standard Booking Detail Modal */}
+      {selectedBooking && !selectedBooking.isCustomized && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-xs">
           <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-xl border border-slate-200 space-y-4">
             <div className="flex items-center justify-between pb-3 border-b border-slate-100">

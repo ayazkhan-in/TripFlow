@@ -1,13 +1,13 @@
 import React, { useState, useMemo } from 'react';
-import { OPERATOR_VENDORS } from '../../data/operatorSuiteData';
 import { VendorSupplyItem } from '../../types/travel';
+import { useOperator } from '../../context/OperatorContext';
 
 interface VendorsSupplyScreenProps {
   showToast: (msg: string) => void;
 }
 
 export const VendorsSupplyScreen: React.FC<VendorsSupplyScreenProps> = ({ showToast }) => {
-  const [vendors, setVendors] = useState<VendorSupplyItem[]>(OPERATOR_VENDORS);
+  const { vendors, addVendor } = useOperator();
   const [searchQuery, setSearchQuery] = useState('');
   const [categoryFilter, setCategoryFilter] = useState<string>('all');
   const [isAddVendorOpen, setIsAddVendorOpen] = useState(false);
@@ -46,7 +46,7 @@ export const VendorsSupplyScreen: React.FC<VendorsSupplyScreenProps> = ({ showTo
       contractRenewal: 'Dec 2027',
     };
 
-    setVendors(prev => [newVendor, ...prev]);
+    addVendor(newVendor);
     setIsAddVendorOpen(false);
     setNewVendorName('');
     setNewVendorRegion('');
