@@ -9,8 +9,31 @@
 
   button {
     border-radius: 9999px;
+    outline: none;
+  }
+
+  button:focus,
+  button:focus-visible,
+  button:active {
+    outline: none !important;
   }
 }
+
+/* Global outline and focus ring reset */
+button,
+button:focus,
+button:focus-visible,
+button:active {
+  outline: none !important;
+  box-shadow: none;
+  -webkit-tap-highlight-color: transparent !important;
+}
+
+*:focus,
+*:focus-visible {
+  outline: none !important;
+}
+
 
 .material-symbols-outlined {
   font-family: 'Material Symbols Outlined';
@@ -34,13 +57,16 @@
   width: 5px;
   height: 5px;
 }
+
 .custom-scrollbar::-webkit-scrollbar-track {
   background: transparent;
 }
+
 .custom-scrollbar::-webkit-scrollbar-thumb {
   background: #c3c6d7;
   border-radius: 9999px;
 }
+
 .custom-scrollbar::-webkit-scrollbar-thumb:hover {
   background: #9ca3af;
 }
@@ -48,7 +74,89 @@
 .no-scrollbar::-webkit-scrollbar {
   display: none;
 }
+
 .no-scrollbar {
   -ms-overflow-style: none;
   scrollbar-width: none;
+}
+
+/* Floating Orbit Animation Keyframes */
+@keyframes float-card-1 {
+
+  0%,
+  100% {
+    transform: translateY(0px) rotate(0deg);
+  }
+
+  50% {
+    transform: translateY(-8px) rotate(0.4deg);
+  }
+}
+
+@keyframes float-card-2 {
+
+  0%,
+  100% {
+    transform: translateY(0px) rotate(0deg);
+  }
+
+  50% {
+    transform: translateY(-11px) rotate(-0.3deg);
+  }
+}
+
+@keyframes float-card-3 {
+
+  0%,
+  100% {
+    transform: translateY(0px) rotate(0deg);
+  }
+
+  50% {
+    transform: translateY(-7px) rotate(0.2deg);
+  }
+}
+
+@keyframes float-card-4 {
+
+  0%,
+  100% {
+    transform: translateY(0px) rotate(0deg);
+  }
+
+  50% {
+    transform: translateY(-10px) rotate(-0.4deg);
+  }
+}
+
+.animate-float-1 {
+  animation: float-card-1 6.5s ease-in-out infinite;
+}
+
+.animate-float-2 {
+  animation: float-card-2 7.8s ease-in-out infinite 0.7s;
+}
+
+.animate-float-3 {
+  animation: float-card-3 8.4s ease-in-out infinite 1.6s;
+}
+
+.animate-float-4 {
+  animation: float-card-4 6.9s ease-in-out infinite 2.3s;
+}
+
+.animate-float-5 {
+  animation: float-card-1 7.4s ease-in-out infinite 3.1s;
+}
+
+.animate-float-6 {
+  animation: float-card-2 8.1s ease-in-out infinite 1.1s;
+}
+
+.animate-float-5 {
+  animation: float-card-1 7.4s ease-in-out infinite 3.1s;
+}
+
+.animate-float-6 {
+  animation: float-card-2 8.1s ease-in-out infinite 1.1s;
 }

@@ -550,106 +550,106 @@ export const TripsAndBookingsScreen: React.FC<TripsAndBookingsScreenProps> = ({
       {/* ------------------------------------------------------------- */}
       {/* SUB-HEADER / BREADCRUMB & MASTER SWITCHER                     */}
       {/* ------------------------------------------------------------- */}
-      <section className="bg-white/95 backdrop-blur-md border-b border-slate-200 px-4 sm:px-6 py-4 sticky top-14 z-30 shadow-2xs">
+      <section className="bg-white/95 backdrop-blur-md border-b border-slate-200 px-4 sm:px-6 py-3.5 sticky top-14 z-30 shadow-2xs">
         <div className="max-w-[1280px] mx-auto flex flex-col md:flex-row md:items-center justify-between gap-4">
-          <div className="space-y-1.5 text-left">
-            {/* Multi-Trip Switcher Pills if user has multiple booked trips */}
-            {bookedTrips && bookedTrips.length > 1 && (
-              <div className="flex items-center gap-1.5 overflow-x-auto pb-1 custom-scrollbar">
-                <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider shrink-0 mr-1">
-                  Booked Trips:
-                </span>
-                {bookedTrips.map(trip => {
-                  const isActive = trip.id === currentTrip?.id;
-                  return (
-                    <button
-                      key={trip.id}
-                      type="button"
-                      onClick={() => onSelectTrip?.(trip.id)}
-                      className={`px-3 py-1 rounded-full text-xs font-bold transition-all cursor-pointer whitespace-nowrap flex items-center gap-1.5 ${
-                        isActive
-                          ? 'bg-blue-600 text-white shadow-xs'
-                          : 'bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-200'
-                      }`}
-                    >
-                      <span className="material-symbols-outlined text-[14px]">
-                        {isActive ? 'check_circle' : 'flight'}
-                      </span>
-                      <span>{trip.destination} ({trip.duration.split('·')[0].trim()})</span>
-                    </button>
-                  );
-                })}
-              </div>
-            )}
-
+          <div className="space-y-1 text-left min-w-0">
+            {/* Breadcrumb & Inline Trip Switcher */}
             <div className="flex items-center gap-2 text-xs text-slate-500 flex-wrap">
-              <span className="font-bold text-blue-600">Trips & Bookings</span>
+              <span className="font-medium text-slate-400">Trips & Bookings</span>
               <span className="text-slate-300">/</span>
-              <span className="text-slate-900 font-semibold">
-                {activeSection === 'timeline'
-                  ? `${currentTrip?.title || 'Kerala Escape'} (Active Itinerary)`
-                  : 'Confirmed Passes & Vouchers'}
+              <span className="text-slate-700 font-semibold">
+                {currentTrip?.destination || 'Kerala'}
               </span>
-              <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-emerald-50 text-emerald-800 border border-emerald-200 text-[11px] font-bold">
-                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
-                Active Journey · Confirmed
-              </span>
-              <span className="font-mono text-[11px] text-slate-600 px-2 py-0.5 rounded-md bg-slate-100 border border-slate-200 font-semibold">
-                Ref #{currentTrip?.bookingRef || 'KL-9402'}
-              </span>
+
+              {/* Multi-Trip Switcher (inline, clean segmented tabs, no bulky pills) */}
+              {bookedTrips && bookedTrips.length > 1 && (
+                <div className="inline-flex items-center bg-slate-100 p-0.5 rounded-lg ml-1.5 border border-slate-200/60">
+                  {bookedTrips.map(trip => {
+                    const isActive = trip.id === currentTrip?.id;
+                    const cleanDuration = trip.duration
+                      ? trip.duration.split('·')[0].trim().replace('1 Days', '1 Day')
+                      : '';
+                    return (
+                      <button
+                        key={trip.id}
+                        type="button"
+                        onClick={() => onSelectTrip?.(trip.id)}
+                        className={`px-2.5 py-0.5 rounded-md text-[11px] font-semibold transition-all cursor-pointer ${
+                          isActive
+                            ? 'bg-white text-slate-900 shadow-2xs font-bold'
+                            : 'text-slate-500 hover:text-slate-900'
+                        }`}
+                      >
+                        {trip.destination} {cleanDuration ? `(${cleanDuration})` : ''}
+                      </button>
+                    );
+                  })}
+                </div>
+              )}
             </div>
 
-            <div className="flex flex-wrap items-baseline gap-2 sm:gap-3">
-              <h1 className="text-xl sm:text-2xl text-slate-900 font-extrabold tracking-tight">
-                {activeSection === 'timeline'
-                  ? `${currentTrip?.destination || 'Kerala'} Itinerary & Bookings`
-                  : 'Your Confirmed Passes & Vouchers'}
-              </h1>
-              <span className="text-slate-300 hidden sm:inline">·</span>
-              <span className="text-xs text-slate-600 font-medium">
-                {currentTrip?.dates || 'Oct 14–19, 2025'}
+            {/* Main Page Title */}
+            <h1 className="text-xl sm:text-2xl text-slate-900 font-extrabold tracking-tight truncate">
+              {activeSection === 'timeline'
+                ? currentTrip?.title || `${currentTrip?.destination || 'Kerala'} Luxury Itinerary`
+                : 'Confirmed Passes & Bookings'}
+            </h1>
+
+            {/* Clean Structured Metadata Row (no unnecessary pills) */}
+            <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-slate-500 pt-0.5">
+              <span className="inline-flex items-center gap-1.5 font-medium text-emerald-700">
+                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 shrink-0" />
+                <span>Confirmed</span>
               </span>
-              <span className="text-slate-300 hidden sm:inline">·</span>
-              <span className="inline-flex items-center gap-1 text-xs text-slate-600 font-medium">
-                <span className="material-symbols-outlined text-sm text-slate-500">group</span>{' '}
-                {currentTrip?.travelers || 2} Travelers (Sarah Mehta + Guest)
+              <span className="text-slate-300">·</span>
+              <span className="font-mono text-slate-500">
+                Ref #{currentTrip?.bookingRef || 'KL-9402'}
               </span>
-              <span className="text-slate-300 hidden sm:inline">·</span>
-              <span className="font-mono text-xs font-bold text-blue-600">
-                ₹{currentTrip ? currentTrip.totalPrice.toLocaleString('en-IN') : '42,800'} Total
+              <span className="text-slate-300">·</span>
+              <span className="inline-flex items-center gap-1 text-slate-600">
+                <span className="material-symbols-outlined text-[13px] text-slate-400">calendar_today</span>
+                <span>{currentTrip?.dates || 'Oct 14–19, 2025'}</span>
+              </span>
+              <span className="text-slate-300">·</span>
+              <span className="inline-flex items-center gap-1 text-slate-600">
+                <span className="material-symbols-outlined text-[14px] text-slate-400">group</span>
+                <span>{currentTrip?.travelers || 2} Travelers</span>
+              </span>
+              <span className="text-slate-300">·</span>
+              <span className="font-semibold text-slate-900">
+                ₹{currentTrip ? currentTrip.totalPrice.toLocaleString('en-IN') : '42,800'}
               </span>
             </div>
           </div>
 
-          {/* Master View Switcher: Active Timeline vs Confirmed Bookings */}
-          <div className="flex items-center gap-2 self-start md:self-auto">
-            <div className="bg-slate-100 p-1 rounded-full border border-slate-200 flex items-center shadow-2xs">
+          {/* Right: Modern Segmented View Switcher */}
+          <div className="shrink-0 self-start md:self-center">
+            <div className="inline-flex p-1 bg-slate-100 rounded-xl border border-slate-200/60">
               <button
                 type="button"
                 onClick={() => setActiveSection('timeline')}
-                className={`px-4 py-2 rounded-full text-xs font-bold flex items-center gap-2 transition-all cursor-pointer ${
+                className={`px-3.5 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition-all cursor-pointer ${
                   activeSection === 'timeline'
-                    ? 'bg-blue-600 text-white shadow-xs'
-                    : 'text-slate-600 hover:text-slate-900 hover:bg-white/60'
+                    ? 'bg-white text-slate-900 shadow-2xs font-bold'
+                    : 'text-slate-600 hover:text-slate-900'
                 }`}
               >
-                <span className="material-symbols-outlined text-[16px]">timeline</span>
+                <span className="material-symbols-outlined text-[16px] text-slate-500">timeline</span>
                 <span>Active Timeline</span>
-                <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
               </button>
               <button
                 type="button"
                 onClick={() => setActiveSection('bookings')}
-                className={`px-4 py-2 rounded-full text-xs font-bold flex items-center gap-2 transition-all cursor-pointer ${
+                className={`px-3.5 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition-all cursor-pointer ${
                   activeSection === 'bookings'
-                    ? 'bg-blue-600 text-white shadow-xs'
-                    : 'text-slate-600 hover:text-slate-900 hover:bg-white/60'
+                    ? 'bg-white text-slate-900 shadow-2xs font-bold'
+                    : 'text-slate-600 hover:text-slate-900'
                 }`}
               >
-                <span className="material-symbols-outlined text-[16px]">confirmation_number</span>
+                <span className="material-symbols-outlined text-[16px] text-slate-500">confirmation_number</span>
                 <span>Confirmed Bookings</span>
-                <span className="text-[10px] bg-slate-200/80 text-slate-700 px-1.5 py-0.2 rounded-full font-bold">
-                  {bookedTrips?.length || 4}
+                <span className="text-[11px] text-slate-400 font-medium">
+                  ({bookedTrips?.length || 2})
                 </span>
               </button>
             </div>

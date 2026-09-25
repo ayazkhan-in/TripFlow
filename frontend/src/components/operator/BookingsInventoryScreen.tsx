@@ -6,6 +6,7 @@ import { formatCurrency } from '../../utils/pricing';
 interface BookingsInventoryScreenProps {
   onInspectTour: (tourId: string) => void;
   showToast: (msg: string) => void;
+  activeCategory?: 'all' | 'flights' | 'stays' | 'transfers' | 'activities';
 }
 
 export const BookingsInventoryScreen: React.FC<BookingsInventoryScreenProps> = ({
@@ -20,12 +21,13 @@ export const BookingsInventoryScreen: React.FC<BookingsInventoryScreenProps> = (
   const filteredBookings = useMemo(() => {
     return bookings.filter(b => {
       const matchesStatus = statusFilter === 'All' || b.status === statusFilter;
+      const q = searchQuery.toLowerCase();
       const matchesSearch =
-        !searchQuery ||
-        b.guestName.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        b.ref.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        b.tourTitle.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        b.destination.toLowerCase().includes(searchQuery.toLowerCase());
+        !q ||
+        b.guestName.toLowerCase().includes(q) ||
+        b.ref.toLowerCase().includes(q) ||
+        b.tourTitle.toLowerCase().includes(q) ||
+        b.destination.toLowerCase().includes(q);
       return matchesStatus && matchesSearch;
     });
   }, [bookings, statusFilter, searchQuery]);
@@ -34,40 +36,35 @@ export const BookingsInventoryScreen: React.FC<BookingsInventoryScreenProps> = (
     setBookings(prev =>
       prev.map(b => (b.id === id ? { ...b, status: 'Confirmed' } : b))
     );
-    showToast(`Booking ${ref} confirmed! Vouchers issued to guest.`);
+    showToast(`Booking ${ref} confirmed.`);
   };
 
   return (
-    <div className="flex-1 bg-[#F7F8FA] min-h-screen p-6 sm:p-8 space-y-6 select-none">
+    <div className="flex-1 bg-slate-50/50 min-h-screen p-6 sm:p-8 space-y-6 select-none">
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <div className="flex items-center gap-2">
-            <span className="material-symbols-outlined text-2xl text-blue-600">
-              confirmation_number
-            </span>
-            <h1 className="text-xl sm:text-2xl font-extrabold text-neutral-900 tracking-tight">
-              Bookings & Inventory
-            </h1>
-          </div>
-          <p className="text-xs text-neutral-500 mt-1">
-            Real-time traveler manifest, hotel room block allocations, and flight seat clearance.
+          <h1 className="text-xl sm:text-2xl font-bold text-slate-900 tracking-tight">
+            Package Bookings & Traveler Manifest
+          </h1>
+          <p className="text-xs text-slate-500 mt-0.5">
+            Master manifest tracking travelers who booked tour packages, guest counts per circuit, and capacity clearance.
           </p>
         </div>
 
-        <div className="flex items-center gap-2.5">
+        <div className="flex items-center gap-2">
           <button
             type="button"
-            onClick={() => showToast('Exporting bookings manifest to CSV...')}
-            className="px-3.5 py-2 bg-white border border-neutral-200 hover:bg-neutral-50 text-neutral-700 rounded-xl text-xs font-semibold shadow-xs flex items-center gap-1.5 cursor-pointer transition-colors"
+            onClick={() => showToast('Exported bookings manifest to CSV')}
+            className="px-3.5 py-2 bg-white border border-slate-200 hover:bg-slate-50 text-slate-700 rounded-lg text-xs font-medium flex items-center gap-1.5 transition-colors"
           >
-            <span className="material-symbols-outlined text-sm">download</span>
+            <span className="material-symbols-outlined text-sm text-slate-400">download</span>
             <span>Export Manifest</span>
           </button>
           <button
             type="button"
-            onClick={() => showToast('Room block sync complete with Aman and Hoshinoya.')}
-            className="px-3.5 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-bold shadow-xs flex items-center gap-1.5 cursor-pointer transition-colors"
+            onClick={() => showToast('Inventory synchronized across properties')}
+            className="px-3.5 py-2 bg-slate-900 hover:bg-slate-800 text-white rounded-lg text-xs font-medium flex items-center gap-1.5 transition-colors"
           >
             <span className="material-symbols-outlined text-sm">sync</span>
             <span>Sync Inventory</span>
@@ -75,89 +72,67 @@ export const BookingsInventoryScreen: React.FC<BookingsInventoryScreenProps> = (
         </div>
       </div>
 
-      {/* KPI Cards Row */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        <div className="bg-white border border-neutral-200/80 rounded-2xl p-4 shadow-2xs">
-          <div className="flex items-center justify-between">
-            <span className="text-xs text-neutral-500 font-medium">Total Active Bookings</span>
-            <span className="w-8 h-8 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center">
-              <span className="material-symbols-outlined text-base">receipt_long</span>
-            </span>
-          </div>
-          <div className="text-2xl font-black text-neutral-900 mt-2">128</div>
-          <div className="flex items-center gap-1 text-[11px] text-emerald-600 font-semibold mt-1">
-            <span className="material-symbols-outlined text-xs">trending_up</span>
-            <span>+12% vs last month</span>
-          </div>
+      {/* KPI Cards Row - Clean and Minimal */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+        <div className="bg-white border border-slate-200/80 rounded-xl p-4">
+          <span className="text-[11px] font-medium text-slate-400 uppercase tracking-wider">
+            Total Active Bookings
+          </span>
+          <div className="text-2xl font-bold text-slate-900 mt-1">128</div>
+          <div className="text-[11px] text-slate-400 mt-0.5">+12% vs last month</div>
         </div>
 
-        <div className="bg-white border border-neutral-200/80 rounded-2xl p-4 shadow-2xs">
-          <div className="flex items-center justify-between">
-            <span className="text-xs text-neutral-500 font-medium">Capacity Utilization</span>
-            <span className="w-8 h-8 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center">
-              <span className="material-symbols-outlined text-base">pie_chart</span>
-            </span>
-          </div>
-          <div className="text-2xl font-black text-neutral-900 mt-2">88.4%</div>
-          <div className="flex items-center gap-1 text-[11px] text-emerald-600 font-semibold mt-1">
-            <span>Optimal load across 8 circuits</span>
-          </div>
+        <div className="bg-white border border-slate-200/80 rounded-xl p-4">
+          <span className="text-[11px] font-medium text-slate-400 uppercase tracking-wider">
+            Capacity Utilization
+          </span>
+          <div className="text-2xl font-bold text-slate-900 mt-1">88.4%</div>
+          <div className="text-[11px] text-slate-400 mt-0.5">Optimal load across 8 circuits</div>
         </div>
 
-        <div className="bg-white border border-neutral-200/80 rounded-2xl p-4 shadow-2xs">
-          <div className="flex items-center justify-between">
-            <span className="text-xs text-neutral-500 font-medium">Gross Booked Value</span>
-            <span className="w-8 h-8 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center">
-              <span className="material-symbols-outlined text-base">payments</span>
-            </span>
-          </div>
-          <div className="text-2xl font-black text-neutral-900 mt-2">$428,950</div>
-          <div className="flex items-center gap-1 text-[11px] text-neutral-400 mt-1">
-            <span>Average $3,351 per traveler</span>
-          </div>
+        <div className="bg-white border border-slate-200/80 rounded-xl p-4">
+          <span className="text-[11px] font-medium text-slate-400 uppercase tracking-wider">
+            Gross Booked Value
+          </span>
+          <div className="text-2xl font-bold text-slate-900 mt-1">$428,950</div>
+          <div className="text-[11px] text-slate-400 mt-0.5">Average $3,351 per traveler</div>
         </div>
 
-        <div className="bg-white border border-neutral-200/80 rounded-2xl p-4 shadow-2xs">
-          <div className="flex items-center justify-between">
-            <span className="text-xs text-neutral-500 font-medium">Waitlist In Queue</span>
-            <span className="w-8 h-8 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center">
-              <span className="material-symbols-outlined text-base">hourglass_top</span>
-            </span>
-          </div>
-          <div className="text-2xl font-black text-neutral-900 mt-2">14</div>
-          <div className="flex items-center gap-1 text-[11px] text-amber-600 font-semibold mt-1">
-            <span>Priority auto-clear on cancellations</span>
-          </div>
+        <div className="bg-white border border-slate-200/80 rounded-xl p-4">
+          <span className="text-[11px] font-medium text-slate-400 uppercase tracking-wider">
+            Waitlist In Queue
+          </span>
+          <div className="text-2xl font-bold text-slate-900 mt-1">14</div>
+          <div className="text-[11px] text-slate-400 mt-0.5">Auto-clear on cancellations</div>
         </div>
       </div>
 
       {/* Filter and Search Bar */}
-      <div className="bg-white border border-neutral-200/80 rounded-2xl p-3 shadow-2xs flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-        {/* Search */}
-        <div className="relative flex-1 max-w-md">
-          <span className="material-symbols-outlined absolute left-3 top-2.5 text-neutral-400 text-sm">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+        <div className="relative flex-1 max-w-sm">
+          <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-sm">
             search
           </span>
           <input
             type="text"
             value={searchQuery}
             onChange={e => setSearchQuery(e.target.value)}
-            placeholder="Search by guest, booking reference, or tour title..."
-            className="w-full pl-9 pr-3 py-1.5 bg-neutral-50 border border-neutral-200 rounded-xl text-xs text-neutral-800 placeholder:text-neutral-400 focus:outline-none focus:border-blue-500 focus:bg-white"
+            placeholder="Search by guest, ref, or tour title..."
+            className="w-full pl-9 pr-3 py-1.5 bg-white border border-slate-200 rounded-lg text-xs text-slate-800 placeholder:text-slate-400 focus:outline-none focus:border-slate-400 transition-colors"
           />
         </div>
 
-        {/* Status Filters */}
-        <div className="flex items-center gap-1.5 overflow-x-auto">
+        {/* Clean Segmented Status Tabs */}
+        <div className="flex items-center border border-slate-200 rounded-lg p-0.5 bg-slate-50">
           {(['All', 'Confirmed', 'Pending', 'Waitlist'] as const).map(st => (
             <button
               key={st}
               type="button"
               onClick={() => setStatusFilter(st)}
-              className={`px-3 py-1.5 rounded-xl text-xs font-semibold cursor-pointer transition-colors ${
+              className={`px-3 py-1 rounded-md text-xs font-medium transition-colors ${
                 statusFilter === st
-                  ? 'bg-neutral-900 text-white'
-                  : 'bg-neutral-100 text-neutral-600 hover:bg-neutral-200/70 hover:text-neutral-900'
+                  ? 'bg-white text-slate-900 font-semibold shadow-2xs'
+                  : 'text-slate-600 hover:text-slate-900'
               }`}
             >
               {st}
@@ -167,12 +142,12 @@ export const BookingsInventoryScreen: React.FC<BookingsInventoryScreenProps> = (
       </div>
 
       {/* Bookings Table Card */}
-      <div className="bg-white border border-neutral-200/80 rounded-2xl overflow-hidden shadow-2xs">
+      <div className="bg-white border border-slate-200/80 rounded-xl overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full text-left border-collapse text-xs">
             <thead>
-              <tr className="border-b border-neutral-200 bg-neutral-50/70 text-neutral-500 font-semibold uppercase text-[10px] tracking-wider">
-                <th className="py-3 px-4">Booking Ref</th>
+              <tr className="border-b border-slate-200 bg-slate-50 text-slate-500 font-medium text-[11px]">
+                <th className="py-3 px-4">Ref</th>
                 <th className="py-3 px-4">Lead Guest</th>
                 <th className="py-3 px-4">Tour Circuit</th>
                 <th className="py-3 px-4">Dates & Pax</th>
@@ -182,10 +157,10 @@ export const BookingsInventoryScreen: React.FC<BookingsInventoryScreenProps> = (
                 <th className="py-3 px-4 text-right">Actions</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-neutral-100 text-neutral-700">
+            <tbody className="divide-y divide-slate-100 text-slate-700">
               {filteredBookings.length === 0 ? (
                 <tr>
-                  <td colSpan={8} className="py-8 text-center text-neutral-400">
+                  <td colSpan={8} className="py-8 text-center text-slate-400">
                     No bookings found matching filters.
                   </td>
                 </tr>
@@ -193,59 +168,57 @@ export const BookingsInventoryScreen: React.FC<BookingsInventoryScreenProps> = (
                 filteredBookings.map(b => (
                   <tr
                     key={b.id}
-                    className="hover:bg-neutral-50/80 transition-colors cursor-pointer group"
+                    className="hover:bg-slate-50/80 transition-colors cursor-pointer group"
                     onClick={() => setSelectedBooking(b)}
                   >
-                    <td className="py-3.5 px-4 font-mono font-bold text-blue-600">
+                    <td className="py-3.5 px-4 font-mono font-medium text-slate-900">
                       {b.ref}
                     </td>
 
                     <td className="py-3.5 px-4">
-                      <div className="font-semibold text-neutral-900 flex items-center gap-1.5">
+                      <div className="font-semibold text-slate-900 flex items-center gap-1.5">
                         <span>{b.guestName}</span>
                         {b.vipStatus && (
-                          <span className="px-1.5 py-0.2 rounded-md bg-amber-100 text-amber-800 text-[10px] font-black">
-                            VIP
-                          </span>
+                          <span className="text-[10px] text-amber-600 font-medium">★ VIP</span>
                         )}
                       </div>
-                      <div className="text-[11px] text-neutral-400 truncate max-w-[180px]">
+                      <div className="text-[11px] text-slate-400 truncate max-w-[180px]">
                         {b.guestEmail}
                       </div>
                     </td>
 
-                    <td className="py-3.5 px-4 font-medium text-neutral-900">
-                      <div className="line-clamp-1">{b.tourTitle}</div>
-                      <div className="text-[11px] text-neutral-400">{b.destination}</div>
+                    <td className="py-3.5 px-4 text-slate-900">
+                      <div className="line-clamp-1 font-medium">{b.tourTitle}</div>
+                      <div className="text-[11px] text-slate-400">{b.destination}</div>
                     </td>
 
                     <td className="py-3.5 px-4 whitespace-nowrap">
                       <div>{b.dates}</div>
-                      <div className="text-[11px] text-neutral-400">{b.guestsCount} Travelers</div>
+                      <div className="text-[11px] text-slate-400">{b.guestsCount} Travelers</div>
                     </td>
 
-                    <td className="py-3.5 px-4 text-neutral-600 max-w-[200px]">
+                    <td className="py-3.5 px-4 text-slate-600 max-w-[200px]">
                       <div className="truncate font-medium">{b.roomsAllocated}</div>
-                      <div className="text-[10px] text-neutral-400 truncate">{b.flightAllocated}</div>
+                      <div className="text-[10px] text-slate-400 truncate">{b.flightAllocated}</div>
                     </td>
 
-                    <td className="py-3.5 px-4 font-extrabold text-neutral-900 whitespace-nowrap">
+                    <td className="py-3.5 px-4 font-bold text-slate-900 whitespace-nowrap">
                       {formatCurrency(b.amount)}
                     </td>
 
                     <td className="py-3.5 px-4 whitespace-nowrap">
-                      <span
-                        className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-bold ${
-                          b.status === 'Confirmed'
-                            ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
-                            : b.status === 'Pending'
-                            ? 'bg-amber-50 text-amber-700 border border-amber-200'
-                            : 'bg-indigo-50 text-indigo-700 border border-indigo-200'
-                        }`}
-                      >
-                        <span className="w-1.5 h-1.5 rounded-full bg-current" />
-                        <span>{b.status}</span>
-                      </span>
+                      <div className="flex items-center gap-1.5 text-xs text-slate-700">
+                        <span
+                          className={`w-1.5 h-1.5 rounded-full ${
+                            b.status === 'Confirmed'
+                              ? 'bg-emerald-500'
+                              : b.status === 'Pending'
+                              ? 'bg-amber-500'
+                              : 'bg-indigo-500'
+                          }`}
+                        />
+                        <span className="font-medium">{b.status}</span>
+                      </div>
                     </td>
 
                     <td className="py-3.5 px-4 text-right whitespace-nowrap" onClick={e => e.stopPropagation()}>
@@ -254,7 +227,7 @@ export const BookingsInventoryScreen: React.FC<BookingsInventoryScreenProps> = (
                           <button
                             type="button"
                             onClick={() => handleConfirm(b.id, b.ref)}
-                            className="px-2.5 py-1 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-xs font-bold shadow-2xs cursor-pointer"
+                            className="px-2.5 py-1 bg-slate-900 hover:bg-slate-800 text-white rounded-md text-xs font-medium transition-colors"
                           >
                             Confirm
                           </button>
@@ -262,7 +235,7 @@ export const BookingsInventoryScreen: React.FC<BookingsInventoryScreenProps> = (
                         <button
                           type="button"
                           onClick={() => onInspectTour('#1024')}
-                          className="px-2.5 py-1 bg-neutral-100 hover:bg-neutral-200/70 text-neutral-700 rounded-lg text-xs font-semibold cursor-pointer"
+                          className="px-2.5 py-1 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-md text-xs font-medium transition-colors"
                         >
                           View Tour
                         </button>
@@ -278,61 +251,61 @@ export const BookingsInventoryScreen: React.FC<BookingsInventoryScreenProps> = (
 
       {/* Booking Detail Modal */}
       {selectedBooking && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-xs">
-          <div className="bg-white rounded-3xl max-w-lg w-full p-6 shadow-2xl border border-neutral-200 space-y-4 animate-in zoom-in-95 duration-150">
-            <div className="flex items-center justify-between pb-3 border-b border-neutral-100">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-xs">
+          <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-xl border border-slate-200 space-y-4">
+            <div className="flex items-center justify-between pb-3 border-b border-slate-100">
               <div>
-                <span className="font-mono text-xs font-bold text-blue-600">
+                <span className="font-mono text-xs text-slate-400">
                   {selectedBooking.ref}
                 </span>
-                <h3 className="text-base font-bold text-neutral-900 mt-0.5">
+                <h3 className="text-base font-bold text-slate-900 mt-0.5">
                   {selectedBooking.guestName}
                 </h3>
               </div>
               <button
                 type="button"
                 onClick={() => setSelectedBooking(null)}
-                className="w-8 h-8 rounded-full bg-neutral-100 hover:bg-neutral-200 flex items-center justify-center cursor-pointer"
+                className="text-slate-400 hover:text-slate-700"
               >
-                ✕
+                <span className="material-symbols-outlined text-lg">close</span>
               </button>
             </div>
 
             <div className="space-y-3 text-xs">
-              <div className="grid grid-cols-2 gap-3 bg-neutral-50 p-3 rounded-2xl">
+              <div className="grid grid-cols-2 gap-3 bg-slate-50 p-3 rounded-lg border border-slate-100">
                 <div>
-                  <span className="text-[10px] text-neutral-400 uppercase font-semibold">Tour</span>
-                  <div className="font-bold text-neutral-800">{selectedBooking.tourTitle}</div>
+                  <span className="text-[10px] text-slate-400 uppercase font-medium">Tour</span>
+                  <div className="font-semibold text-slate-900">{selectedBooking.tourTitle}</div>
                 </div>
                 <div>
-                  <span className="text-[10px] text-neutral-400 uppercase font-semibold">Total Price</span>
-                  <div className="font-extrabold text-blue-600">{formatCurrency(selectedBooking.amount)}</div>
+                  <span className="text-[10px] text-slate-400 uppercase font-medium">Total Price</span>
+                  <div className="font-bold text-slate-900">{formatCurrency(selectedBooking.amount)}</div>
                 </div>
               </div>
 
               <div>
-                <span className="text-[10px] text-neutral-400 uppercase font-semibold">Allocated Suites & Rooms</span>
-                <p className="font-medium text-neutral-800 mt-0.5">{selectedBooking.roomsAllocated}</p>
+                <span className="text-[10px] text-slate-400 uppercase font-medium block">Allocated Suites & Rooms</span>
+                <p className="text-slate-800 mt-0.5">{selectedBooking.roomsAllocated}</p>
               </div>
 
               <div>
-                <span className="text-[10px] text-neutral-400 uppercase font-semibold">Flight Clearances</span>
-                <p className="font-medium text-neutral-800 mt-0.5">{selectedBooking.flightAllocated}</p>
+                <span className="text-[10px] text-slate-400 uppercase font-medium block">Flight Clearances</span>
+                <p className="text-slate-800 mt-0.5">{selectedBooking.flightAllocated}</p>
               </div>
 
               {selectedBooking.notes && (
-                <div className="p-3 bg-amber-50/70 border border-amber-200/60 rounded-xl text-amber-900">
-                  <span className="font-bold block mb-0.5">VIP Concierge Notes:</span>
+                <div className="p-3 bg-slate-50 border border-slate-200 rounded-lg text-slate-700">
+                  <span className="font-semibold block mb-0.5">Concierge Notes:</span>
                   <span>{selectedBooking.notes}</span>
                 </div>
               )}
             </div>
 
-            <div className="pt-3 border-t border-neutral-100 flex items-center justify-end gap-2">
+            <div className="pt-3 border-t border-slate-100 flex items-center justify-end gap-2">
               <button
                 type="button"
                 onClick={() => setSelectedBooking(null)}
-                className="px-4 py-2 text-xs font-semibold text-neutral-600 hover:bg-neutral-100 rounded-xl cursor-pointer"
+                className="px-3.5 py-1.5 text-xs font-medium text-slate-600 hover:text-slate-900 rounded-lg transition-colors"
               >
                 Close
               </button>
@@ -342,9 +315,9 @@ export const BookingsInventoryScreen: React.FC<BookingsInventoryScreenProps> = (
                   onInspectTour('#1024');
                   setSelectedBooking(null);
                 }}
-                className="px-4 py-2 text-xs font-bold text-white bg-blue-600 hover:bg-blue-700 rounded-xl shadow-xs cursor-pointer"
+                className="px-3.5 py-1.5 text-xs font-medium text-white bg-slate-900 hover:bg-slate-800 rounded-lg transition-colors"
               >
-                Inspect Live Tour Details
+                View Live Tour
               </button>
             </div>
           </div>

@@ -28,6 +28,7 @@ import { ProfileModal } from './components/consumer/ProfileModal';
 import { OpsCommandHub } from './components/operator/OpsCommandHub';
 import { TourDetailScreen } from './components/operator/TourDetailScreen';
 import { BookingsInventoryScreen } from './components/operator/BookingsInventoryScreen';
+import { TravelerBookingsManagerScreen } from './components/operator/TravelerBookingsManagerScreen';
 import { VendorsSupplyScreen } from './components/operator/VendorsSupplyScreen';
 import { TourCohortsScreen } from './components/operator/TourCohortsScreen';
 import { TourGuidesScreen } from './components/operator/TourGuidesScreen';
@@ -451,8 +452,20 @@ export default function App() {
                       />
                     )}
 
+                    {(operatorTab === 'flight_bookings' ||
+                      operatorTab === 'stay_bookings' ||
+                      operatorTab === 'transfer_bookings' ||
+                      operatorTab === 'activity_bookings') && (
+                      <TravelerBookingsManagerScreen
+                        activeTab={operatorTab}
+                        onTabChange={tab => setOperatorTab(tab)}
+                        showToast={showToast}
+                      />
+                    )}
+
                     {(operatorTab === 'bookings' || operatorTab === 'customers') && (
                       <BookingsInventoryScreen
+                        activeCategory="all"
                         onInspectTour={tourId => setOperatorTourId(tourId)}
                         showToast={showToast}
                       />

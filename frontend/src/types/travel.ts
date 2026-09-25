@@ -59,6 +59,10 @@ export interface BookedTrip {
 export type OperatorTab =
   | 'hub'
   | 'bookings'
+  | 'flight_bookings'
+  | 'stay_bookings'
+  | 'transfer_bookings'
+  | 'activity_bookings'
   | 'vendors'
   | 'cohorts'
   | 'guides'

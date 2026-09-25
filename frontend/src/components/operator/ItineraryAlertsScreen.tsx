@@ -33,98 +33,77 @@ export const ItineraryAlertsScreen: React.FC<ItineraryAlertsScreenProps> = ({
   };
 
   return (
-    <div className="flex-1 bg-[#F7F8FA] min-h-screen p-6 sm:p-8 space-y-6 select-none">
+    <div className="flex-1 bg-slate-50/50 min-h-screen p-6 sm:p-8 space-y-6 select-none">
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <div className="flex items-center gap-2">
-            <span className="material-symbols-outlined text-2xl text-rose-600">
-              warning
-            </span>
-            <h1 className="text-xl sm:text-2xl font-extrabold text-neutral-900 tracking-tight">
-              Itinerary Alerts & Disruption Radar
-            </h1>
-          </div>
-          <p className="text-xs text-neutral-500 mt-1">
+          <h1 className="text-xl sm:text-2xl font-bold text-slate-900 tracking-tight">
+            Itinerary Alerts & Disruption Radar
+          </h1>
+          <p className="text-xs text-slate-500 mt-0.5">
             Real-time flight delays, weather shifts, and autonomous itinerary reconciliation.
           </p>
         </div>
 
-        <button
-          type="button"
-          onClick={() => showToast('All live telemetry sensors operational across Japan, India & Europe.')}
-          className="px-4 py-2 bg-white border border-neutral-200 hover:bg-neutral-50 text-neutral-800 rounded-xl text-xs font-bold shadow-xs flex items-center gap-1.5 cursor-pointer self-start sm:self-auto transition-colors"
-        >
-          <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-          <span>Sensors Live (Sync: 2s)</span>
-        </button>
+        <div className="flex items-center gap-1.5 px-3 py-1.5 bg-white border border-slate-200 rounded-lg text-xs text-slate-700">
+          <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+          <span>Sensors Live</span>
+        </div>
       </div>
 
-      {/* KPI Cards */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        <div className="bg-white border border-neutral-200/80 rounded-2xl p-4 shadow-2xs">
-          <div className="flex items-center justify-between">
-            <span className="text-xs text-neutral-500 font-medium">Critical Alerts</span>
-            <span className="w-8 h-8 rounded-xl bg-rose-50 text-rose-600 flex items-center justify-center">
-              <span className="material-symbols-outlined text-base">emergency</span>
-            </span>
-          </div>
-          <div className="text-2xl font-black text-rose-600 mt-2">
+      {/* KPI Cards - Clean & Minimal */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+        <div className="bg-white border border-slate-200/80 rounded-xl p-4">
+          <span className="text-[11px] font-medium text-slate-400 uppercase tracking-wider">
+            Critical Alerts
+          </span>
+          <div className="text-2xl font-bold text-slate-900 mt-1">
             {alerts.filter(a => !a.isResolved && a.severity === 'critical').length} Active
           </div>
-          <div className="text-[11px] text-rose-600 font-semibold mt-1">Immediate action needed</div>
+          <div className="text-[11px] text-slate-400 mt-0.5">Requires resolution</div>
         </div>
 
-        <div className="bg-white border border-neutral-200/80 rounded-2xl p-4 shadow-2xs">
-          <div className="flex items-center justify-between">
-            <span className="text-xs text-neutral-500 font-medium">Average Recovery Time</span>
-            <span className="w-8 h-8 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center">
-              <span className="material-symbols-outlined text-base">bolt</span>
-            </span>
-          </div>
-          <div className="text-2xl font-black text-emerald-600 mt-2">3.2 mins</div>
-          <div className="text-[11px] text-emerald-600 font-semibold mt-1">Autonomous reconciliation</div>
+        <div className="bg-white border border-slate-200/80 rounded-xl p-4">
+          <span className="text-[11px] font-medium text-slate-400 uppercase tracking-wider">
+            Avg Recovery Time
+          </span>
+          <div className="text-2xl font-bold text-slate-900 mt-1">3.2 mins</div>
+          <div className="text-[11px] text-slate-400 mt-0.5">Autonomous reconciliation</div>
         </div>
 
-        <div className="bg-white border border-neutral-200/80 rounded-2xl p-4 shadow-2xs">
-          <div className="flex items-center justify-between">
-            <span className="text-xs text-neutral-500 font-medium">Travelers Protected</span>
-            <span className="w-8 h-8 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center">
-              <span className="material-symbols-outlined text-base">shield</span>
-            </span>
-          </div>
-          <div className="text-2xl font-black text-neutral-900 mt-2">28 Travelers</div>
-          <div className="text-[11px] text-neutral-400 mt-1">Across 4 live circuits</div>
+        <div className="bg-white border border-slate-200/80 rounded-xl p-4">
+          <span className="text-[11px] font-medium text-slate-400 uppercase tracking-wider">
+            Travelers Protected
+          </span>
+          <div className="text-2xl font-bold text-slate-900 mt-1">28 Travelers</div>
+          <div className="text-[11px] text-slate-400 mt-0.5">Across 4 circuits</div>
         </div>
 
-        <div className="bg-white border border-neutral-200/80 rounded-2xl p-4 shadow-2xs">
-          <div className="flex items-center justify-between">
-            <span className="text-xs text-neutral-500 font-medium">Auto-Recovery Rate</span>
-            <span className="w-8 h-8 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center">
-              <span className="material-symbols-outlined text-base">auto_fix_high</span>
-            </span>
-          </div>
-          <div className="text-2xl font-black text-indigo-600 mt-2">96.8%</div>
-          <div className="text-[11px] text-neutral-400 mt-1">Without customer friction</div>
+        <div className="bg-white border border-slate-200/80 rounded-xl p-4">
+          <span className="text-[11px] font-medium text-slate-400 uppercase tracking-wider">
+            Auto-Recovery Rate
+          </span>
+          <div className="text-2xl font-bold text-slate-900 mt-1">96.8%</div>
+          <div className="text-[11px] text-slate-400 mt-0.5">Zero traveler friction</div>
         </div>
       </div>
 
       {/* Filter Tabs */}
-      <div className="flex items-center gap-1.5 overflow-x-auto pb-1">
+      <div className="flex items-center border border-slate-200 rounded-lg p-0.5 bg-slate-50 w-fit">
         {[
           { id: 'all', label: 'All Alerts' },
-          { id: 'critical', label: 'Critical Only' },
+          { id: 'critical', label: 'Critical' },
           { id: 'high', label: 'High Priority' },
-          { id: 'resolved', label: 'Resolved History' },
+          { id: 'resolved', label: 'Resolved' },
         ].map(tab => (
           <button
             key={tab.id}
             type="button"
             onClick={() => setSeverityFilter(tab.id as any)}
-            className={`px-3.5 py-1.5 rounded-xl text-xs font-semibold cursor-pointer whitespace-nowrap transition-colors ${
+            className={`px-3 py-1 rounded-md text-xs font-medium whitespace-nowrap transition-colors ${
               severityFilter === tab.id
-                ? 'bg-neutral-900 text-white'
-                : 'bg-white border border-neutral-200 text-neutral-600 hover:bg-neutral-100 hover:text-neutral-900'
+                ? 'bg-white text-slate-900 font-semibold shadow-2xs'
+                : 'text-slate-600 hover:text-slate-900'
             }`}
           >
             {tab.label}
@@ -133,14 +112,11 @@ export const ItineraryAlertsScreen: React.FC<ItineraryAlertsScreenProps> = ({
       </div>
 
       {/* Alerts Feed */}
-      <div className="space-y-4">
+      <div className="space-y-3">
         {filteredAlerts.length === 0 ? (
-          <div className="bg-white rounded-3xl p-12 text-center border border-neutral-200/80">
-            <span className="material-symbols-outlined text-4xl text-emerald-500 mb-2">
-              check_circle
-            </span>
-            <h3 className="text-base font-bold text-neutral-800">All Clear</h3>
-            <p className="text-xs text-neutral-400 mt-1">
+          <div className="bg-white rounded-xl p-12 text-center border border-slate-200/80">
+            <h3 className="text-sm font-medium text-slate-700">All Clear</h3>
+            <p className="text-xs text-slate-400 mt-1">
               No unresolved alerts in this category. Telemetry systems running smoothly.
             </p>
           </div>
@@ -148,81 +124,87 @@ export const ItineraryAlertsScreen: React.FC<ItineraryAlertsScreenProps> = ({
           filteredAlerts.map(alert => (
             <div
               key={alert.id}
-              className={`bg-white rounded-3xl p-5 sm:p-6 shadow-2xs border transition-all ${
+              className={`bg-white rounded-xl p-5 border transition-colors ${
                 alert.isResolved
-                  ? 'border-neutral-200 opacity-75'
+                  ? 'border-slate-200/80 opacity-70'
                   : alert.severity === 'critical'
-                  ? 'border-rose-300 ring-2 ring-rose-100'
+                  ? 'border-rose-300'
                   : 'border-amber-300'
               }`}
             >
               <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-3">
-                <div className="space-y-1.5">
-                  <div className="flex items-center gap-2 flex-wrap">
-                    <span
-                      className={`px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider ${
-                        alert.isResolved
-                          ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
-                          : alert.severity === 'critical'
-                          ? 'bg-rose-50 text-rose-700 border border-rose-200'
-                          : 'bg-amber-50 text-amber-700 border border-amber-200'
-                      }`}
-                    >
-                      {alert.isResolved ? 'RESOLVED' : alert.severity.toUpperCase()}
-                    </span>
+                <div className="space-y-1">
+                  <div className="flex items-center gap-2 flex-wrap text-xs">
+                    <div className="flex items-center gap-1.5">
+                      <span
+                        className={`w-1.5 h-1.5 rounded-full ${
+                          alert.isResolved
+                            ? 'bg-slate-400'
+                            : alert.severity === 'critical'
+                            ? 'bg-rose-500'
+                            : 'bg-amber-500'
+                        }`}
+                      />
+                      <span
+                        className={`font-semibold uppercase text-[10px] tracking-wider ${
+                          alert.isResolved
+                            ? 'text-slate-500'
+                            : alert.severity === 'critical'
+                            ? 'text-rose-700'
+                            : 'text-amber-700'
+                        }`}
+                      >
+                        {alert.isResolved ? 'Resolved' : alert.severity}
+                      </span>
+                    </div>
 
-                    <span className="font-mono text-xs font-bold text-neutral-800">
-                      {alert.tourId} • {alert.tourTitle}
+                    <span className="text-slate-300">·</span>
+                    <span className="font-mono text-slate-700">
+                      {alert.tourId} · {alert.tourTitle}
                     </span>
-
-                    <span className="text-[11px] text-neutral-400">• {alert.timeAgo}</span>
+                    <span className="text-slate-300">·</span>
+                    <span className="text-slate-400">{alert.timeAgo}</span>
                   </div>
 
-                  <h3 className="text-base font-bold text-neutral-900">{alert.title}</h3>
-                  <p className="text-xs text-neutral-600 leading-relaxed max-w-2xl">
+                  <h3 className="text-sm font-bold text-slate-900 mt-1">{alert.title}</h3>
+                  <p className="text-xs text-slate-600 leading-relaxed max-w-2xl">
                     {alert.description}
                   </p>
                 </div>
 
-                <div className="text-right shrink-0">
-                  <div className="text-xs font-bold text-neutral-800">
+                <div className="text-left sm:text-right shrink-0">
+                  <div className="text-xs font-semibold text-slate-800">
                     {alert.affectedTravelers} Travelers Impacted
                   </div>
-                  <span className="text-[11px] text-neutral-400 font-medium block">
-                    Category: {alert.category}
+                  <span className="text-[11px] text-slate-400 block mt-0.5">
+                    {alert.category}
                   </span>
                 </div>
               </div>
 
               {/* Action Box */}
-              <div className="mt-4 p-4 bg-neutral-50 rounded-2xl border border-neutral-100 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                <div className="flex items-center gap-2">
-                  <span className="material-symbols-outlined text-base text-blue-600 shrink-0">
-                    auto_fix_high
-                  </span>
-                  <div className="text-xs">
-                    <span className="text-neutral-400 font-medium">Autonomous Recommendation: </span>
-                    <strong className="text-neutral-800">{alert.actionSuggested}</strong>
-                  </div>
+              <div className="mt-3.5 pt-3 border-t border-slate-100 flex flex-col sm:flex-row sm:items-center justify-between gap-2.5">
+                <div className="text-xs text-slate-600">
+                  <span className="font-medium text-slate-800">Suggested Action: </span>
+                  <span>{alert.actionSuggested}</span>
                 </div>
 
-                <div className="flex items-center gap-2 shrink-0 self-end sm:self-center">
+                <div className="flex items-center gap-2 shrink-0">
                   {!alert.isResolved && (
                     <button
                       type="button"
                       onClick={() => handleResolveAlert(alert.id, alert.title)}
-                      className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold shadow-xs cursor-pointer transition-colors flex items-center gap-1.5"
+                      className="px-3 py-1.5 bg-slate-900 hover:bg-slate-800 text-white rounded-lg text-xs font-medium transition-colors"
                     >
-                      <span className="material-symbols-outlined text-sm">check</span>
-                      <span>Apply Resolution</span>
+                      Apply Resolution
                     </button>
                   )}
                   <button
                     type="button"
                     onClick={() => onInspectTour(alert.tourId)}
-                    className="px-3.5 py-2 bg-white border border-neutral-200 hover:bg-neutral-100 text-neutral-700 rounded-xl text-xs font-semibold cursor-pointer transition-colors"
+                    className="px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg text-xs font-medium transition-colors"
                   >
-                    Inspect Tour
+                    View Tour
                   </button>
                 </div>
               </div>
