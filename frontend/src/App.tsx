@@ -42,6 +42,7 @@ import { AuthModal, AuthUser } from './components/auth/AuthModal';
 import { AuthScreen } from './components/auth/AuthScreen';
 import { TravelVaultScreen } from './components/consumer/TravelVaultScreen';
 import { AssistantScreen } from './components/consumer/AssistantScreen';
+import { StoryScreen } from './components/consumer/StoryScreen';
 import { ItineraryBuilderScreen } from './components/itinerary/ItineraryBuilderScreen';
 import {
   JourneyDetailsModal,
@@ -79,6 +80,7 @@ function TripFlowApp() {
   const [isPaymentOverlayOpen, setIsPaymentOverlayOpen] = useState<boolean>(false);
   const [paymentOverlayItinerary, setPaymentOverlayItinerary] = useState<TripItinerary | null>(null);
   const [paymentOverlayPrice, setPaymentOverlayPrice] = useState<number>(0);
+  const [selectedStoryId, setSelectedStoryId] = useState<string | null>(null);
 
   // Sync with live Neon PostgreSQL backend
   useEffect(() => {
@@ -391,7 +393,7 @@ function TripFlowApp() {
   };
 
   return (
-    <div className={`bg-[#F7F8FA] text-[#151c27] flex flex-col font-sans selection:bg-[#2563EB] selection:text-white ${consumerTab === 'builder' || consumerTab === 'assistant' ? 'h-screen max-h-screen overflow-hidden' : 'min-h-screen'}`}>
+    <div className={`bg-[#F7F8FA] text-[#151c27] flex flex-col font-sans selection:bg-[#2563EB] selection:text-white ${consumerTab === 'builder' || consumerTab === 'assistant' || consumerTab === 'story' ? 'h-screen max-h-screen overflow-hidden' : 'min-h-screen'}`}>
       {/* Global Toast */}
       {toastNotification && (
         <div className="fixed top-16 right-6 z-50 bg-[#111827] text-white px-4 py-2.5 rounded-xl shadow-lg border border-white/10 text-xs font-semibold flex items-center gap-2 animate-in slide-in-from-top duration-200">
@@ -433,7 +435,7 @@ function TripFlowApp() {
           {/* CONSUMER SURFACE: HOME, TRIPS & BOOKINGS, VAULT, DISCOVER */}
           {/* ========================================================= */}
           {viewMode === 'consumer' && (
-            <div className={`flex-1 min-h-0 flex flex-col ${consumerTab === 'builder' || consumerTab === 'assistant' ? 'h-screen max-h-screen overflow-hidden' : ''}`}>
+            <div className={`flex-1 min-h-0 flex flex-col ${consumerTab === 'builder' || consumerTab === 'assistant' || consumerTab === 'story' ? 'h-screen max-h-screen overflow-hidden' : ''}`}>
               <TopNav
                 activeTab={consumerTab}
                 onTabChange={handleConsumerTabChange}
@@ -448,7 +450,7 @@ function TripFlowApp() {
                 onGoToLanding={() => setCurrentRoute('landing')}
               />
 
-              <main className={`flex-1 min-h-0 flex flex-col ${consumerTab === 'builder' || consumerTab === 'assistant' ? 'h-[calc(100vh-3.5rem)] max-h-[calc(100vh-3.5rem)] overflow-hidden' : ''}`}>
+              <main className={`flex-1 min-h-0 flex flex-col ${consumerTab === 'builder' || consumerTab === 'assistant' || consumerTab === 'story' ? 'h-[calc(100vh-3.5rem)] max-h-[calc(100vh-3.5rem)] overflow-hidden' : ''}`}>
                 {consumerTab === 'home' && (
                   <HomeScreen
                     onNavigateTab={handleConsumerTabChange}
@@ -524,6 +526,20 @@ function TripFlowApp() {
                     }}
                     initialPrompt={assistantInitialPrompt}
                     onClearInitialPrompt={() => setAssistantInitialPrompt(null)}
+                    currentUser={authUser}
+                  />
+                )}
+
+                {consumerTab === 'story' && (
+                  <StoryScreen
+                    initialStoryId={selectedStoryId}
+                    onPlanTripFromStory={(itinerary) => {
+                      setCurrentItinerary(itinerary);
+                      setModifyingTripId(null);
+                      setConsumerTab('builder');
+                      showToast(`✨ Loaded "${itinerary.title}" in Itinerary Builder!`);
+                    }}
+                    showToast={showToast}
                   />
                 )}
 

@@ -643,7 +643,7 @@ export const DiscoverScreen: React.FC<DiscoverScreenProps> = ({
     const nights = Math.max(1, aiProposal.days - 1);
     const flightTotal = chosenFlight.priceUSD * aiProposal.travelers;
     const hotelTotal = chosenHotel.pricePerNightUSD * nights;
-    const activitiesBase = 180 * aiProposal.days;
+    const activitiesBase = 3500 * aiProposal.days;
     const transferDelta = chosenTransfer.priceDeltaUSD;
 
     const extrasTotal = aiProposal.extraActivities
@@ -1180,9 +1180,9 @@ export const DiscoverScreen: React.FC<DiscoverScreenProps> = ({
                   <div className="text-right sm:shrink-0 bg-slate-50 p-2.5 rounded-2xl border border-slate-100">
                     <div className="text-[11px] text-slate-400 font-medium">Estimated Total</div>
                     <div className="text-lg font-black text-slate-900">
-                      ${proposalPricing.totalUSD.toLocaleString()}{' '}
+                      ₹{proposalPricing.totalUSD.toLocaleString('en-IN')}{' '}
                       <span className="text-xs font-normal text-slate-500">
-                        (${proposalPricing.perPersonUSD.toLocaleString()}/person)
+                        (₹{proposalPricing.perPersonUSD.toLocaleString('en-IN')}/person)
                       </span>
                     </div>
                     {proposalPricing.priceDeltaUSD !== 0 && (
@@ -1192,8 +1192,8 @@ export const DiscoverScreen: React.FC<DiscoverScreenProps> = ({
                         }`}
                       >
                         {proposalPricing.priceDeltaUSD > 0
-                          ? `+$${proposalPricing.priceDeltaUSD.toLocaleString()} (Upgraded Options)`
-                          : `-$${Math.abs(proposalPricing.priceDeltaUSD).toLocaleString()} (Cheaper Alternatives)`}
+                          ? `+₹${proposalPricing.priceDeltaUSD.toLocaleString('en-IN')} (Upgraded Options)`
+                          : `-₹${Math.abs(proposalPricing.priceDeltaUSD).toLocaleString('en-IN')} (Cheaper Alternatives)`}
                       </div>
                     )}
                   </div>
@@ -1269,7 +1269,7 @@ export const DiscoverScreen: React.FC<DiscoverScreenProps> = ({
 
                       <div className="text-right sm:shrink-0">
                         <span className="text-sm font-bold text-slate-900">
-                          ${proposalPricing.chosenFlight?.priceUSD}
+                          ₹{proposalPricing.chosenFlight?.priceUSD?.toLocaleString('en-IN')}
                         </span>
                         <span className="text-[10px] text-slate-400 block">/ traveler</span>
                       </div>
@@ -1332,13 +1332,13 @@ export const DiscoverScreen: React.FC<DiscoverScreenProps> = ({
                                 </div>
 
                                 <div className="text-right">
-                                  <div className="text-xs font-bold text-slate-900">${flt.priceUSD}</div>
+                                  <div className="text-xs font-bold text-slate-900">₹{flt.priceUSD?.toLocaleString('en-IN')}</div>
                                   <div className="text-[10px] text-slate-400">
                                     {flt.priceDeltaUSD === 0
                                       ? 'Base Rate'
                                       : flt.priceDeltaUSD > 0
-                                      ? `+$${flt.priceDeltaUSD}`
-                                      : `-$${Math.abs(flt.priceDeltaUSD)}`}
+                                      ? `+₹${flt.priceDeltaUSD?.toLocaleString('en-IN')}`
+                                      : `-₹${Math.abs(flt.priceDeltaUSD)?.toLocaleString('en-IN')}`}
                                   </div>
                                 </div>
                               </div>
@@ -1420,7 +1420,7 @@ export const DiscoverScreen: React.FC<DiscoverScreenProps> = ({
 
                       <div className="text-right sm:shrink-0">
                         <span className="text-sm font-bold text-slate-900">
-                          ${proposalPricing.chosenHotel?.pricePerNightUSD}
+                          ₹{proposalPricing.chosenHotel?.pricePerNightUSD?.toLocaleString('en-IN')}
                         </span>
                         <span className="text-[10px] text-slate-400 block">
                           / night × {proposalPricing.nights} nights
@@ -1488,14 +1488,14 @@ export const DiscoverScreen: React.FC<DiscoverScreenProps> = ({
 
                                 <div className="text-right shrink-0">
                                   <div className="text-xs font-bold text-slate-900">
-                                    ${htl.pricePerNightUSD}/nt
+                                    ₹{htl.pricePerNightUSD?.toLocaleString('en-IN')}/nt
                                   </div>
                                   <div className="text-[10px] text-slate-400">
                                     {htl.priceDeltaPerNightUSD === 0
                                       ? 'Base Choice'
                                       : htl.priceDeltaPerNightUSD > 0
-                                      ? `+$${htl.priceDeltaPerNightUSD}/nt`
-                                      : `-$${Math.abs(htl.priceDeltaPerNightUSD)}/nt`}
+                                      ? `+₹${htl.priceDeltaPerNightUSD?.toLocaleString('en-IN')}/nt`
+                                      : `-₹${Math.abs(htl.priceDeltaPerNightUSD)?.toLocaleString('en-IN')}/nt`}
                                   </div>
                                 </div>
                               </div>
@@ -1617,7 +1617,7 @@ export const DiscoverScreen: React.FC<DiscoverScreenProps> = ({
                                 <span className="text-amber-600 font-semibold">★ {act.rating}</span>
                               </div>
                               <div className="text-xs font-bold text-slate-900 mt-0.5">
-                                ${act.price}
+                                ₹{act.price?.toLocaleString('en-IN')}
                               </div>
                             </div>
                           </div>

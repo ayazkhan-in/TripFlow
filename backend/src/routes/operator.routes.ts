@@ -1,3 +1,4 @@
+// TripFlow Operator Command Hub Routes - Verified Prisma Types
 import { Router, Response } from 'express';
 import { prisma } from '../config/db.js';
 import { optionalAuth, AuthenticatedRequest } from '../middleware/auth.js';

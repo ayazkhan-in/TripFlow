@@ -2,7 +2,7 @@ import { TripItinerary } from './itinerary';
 
 export type ViewMode = 'consumer' | 'operator';
 
-export type ConsumerTab = 'home' | 'builder' | 'trips' | 'vault' | 'discover' | 'bookings' | 'profile' | 'assistant';
+export type ConsumerTab = 'home' | 'builder' | 'trips' | 'vault' | 'discover' | 'bookings' | 'profile' | 'assistant' | 'story';
 
 export interface BookedTrip {
   id: string;

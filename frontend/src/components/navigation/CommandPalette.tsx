@@ -95,6 +95,17 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({
       },
     },
     {
+      id: 'stories',
+      title: 'Travel Stories & Reels — 9 Verified Video Escapes & Scrollable Feeds',
+      type: 'Stories & Reels',
+      icon: 'play_circle',
+      action: () => {
+        onSwitchMode('consumer');
+        onNavigateConsumer('story');
+        onClose();
+      },
+    },
+    {
       id: 'discover',
       title: 'Discover & Plan — Adaptive Travel Intelligence',
       type: 'Planning',
