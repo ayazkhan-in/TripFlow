@@ -101,6 +101,18 @@ export const TopNav: React.FC<TopNavProps> = ({
         </button>
 
         <button
+          onClick={() => onTabChange('story')}
+          className={`font-medium text-xs py-2 transition-colors cursor-pointer flex items-center gap-1.5 focus:outline-none active:outline-none ${
+            activeTab === 'story'
+              ? 'text-[#004AC6] font-semibold'
+              : 'text-[#434655] hover:text-[#151c27]'
+          }`}
+        >
+          <span className="material-symbols-outlined text-sm">play_circle</span>
+          <span>Story</span>
+        </button>
+
+        <button
           onClick={() => onTabChange('assistant')}
           className={`font-medium text-xs py-2 transition-colors cursor-pointer flex items-center gap-1.5 focus:outline-none active:outline-none ${
             activeTab === 'assistant'
