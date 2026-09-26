@@ -1,6 +1,7 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { OPERATOR_CALENDAR_EVENTS } from '../../data/operatorSuiteData';
 import { CalendarTourEvent } from '../../types/travel';
+import { TripFlowApi } from '../../services/api';
 
 interface GlobalCalendarScreenProps {
   onInspectTour: (tourId: string) => void;
@@ -11,10 +12,29 @@ export const GlobalCalendarScreen: React.FC<GlobalCalendarScreenProps> = ({
   onInspectTour,
   showToast,
 }) => {
-  const [events] = useState<CalendarTourEvent[]>(OPERATOR_CALENDAR_EVENTS);
+  const [events, setEvents] = useState<CalendarTourEvent[]>(OPERATOR_CALENDAR_EVENTS);
   const [selectedDate, setSelectedDate] = useState<string>('2026-10-14');
   const [filterCohort, setFilterCohort] = useState<string>('all');
   const [viewMode, setViewMode] = useState<'month' | 'day'>('month');
+
+  useEffect(() => {
+    TripFlowApi.getCalendarEvents().then(backendEvents => {
+      if (backendEvents && backendEvents.length > 0) {
+        setEvents(backendEvents.map((e: any) => ({
+          id: e.id,
+          tourId: '#1024',
+          date: typeof e.eventDate === 'string' ? e.eventDate.split('T')[0] : '2026-10-14',
+          time: e.timeSlot,
+          title: e.title,
+          cohort: e.cohortName,
+          type: e.eventType,
+          location: e.location,
+          color: e.color,
+          pax: e.pax,
+        })));
+      }
+    });
+  }, []);
 
   // Days in October 2026 (Oct 1 to Oct 31, starting on Thursday = 4 offset)
   const calendarDays = useMemo(() => {

@@ -1,8 +1,9 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { CATALOG_ITEMS } from '../../data/itineraryData';
 import { CatalogItem, ItineraryCategory } from '../../types/itinerary';
 import { clearDragPayload, setDragPayload } from '../../utils/dragDropState';
 import { formatCurrency } from '../../utils/pricing';
+import { TripFlowApi } from '../../services/api';
 
 interface AddSidebarProps {
   onAddItem: (item: CatalogItem, targetDayNumber: number) => void;
@@ -32,9 +33,22 @@ export const AddSidebar: React.FC<AddSidebarProps> = ({
   isCollapsed = false,
   onToggleCollapse,
 }) => {
+  const [catalogItems, setCatalogItems] = useState<CatalogItem[]>(CATALOG_ITEMS);
   const [selectedCategory, setSelectedCategory] = useState<ItineraryCategory | 'all'>('all');
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedDayForAdd, setSelectedDayForAdd] = useState<number>(activeDayNumber || 1);
+
+  useEffect(() => {
+    TripFlowApi.getCatalogItems().then(items => {
+      if (items && items.length > 0) {
+        setCatalogItems(items.map((it: any) => ({
+          ...it,
+          price: Number(it.price || 0),
+          rating: Number(it.rating || 4.9),
+        })));
+      }
+    });
+  }, []);
 
   React.useEffect(() => {
     if (activeDayNumber) {
@@ -43,7 +57,7 @@ export const AddSidebar: React.FC<AddSidebarProps> = ({
   }, [activeDayNumber]);
 
   const filteredItems = useMemo(() => {
-    return CATALOG_ITEMS.filter(item => {
+    return catalogItems.filter(item => {
       const matchesCategory = selectedCategory === 'all' || item.category === selectedCategory;
       const matchesSearch =
         !searchQuery ||
@@ -51,7 +65,7 @@ export const AddSidebar: React.FC<AddSidebarProps> = ({
         item.location.toLowerCase().includes(searchQuery.toLowerCase());
       return matchesCategory && matchesSearch;
     });
-  }, [selectedCategory, searchQuery]);
+  }, [catalogItems, selectedCategory, searchQuery]);
 
   const handleDragStart = (e: React.DragEvent, item: CatalogItem) => {
     const payload = { type: 'catalog-item' as const, item };

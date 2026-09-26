@@ -73,11 +73,14 @@ export default function App() {
       if (trips && trips.length > 0) {
         setBookedTrips(trips);
         setActiveBookedTripId(trips[0].id);
+        if (trips[0].itinerary) {
+          setCurrentItinerary(trips[0].itinerary);
+        }
       }
     });
     TripFlowApi.getVaultDocuments().then(docs => {
       if (docs && docs.length > 0) {
-        setVaultDocuments(prev => [...docs, ...prev.filter(d => !docs.some(bd => bd.id === d.id))]);
+        setVaultDocuments(docs);
       }
     });
   }, []);

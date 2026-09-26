@@ -1,7 +1,8 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { OPERATOR_BOOKINGS } from '../../data/operatorSuiteData';
 import { BookingItem } from '../../types/travel';
 import { formatCurrency } from '../../utils/pricing';
+import { TripFlowApi } from '../../services/api';
 
 interface BookingsInventoryScreenProps {
   onInspectTour: (tourId: string) => void;
@@ -17,6 +18,30 @@ export const BookingsInventoryScreen: React.FC<BookingsInventoryScreenProps> = (
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<'All' | 'Confirmed' | 'Pending' | 'Waitlist'>('All');
   const [selectedBooking, setSelectedBooking] = useState<BookingItem | null>(null);
+
+  useEffect(() => {
+    TripFlowApi.getOperatorBookings().then(backendBookings => {
+      if (backendBookings && backendBookings.length > 0) {
+        setBookings(backendBookings.map((b: any) => ({
+          id: b.id,
+          ref: b.bookingRef,
+          guestName: b.user?.name || 'Sarah Mehta',
+          guestEmail: b.user?.email || 'sarah.mehta@concierge.tripflow.io',
+          tourTitle: b.title,
+          destination: b.destination,
+          dates: b.dates,
+          guestsCount: b.travelers || 2,
+          status: b.status === 'CONFIRMED' ? 'Confirmed' : 'Pending',
+          amount: Number(b.totalPrice || 2450),
+          roomsAllocated: '1 Suite (Lake View)',
+          flightAllocated: b.flightDetails?.flightNumber || 'AI-682',
+          vipStatus: true,
+          notes: 'VIP concierge arrangements confirmed with dedicated chauffeur standby.',
+          bookedAt: new Date(b.bookedAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
+        })));
+      }
+    });
+  }, []);
 
   const filteredBookings = useMemo(() => {
     return bookings.filter(b => {

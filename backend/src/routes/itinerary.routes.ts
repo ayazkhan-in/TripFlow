@@ -5,11 +5,11 @@ import { optionalAuth, AuthenticatedRequest } from '../middleware/auth.js';
 const router = Router();
 
 // GET /api/v1/catalog/items - Activities catalog
-router.get('/catalog/items', async (req: Request, res: Response) => {
+router.get(['/catalog/items', '/items'], async (req: Request, res: Response) => {
   try {
     const { category } = req.query;
     const where: any = { isActive: true };
-    if (category && typeof category === 'string') {
+    if (category && typeof category === 'string' && category !== 'all') {
       where.category = category;
     }
 
@@ -25,7 +25,7 @@ router.get('/catalog/items', async (req: Request, res: Response) => {
 });
 
 // GET /api/v1/itineraries/:id - Get itinerary by ID
-router.get('/itineraries/:id', async (req: Request, res: Response) => {
+router.get(['/itineraries/:id', '/:id'], async (req: Request, res: Response) => {
   try {
     const itinerary = await prisma.tripItinerary.findUnique({
       where: { id: req.params.id },
@@ -49,7 +49,7 @@ router.get('/itineraries/:id', async (req: Request, res: Response) => {
 });
 
 // POST /api/v1/itineraries - Save new itinerary
-router.post('/itineraries', optionalAuth, async (req: AuthenticatedRequest, res: Response) => {
+router.post(['/itineraries', '/'], optionalAuth, async (req: AuthenticatedRequest, res: Response) => {
   try {
     const userId = req.user?.id || 'user-sarah-1024';
     const {
@@ -96,7 +96,13 @@ router.post('/itineraries', optionalAuth, async (req: AuthenticatedRequest, res:
             items: {
               create: (day.items || []).map((item: any) => ({
                 title: item.title,
-                category: item.category || 'activity',
+                category: ['activity', 'hotel', 'transport', 'meal', 'experience'].includes(item.category)
+                  ? item.category
+                  : item.category === 'dining'
+                  ? 'meal'
+                  : item.category === 'transit'
+                  ? 'transport'
+                  : 'activity',
                 price: Number(item.price || 0),
                 timeSlot: item.time || '10:00 AM',
                 duration: item.duration,
@@ -126,7 +132,7 @@ router.post('/itineraries', optionalAuth, async (req: AuthenticatedRequest, res:
 });
 
 // POST /api/v1/itineraries/:id/recalculate - Calculate dynamic pricing
-router.post('/itineraries/:id/recalculate', async (req: Request, res: Response) => {
+router.post(['/itineraries/:id/recalculate', '/:id/recalculate'], async (req: Request, res: Response) => {
   try {
     const { items = [], travelers = 2 } = req.body;
     let subtotal = 0;

@@ -1,6 +1,7 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { OPERATOR_COHORTS } from '../../data/operatorSuiteData';
 import { TourCohortItem } from '../../types/travel';
+import { TripFlowApi } from '../../services/api';
 
 interface TourCohortsScreenProps {
   onInspectTour: (tourId: string) => void;
@@ -11,10 +12,21 @@ export const TourCohortsScreen: React.FC<TourCohortsScreenProps> = ({
   onInspectTour,
   showToast,
 }) => {
-  const [cohorts] = useState<TourCohortItem[]>(OPERATOR_COHORTS);
+  const [cohorts, setCohorts] = useState<TourCohortItem[]>(OPERATOR_COHORTS);
   const [selectedCohort, setSelectedCohort] = useState<TourCohortItem | null>(null);
   const [broadcastMessage, setBroadcastMessage] = useState('');
   const [isBroadcastOpen, setIsBroadcastOpen] = useState(false);
+
+  useEffect(() => {
+    TripFlowApi.getTourCohorts().then(backendCohorts => {
+      if (backendCohorts && backendCohorts.length > 0) {
+        setCohorts(backendCohorts.map((c: any) => ({
+          ...c,
+          leadGuide: c.leadGuide?.name || 'Rohan Deshmukh',
+        })));
+      }
+    });
+  }, []);
 
   const handleSendBroadcast = (e: React.FormEvent) => {
     e.preventDefault();

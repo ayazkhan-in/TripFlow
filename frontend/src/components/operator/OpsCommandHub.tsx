@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   DisruptionIssue,
   DispatchTransfer,
@@ -10,6 +10,7 @@ import {
   RADAR_MAP_IMAGE,
   REALTIME_EVENTS,
 } from '../../data/mockData';
+import { TripFlowApi } from '../../services/api';
 
 interface OpsCommandHubProps {
   onInspectTour: (tourId: string) => void;
@@ -33,8 +34,32 @@ export const OpsCommandHub: React.FC<OpsCommandHubProps> = ({
   >('all');
   const [liveToast, setLiveToast] = useState<string | null>(null);
 
+  useEffect(() => {
+    TripFlowApi.getDisruptionAlerts().then(backendAlerts => {
+      if (backendAlerts && backendAlerts.length > 0) {
+        setDisruptions(backendAlerts.map((a: any, idx: number) => {
+          const fallback = INITIAL_DISRUPTIONS[idx % INITIAL_DISRUPTIONS.length] || INITIAL_DISRUPTIONS[0];
+          return {
+            ...fallback,
+            id: a.id,
+            tourId: a.cohortId || fallback.tourId,
+            tourName: a.tourTitle || fallback.tourName,
+            severity: (a.severity === 'critical' || a.severity === 'high') ? a.severity : 'moderate',
+            severityLabel: a.severity === 'critical' ? 'Critical Disruption' : a.severity === 'high' ? 'High Impact' : 'Moderate Advisory',
+            rootCauseTitle: a.title || fallback.rootCauseTitle,
+            rootCauseDetail: a.description || fallback.rootCauseDetail,
+            aiRecommendation: a.actionSuggested || fallback.aiRecommendation,
+            actionText: a.isResolved ? 'Resolved' : fallback.actionText,
+            status: (a.isResolved ? 'resolved' : 'open') as 'open' | 'resolved',
+          };
+        }));
+      }
+    });
+  }, []);
+
   const handleQuickReschedule = (issueId: string) => {
     onResolveDisruption();
+    TripFlowApi.resolveDisruptionAlert(issueId).catch(console.warn);
     setDisruptions(prev =>
       prev.map(d => (d.id === issueId ? { ...d, status: 'resolved' } : d))
     );

@@ -1,10 +1,11 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { ConsumerTab, SavedJourney } from '../../types/travel';
 import {
   KERALA_HERO_IMAGE,
   SAVED_JOURNEYS,
 } from '../../data/mockData';
 import { LuxuryCard } from '../common/LuxuryCard';
+import { TripFlowApi } from '../../services/api';
 
 interface HomeScreenProps {
   onNavigateTab: (tab: ConsumerTab) => void;
@@ -23,6 +24,14 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
 }) => {
   const [filter, setFilter] = useState<'all' | 'domestic' | 'international'>('all');
   const [journeys, setJourneys] = useState<SavedJourney[]>(SAVED_JOURNEYS);
+
+  useEffect(() => {
+    TripFlowApi.getSavedJourneys().then(backendJourneys => {
+      if (backendJourneys && backendJourneys.length > 0) {
+        setJourneys(backendJourneys);
+      }
+    });
+  }, []);
 
   const toggleBookmark = (id: string) => {
     setJourneys(prev =>

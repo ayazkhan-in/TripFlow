@@ -1,6 +1,17 @@
+import fs from 'fs';
+import path from 'path';
+
+try {
+  fs.writeFileSync('c:/Users/Arif Choudhary/OneDrive/Desktop/TRIPFLOW/TripFlow/backend/debug.log', `[${new Date().toISOString()}] server.ts loaded\n`);
+} catch (e) {
+  // ignore
+}
+
 import express from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
+
+dotenv.config();
 
 import authRoutes from './routes/auth.routes.js';
 import discoverRoutes from './routes/discover.routes.js';
@@ -11,7 +22,19 @@ import telemetryRoutes from './routes/telemetry.routes.js';
 import operatorRoutes from './routes/operator.routes.js';
 import mediaRoutes from './routes/media.routes.js';
 
-dotenv.config();
+process.on('uncaughtException', (err) => {
+  try {
+    fs.appendFileSync('c:/Users/Arif Choudhary/OneDrive/Desktop/TRIPFLOW/TripFlow/backend/debug.log', `[${new Date().toISOString()}] uncaughtException: ${err?.stack || err}\n`);
+  } catch {}
+  console.error('Uncaught Exception:', err);
+});
+
+process.on('unhandledRejection', (reason) => {
+  try {
+    fs.appendFileSync('c:/Users/Arif Choudhary/OneDrive/Desktop/TRIPFLOW/TripFlow/backend/debug.log', `[${new Date().toISOString()}] unhandledRejection: ${reason}\n`);
+  } catch {}
+  console.error('Unhandled Rejection:', reason);
+});
 
 const app = express();
 const PORT = Number(process.env.PORT) || 5000;
@@ -60,12 +83,18 @@ app.use((err: any, _req: express.Request, res: express.Response, _next: express.
 });
 
 const server = app.listen(PORT, '0.0.0.0', () => {
+  try {
+    fs.appendFileSync('c:/Users/Arif Choudhary/OneDrive/Desktop/TRIPFLOW/TripFlow/backend/debug.log', `[${new Date().toISOString()}] Server listening successfully on http://0.0.0.0:${PORT}\n`);
+  } catch {}
   console.log(`🚀 TripFlow Backend running on http://localhost:${PORT}`);
   console.log(`📦 Database: Neon PostgreSQL Connected`);
   console.log(`✨ AI Services: Gemini Flash Optical Vision & Trip Planner Active`);
 });
 
 server.on('error', (err: any) => {
+  try {
+    fs.appendFileSync('c:/Users/Arif Choudhary/OneDrive/Desktop/TRIPFLOW/TripFlow/backend/debug.log', `[${new Date().toISOString()}] server.on('error'): ${err?.stack || err}\n`);
+  } catch {}
   if (err.code === 'EADDRINUSE') {
     console.error(`❌ Port ${PORT} is already in use.`);
     console.error(`💡 Free the port or stop any duplicate node process running on port ${PORT}.`);

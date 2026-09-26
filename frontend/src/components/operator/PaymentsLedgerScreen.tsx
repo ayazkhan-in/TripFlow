@@ -1,7 +1,8 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { OPERATOR_PAYMENTS } from '../../data/operatorSuiteData';
 import { PaymentLedgerItem } from '../../types/travel';
 import { formatCurrency } from '../../utils/pricing';
+import { TripFlowApi } from '../../services/api';
 
 interface PaymentsLedgerScreenProps {
   showToast: (msg: string) => void;
@@ -14,9 +15,31 @@ export const PaymentsLedgerScreen: React.FC<PaymentsLedgerScreenProps> = ({ show
   const [statusFilter, setStatusFilter] = useState<'all' | 'Settled' | 'Processing'>('all');
   const [selectedTxn, setSelectedTxn] = useState<PaymentLedgerItem | null>(null);
 
+  useEffect(() => {
+    TripFlowApi.getPaymentsLedger().then(backendTxns => {
+      if (backendTxns && backendTxns.length > 0) {
+        setPayments(backendTxns.map((t: any) => ({
+          id: t.id,
+          transactionRef: t.transactionRef,
+          tourId: t.bookedTripId || '#1024',
+          date: new Date(t.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
+          party: t.party,
+          type: (t.type === 'outbound' || t.type === 'escrow') ? t.type : 'inbound',
+          amount: Number(t.amount || 0),
+          currency: t.currency || 'USD',
+          status: t.status === 'SETTLED' ? 'Settled' : 'Processing',
+          paymentMethod: t.paymentMethod,
+          description: t.description,
+        })));
+      }
+    });
+  }, []);
+
   const filteredPayments = useMemo(() => {
     return payments.filter(p => {
-      const matchesType = typeFilter === 'all' || p.type === typeFilter;
+      const matchesType =
+        typeFilter === 'all' ||
+        (typeFilter === 'disbursement' ? p.type === 'outbound' : p.type === typeFilter);
       const matchesStatus = statusFilter === 'all' || p.status === statusFilter;
       const q = searchQuery.toLowerCase();
       const matchesSearch =

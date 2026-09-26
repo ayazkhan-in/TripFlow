@@ -38,6 +38,17 @@ router.get('/premade', async (_req: Request, res: Response) => {
   }
 });
 
+// GET /api/v1/discover/saved-journeys - Get user saved journeys
+router.get('/saved-journeys', async (_req: Request, res: Response) => {
+  try {
+    const journeys = await prisma.savedJourney.findMany();
+    res.json({ success: true, count: journeys.length, journeys });
+  } catch (err: any) {
+    console.error('Error fetching saved journeys:', err);
+    res.status(500).json({ error: err.message || 'Failed to fetch saved journeys' });
+  }
+});
+
 // POST /api/v1/discover/ai-generate - Generate custom living itinerary using Gemini
 router.post('/ai-generate', async (req: Request, res: Response) => {
   try {

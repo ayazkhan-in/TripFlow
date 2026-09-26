@@ -280,5 +280,151 @@ export class TripFlowApi {
       return false;
     }
   }
+
+  static async getCatalogItems(category?: string): Promise<any[]> {
+    try {
+      const query = category && category !== 'all' ? `?category=${category}` : '';
+      const res = await fetch(`${API_BASE}/catalog/items${query}`, {
+        headers: this.getHeaders(),
+      });
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const data = await res.json();
+      return data.items || [];
+    } catch (err) {
+      console.warn('API getCatalogItems fallback:', err);
+      return [];
+    }
+  }
+
+  static async getEmergencyContacts(): Promise<any[]> {
+    try {
+      const res = await fetch(`${API_BASE}/vault/emergency-contacts`, {
+        headers: this.getHeaders(),
+      });
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const data = await res.json();
+      return data.contacts || [];
+    } catch (err) {
+      console.warn('API getEmergencyContacts fallback:', err);
+      return [];
+    }
+  }
+
+  static async getSavedJourneys(): Promise<any[]> {
+    try {
+      const res = await fetch(`${API_BASE}/discover/saved-journeys`, {
+        headers: this.getHeaders(),
+      });
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const data = await res.json();
+      return data.journeys || [];
+    } catch (err) {
+      console.warn('API getSavedJourneys fallback:', err);
+      return [];
+    }
+  }
+
+  static async getPaymentsLedger(): Promise<any[]> {
+    try {
+      const res = await fetch(`${API_BASE}/operator/ledger`, {
+        headers: this.getHeaders(),
+      });
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const data = await res.json();
+      return data.transactions || [];
+    } catch (err) {
+      console.warn('API getPaymentsLedger fallback:', err);
+      return [];
+    }
+  }
+
+  static async getCalendarEvents(): Promise<any[]> {
+    try {
+      const res = await fetch(`${API_BASE}/operator/calendar`, {
+        headers: this.getHeaders(),
+      });
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const data = await res.json();
+      return data.events || [];
+    } catch (err) {
+      console.warn('API getCalendarEvents fallback:', err);
+      return [];
+    }
+  }
+
+  static async getOperatorBookings(): Promise<any[]> {
+    try {
+      const res = await fetch(`${API_BASE}/operator/bookings`, {
+        headers: this.getHeaders(),
+      });
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const data = await res.json();
+      return data.bookings || [];
+    } catch (err) {
+      console.warn('API getOperatorBookings fallback:', err);
+      return [];
+    }
+  }
+
+  static async addVendor(vendorData: any): Promise<any | null> {
+    try {
+      const res = await fetch(`${API_BASE}/operator/vendors`, {
+        method: 'POST',
+        headers: this.getHeaders(),
+        body: JSON.stringify(vendorData),
+      });
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const data = await res.json();
+      return data.vendor || null;
+    } catch (err) {
+      console.warn('API addVendor fallback:', err);
+      return null;
+    }
+  }
+
+  static async addTourCohort(cohortData: any): Promise<any | null> {
+    try {
+      const res = await fetch(`${API_BASE}/operator/cohorts`, {
+        method: 'POST',
+        headers: this.getHeaders(),
+        body: JSON.stringify(cohortData),
+      });
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const data = await res.json();
+      return data.cohort || null;
+    } catch (err) {
+      console.warn('API addTourCohort fallback:', err);
+      return null;
+    }
+  }
+
+  static async getFlightTelemetry(pnr: string): Promise<any | null> {
+    try {
+      const res = await fetch(`${API_BASE}/telemetry/flight/${pnr}`, {
+        headers: this.getHeaders(),
+      });
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const data = await res.json();
+      return data.flight || null;
+    } catch (err) {
+      console.warn('API getFlightTelemetry fallback:', err);
+      return null;
+    }
+  }
+
+  static async getChauffeurTelemetry(tripId: string): Promise<any | null> {
+    try {
+      const res = await fetch(`${API_BASE}/telemetry/chauffeur/${tripId}`, {
+        headers: this.getHeaders(),
+      });
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const data = await res.json();
+      return data.chauffeur || null;
+    } catch (err) {
+      console.warn('API getChauffeurTelemetry fallback:', err);
+      return null;
+    }
+  }
 }
+
 

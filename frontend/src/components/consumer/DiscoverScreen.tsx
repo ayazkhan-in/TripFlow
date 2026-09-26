@@ -7,6 +7,7 @@ import {
   PREMADE_GOA_ITINERARY,
   AIGenerateParams,
 } from '../../data/premadeItineraries';
+import { TripFlowApi } from '../../services/api';
 
 interface DiscoverScreenProps {
   onNavigateTab: (tab: ConsumerTab) => void;
@@ -516,9 +517,57 @@ export const DiscoverScreen: React.FC<DiscoverScreenProps> = ({
     }
   };
 
+  // Dynamic Packages loaded from live PostgreSQL backend
+  const [packages, setPackages] = useState<OperatorCuratedPackage[]>(OPERATOR_PACKAGES);
+
+  useEffect(() => {
+    TripFlowApi.getPremadeTrips().then(trips => {
+      if (trips && trips.length > 0) {
+        const mapped: OperatorCuratedPackage[] = trips.map(t => {
+          const isDomestic = t.country === 'India';
+          const inr = Math.round(Number(t.totalPrice || 2450) * 83);
+          const matched = OPERATOR_PACKAGES.find(p => p.destination.toLowerCase().includes(t.destination.toLowerCase()));
+          return {
+            id: t.id,
+            title: t.title,
+            destination: t.destination,
+            country: t.country,
+            isDomestic,
+            dates: t.dates || 'Personalized Dates',
+            days: t.days?.length || 5,
+            travelers: t.travelers || 2,
+            totalPriceINR: inr,
+            heroImage: t.heroImageUrl || matched?.heroImage || 'https://images.unsplash.com/photo-1602216056096-3b40cc0c9944?auto=format&fit=crop&w=1200&q=80',
+            tag: matched?.tag || `✨ ${t.destination} Curated`,
+            badgeText: matched?.badgeText || 'Ready to Book',
+            badgeBg: matched?.badgeBg || 'bg-blue-600',
+            routeStops: t.routeStops?.map((s: any) => ({ city: s.city })) || [{ city: t.destination }],
+            inclusions: matched?.inclusions || [
+              { icon: 'flight', text: `${t.destination} Scheduled Flight Included` },
+              { icon: 'hotel', text: '5-Star Curated Luxury Suite' },
+              { icon: 'directions_car', text: 'Private Dedicated Chauffeur Service' },
+            ],
+            operator: matched?.operator || {
+              name: `${t.destination} Elite Concierge`,
+              leadDirector: 'Concierge Dispatch Desk',
+              avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=200&q=80',
+              license: `LIC-OP-${t.destination.substring(0, 2).toUpperCase()}-101`,
+              rating: 4.96,
+              toursCount: 120,
+              dispatchHub: `${t.destination} Operations Hub`,
+              badge: 'Verified Concierge Partner',
+            },
+            itineraryTemplate: t,
+          };
+        });
+        setPackages(mapped);
+      }
+    });
+  }, []);
+
   // Filter curated packages based on entered criteria, scope (domestic/international), and search query
   const filteredPackages = useMemo(() => {
-    return OPERATOR_PACKAGES.filter(pkg => {
+    return packages.filter(pkg => {
       // 1. Domestic vs International scope check
       if (scopeFilter === 'domestic' && !pkg.isDomestic) return false;
       if (scopeFilter === 'international' && pkg.isDomestic) return false;
@@ -548,7 +597,7 @@ export const DiscoverScreen: React.FC<DiscoverScreenProps> = ({
 
       return true;
     });
-  }, [maxBudgetINR, scopeFilter, selectedDays, curatedSearchQuery]);
+  }, [packages, maxBudgetINR, scopeFilter, selectedDays, curatedSearchQuery]);
 
   const handleCuratedSearch = (e: React.FormEvent) => {
     e.preventDefault();

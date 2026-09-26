@@ -63,7 +63,10 @@ export interface TripItinerary {
   startDate: string;
   travelers: number;
   currency: string;
+  totalPrice?: number;
   heroImage?: string;
+  heroImageUrl?: string;
+  isPremade?: boolean;
   routeStops?: RouteStop[];
   days: ItineraryDay[];
 }

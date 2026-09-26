@@ -54,8 +54,98 @@ router.get('/guides', async (_req: Request, res: Response) => {
 // GET /api/v1/operator/vendors - Vendor supply contracts
 router.get('/vendors', async (_req: Request, res: Response) => {
   try {
-    const vendors = await prisma.vendor.findMany();
+    const vendors = await prisma.vendor.findMany({ orderBy: { rating: 'desc' } });
     res.json({ success: true, count: vendors.length, vendors });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// POST /api/v1/operator/vendors - Add new vendor
+router.post('/vendors', async (req: Request, res: Response) => {
+  try {
+    const {
+      name,
+      category = 'hotel',
+      region = 'Global',
+      contactPerson = 'Operations Desk',
+      phone = '+1 800 555 0199',
+      email = 'operations@partner.com',
+      rating = 4.9,
+      slaCompliance = 99,
+      activeContracts = 1,
+      status = 'Active',
+      contractRenewal = new Date('2027-12-31'),
+    } = req.body;
+
+    const vendor = await prisma.vendor.create({
+      data: {
+        name,
+        category,
+        region,
+        contactPerson,
+        phone,
+        email,
+        rating: Number(rating),
+        slaCompliance: Number(slaCompliance),
+        activeContracts: Number(activeContracts),
+        status,
+        contractRenewal: new Date(contractRenewal),
+      },
+    });
+
+    res.status(201).json({ success: true, vendor });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// POST /api/v1/operator/cohorts - Add new tour dispatch/cohort
+router.post('/cohorts', async (req: Request, res: Response) => {
+  try {
+    const {
+      name,
+      circuit,
+      dates = 'Personalized Dates',
+      paxCount = 10,
+      maxPax = 16,
+      currentStop = 'Hub Dispatch Check-in',
+      nextMilestone = 'Hotel Check-in',
+      status = 'Upcoming',
+      vipCount = 2,
+    } = req.body;
+
+    const cohort = await prisma.tourCohort.create({
+      data: {
+        name,
+        circuit: circuit || name,
+        dates,
+        paxCount: Number(paxCount),
+        maxPax: Number(maxPax),
+        currentStop,
+        nextMilestone,
+        status,
+        vipCount: Number(vipCount),
+      },
+    });
+
+    res.status(201).json({ success: true, cohort });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// GET /api/v1/operator/bookings - All booked trips for operator
+router.get('/bookings', async (_req: Request, res: Response) => {
+  try {
+    const bookings = await prisma.bookedTrip.findMany({
+      orderBy: { bookedAt: 'desc' },
+      include: {
+        user: { select: { id: true, name: true, email: true, phone: true } },
+        itinerary: true,
+      },
+    });
+    res.json({ success: true, count: bookings.length, bookings });
   } catch (err: any) {
     res.status(500).json({ error: err.message });
   }

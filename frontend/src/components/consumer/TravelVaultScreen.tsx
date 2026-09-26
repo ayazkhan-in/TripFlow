@@ -52,10 +52,20 @@ export const TravelVaultScreen: React.FC<TravelVaultScreenProps> = ({
   const [newNotes, setNewNotes] = useState('');
   const [newFileName, setNewFileName] = useState('');
 
+  const [emergencyContacts, setEmergencyContacts] = useState(EMERGENCY_CONTACTS);
+
+  useEffect(() => {
+    TripFlowApi.getEmergencyContacts().then(contacts => {
+      if (contacts && contacts.length > 0) {
+        setEmergencyContacts(contacts);
+      }
+    });
+  }, []);
+
   // Category counts
   const getCategoryCount = (categoryKey: string) => {
     if (categoryKey === 'all') return documents.length;
-    if (categoryKey === 'emergency') return EMERGENCY_CONTACTS.length;
+    if (categoryKey === 'emergency') return emergencyContacts.length;
     return documents.filter(d => d.category === categoryKey).length;
   };
 
@@ -559,7 +569,7 @@ export const TravelVaultScreen: React.FC<TravelVaultScreenProps> = ({
       {/* ------------------------------------------------------------- */}
       {activeCategory === 'emergency' && (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 animate-in fade-in duration-150">
-          {EMERGENCY_CONTACTS.map(contact => (
+          {emergencyContacts.map(contact => (
             <div
               key={contact.id}
               className="bg-white rounded-3xl p-5 border border-slate-200 shadow-2xs space-y-3"

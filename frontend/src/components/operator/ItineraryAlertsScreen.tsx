@@ -1,6 +1,7 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { OPERATOR_ALERTS } from '../../data/operatorSuiteData';
 import { ItineraryAlertItem } from '../../types/travel';
+import { TripFlowApi } from '../../services/api';
 
 interface ItineraryAlertsScreenProps {
   onInspectTour: (tourId: string) => void;
@@ -16,6 +17,26 @@ export const ItineraryAlertsScreen: React.FC<ItineraryAlertsScreenProps> = ({
   const [alerts, setAlerts] = useState<ItineraryAlertItem[]>(OPERATOR_ALERTS);
   const [severityFilter, setSeverityFilter] = useState<'all' | 'critical' | 'high' | 'resolved'>('all');
 
+  useEffect(() => {
+    TripFlowApi.getDisruptionAlerts().then(backendAlerts => {
+      if (backendAlerts && backendAlerts.length > 0) {
+        setAlerts(backendAlerts.map((a: any) => ({
+          id: a.id,
+          tourId: a.cohortId || '#1024',
+          tourTitle: a.tourTitle,
+          severity: a.severity,
+          title: a.title,
+          description: a.description,
+          affectedTravelers: a.affectedTravelers || 2,
+          timeAgo: 'Just now',
+          category: a.category,
+          actionSuggested: a.actionSuggested,
+          isResolved: a.isResolved,
+        })));
+      }
+    });
+  }, []);
+
   const filteredAlerts = useMemo(() => {
     return alerts.filter(a => {
       if (severityFilter === 'all') return true;
@@ -28,6 +49,7 @@ export const ItineraryAlertsScreen: React.FC<ItineraryAlertsScreenProps> = ({
     setAlerts(prev =>
       prev.map(a => (a.id === id ? { ...a, isResolved: true, severity: 'resolved' } : a))
     );
+    TripFlowApi.resolveDisruptionAlert(id).catch(console.warn);
     if (onResolveDisruption) onResolveDisruption();
     showToast(`Autonomous resolution applied for: "${title}". Chauffeur & hotel notified.`);
   };

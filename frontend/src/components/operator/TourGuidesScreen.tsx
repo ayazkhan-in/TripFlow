@@ -1,16 +1,29 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { OPERATOR_GUIDES } from '../../data/operatorSuiteData';
 import { TourGuideStaffItem } from '../../types/travel';
+import { TripFlowApi } from '../../services/api';
 
 interface TourGuidesScreenProps {
   showToast: (msg: string) => void;
 }
 
 export const TourGuidesScreen: React.FC<TourGuidesScreenProps> = ({ showToast }) => {
-  const [guides] = useState<TourGuideStaffItem[]>(OPERATOR_GUIDES);
+  const [guides, setGuides] = useState<TourGuideStaffItem[]>(OPERATOR_GUIDES);
   const [searchQuery, setSearchQuery] = useState('');
   const [roleFilter, setRoleFilter] = useState<string>('all');
   const [selectedGuide, setSelectedGuide] = useState<TourGuideStaffItem | null>(null);
+
+  useEffect(() => {
+    TripFlowApi.getTourGuides().then(backendGuides => {
+      if (backendGuides && backendGuides.length > 0) {
+        setGuides(backendGuides.map((g: any) => ({
+          ...g,
+          rating: Number(g.rating || 4.95),
+          totalTours: Number(g.totalTours || 100),
+        })));
+      }
+    });
+  }, []);
 
   const filteredGuides = useMemo(() => {
     return guides.filter(g => {

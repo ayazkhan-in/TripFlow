@@ -1,7 +1,8 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { CATALOG_ITEMS } from '../../data/itineraryData';
 import { CatalogItem, ItineraryCategory } from '../../types/itinerary';
 import { CATEGORY_CONFIG, formatCurrency } from '../../utils/pricing';
+import { TripFlowApi } from '../../services/api';
 
 interface AddBottomSheetProps {
   isOpen: boolean;
@@ -20,9 +21,22 @@ export const AddBottomSheet: React.FC<AddBottomSheetProps> = ({
   totalDays,
   onOpenCustomItemModal,
 }) => {
+  const [catalogItems, setCatalogItems] = useState<CatalogItem[]>(CATALOG_ITEMS);
   const [selectedCategory, setSelectedCategory] = useState<ItineraryCategory | 'all'>('all');
   const [searchQuery, setSearchQuery] = useState('');
   const [targetDay, setTargetDay] = useState(activeDayNumber || 1);
+
+  useEffect(() => {
+    TripFlowApi.getCatalogItems().then(items => {
+      if (items && items.length > 0) {
+        setCatalogItems(items.map((it: any) => ({
+          ...it,
+          price: Number(it.price || 0),
+          rating: Number(it.rating || 4.9),
+        })));
+      }
+    });
+  }, []);
 
   React.useEffect(() => {
     if (activeDayNumber) {
@@ -40,7 +54,7 @@ export const AddBottomSheet: React.FC<AddBottomSheetProps> = ({
   ];
 
   const filteredItems = useMemo(() => {
-    return CATALOG_ITEMS.filter(item => {
+    return catalogItems.filter(item => {
       const matchesCategory = selectedCategory === 'all' || item.category === selectedCategory;
       const matchesSearch =
         !searchQuery ||
@@ -49,7 +63,7 @@ export const AddBottomSheet: React.FC<AddBottomSheetProps> = ({
         item.tags.some(t => t.toLowerCase().includes(searchQuery.toLowerCase()));
       return matchesCategory && matchesSearch;
     });
-  }, [selectedCategory, searchQuery]);
+  }, [catalogItems, selectedCategory, searchQuery]);
 
   if (!isOpen) return null;
 

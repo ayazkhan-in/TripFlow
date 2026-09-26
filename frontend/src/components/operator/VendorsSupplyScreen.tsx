@@ -1,6 +1,7 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { OPERATOR_VENDORS } from '../../data/operatorSuiteData';
 import { VendorSupplyItem } from '../../types/travel';
+import { TripFlowApi } from '../../services/api';
 
 interface VendorsSupplyScreenProps {
   showToast: (msg: string) => void;
@@ -15,6 +16,21 @@ export const VendorsSupplyScreen: React.FC<VendorsSupplyScreenProps> = ({ showTo
   const [newVendorCategory, setNewVendorCategory] = useState<VendorSupplyItem['category']>('hotel');
   const [newVendorRegion, setNewVendorRegion] = useState('');
 
+  useEffect(() => {
+    TripFlowApi.getVendors().then(backendVendors => {
+      if (backendVendors && backendVendors.length > 0) {
+        setVendors(backendVendors.map((v: any) => ({
+          ...v,
+          rating: Number(v.rating || 4.9),
+          slaCompliance: Number(v.slaCompliance || 99),
+          contractRenewal: typeof v.contractRenewal === 'string' && v.contractRenewal.includes('T')
+            ? new Date(v.contractRenewal).toLocaleDateString('en-US', { month: 'short', year: 'numeric' })
+            : v.contractRenewal || 'Dec 2027',
+        })));
+      }
+    });
+  }, []);
+
   const filteredVendors = useMemo(() => {
     return vendors.filter(v => {
       const matchesCategory = categoryFilter === 'all' || v.category === categoryFilter;
@@ -27,7 +43,7 @@ export const VendorsSupplyScreen: React.FC<VendorsSupplyScreenProps> = ({ showTo
     });
   }, [vendors, categoryFilter, searchQuery]);
 
-  const handleAddVendor = (e: React.FormEvent) => {
+  const handleAddVendor = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newVendorName.trim()) return;
 
@@ -47,6 +63,7 @@ export const VendorsSupplyScreen: React.FC<VendorsSupplyScreenProps> = ({ showTo
     };
 
     setVendors(prev => [newVendor, ...prev]);
+    TripFlowApi.addVendor(newVendor).catch(console.warn);
     setIsAddVendorOpen(false);
     setNewVendorName('');
     setNewVendorRegion('');

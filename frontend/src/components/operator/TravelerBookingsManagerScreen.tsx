@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import {
   OPERATOR_FLIGHT_TICKETS,
   OPERATOR_STAY_BOOKINGS,
@@ -11,6 +11,7 @@ import {
 } from '../../data/operatorBookingsData';
 import { OperatorTab } from '../../types/travel';
 import { formatCurrency } from '../../utils/pricing';
+import { TripFlowApi } from '../../services/api';
 
 interface TravelerBookingsManagerScreenProps {
   activeTab: OperatorTab;
@@ -32,11 +33,79 @@ export const TravelerBookingsManagerScreen: React.FC<TravelerBookingsManagerScre
       ? 'activities'
       : 'flights';
 
+  const [flights, setFlights] = useState<OperatorFlightTicket[]>(OPERATOR_FLIGHT_TICKETS);
+  const [stays, setStays] = useState<OperatorStayBooking[]>(OPERATOR_STAY_BOOKINGS);
+  const [transfers, setTransfers] = useState<OperatorTransferBooking[]>(OPERATOR_TRANSFER_BOOKINGS);
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('All');
   const [selectedTicket, setSelectedTicket] = useState<OperatorFlightTicket | null>(null);
   const [selectedStay, setSelectedStay] = useState<OperatorStayBooking | null>(null);
   const [copiedId, setCopiedId] = useState<string | null>(null);
+
+  useEffect(() => {
+    TripFlowApi.getOperatorBookings().then(bookings => {
+      if (bookings && bookings.length > 0) {
+        const dynamicFlights: OperatorFlightTicket[] = bookings.map((b: any) => ({
+          id: `fl-${b.id}`,
+          ticketNumber: `098-${Math.floor(1000000000 + Math.random() * 9000000000)}`,
+          pnr: b.flightDetails?.pnr || 'KOK682',
+          airline: b.flightDetails?.airline || 'Air India',
+          airlineCode: (b.flightDetails?.flightNumber || 'AI-682').split('-')[0] || 'AI',
+          flightNumber: b.flightDetails?.flightNumber || 'AI-682',
+          route: b.flightDetails?.route || 'BOM ➔ COK',
+          origin: (b.flightDetails?.route || 'BOM ➔ COK').split('➔')[0]?.trim() || 'BOM',
+          destination: (b.flightDetails?.route || 'BOM ➔ COK').split('➔')[1]?.trim() || 'COK',
+          departureTime: b.flightDetails?.departureTime || '11:30 AM',
+          arrivalTime: b.flightDetails?.arrivalTime || '01:30 PM',
+          seat: b.flightDetails?.seat || '14A & 14B',
+          travelerName: b.user?.name || 'Sarah Mehta',
+          tourTitle: b.title || 'Kerala Mist & Spice Route',
+          terminal: b.flightDetails?.terminal || 'Terminal 2',
+          baggage: '2 x 30kg Priority Tagged',
+          classType: 'Premium Economy',
+          status: 'Confirmed',
+          type: 'flight',
+          amount: 280,
+        }));
+        setFlights(dynamicFlights);
+
+        const dynamicStays: OperatorStayBooking[] = bookings.map((b: any) => ({
+          id: `stay-${b.id}`,
+          voucherRef: b.hotelCheckIn?.voucherRef || 'VCHR-BB-8812',
+          hotelName: b.hotelCheckIn?.hotelName || 'Brunton Boatyard — CGH Earth',
+          roomType: b.hotelCheckIn?.roomType || 'Sea Facing Heritage Suite',
+          destination: b.destination,
+          checkIn: b.hotelCheckIn?.checkInDate || 'Oct 14, 2025',
+          checkOut: b.hotelCheckIn?.checkOutDate || 'Oct 17, 2025',
+          nights: b.hotelCheckIn?.nights || 3,
+          travelerName: b.user?.name || 'Sarah Mehta',
+          guestsCount: b.travelers || 2,
+          inclusions: b.hotelCheckIn?.inclusions || ['Breakfast Buffet', 'High Tea', 'Sunset Harbour Cruise'],
+          confirmationCode: `CONF-${b.bookingRef?.split('-')[2] || '4901'}`,
+          status: 'Confirmed',
+          nightlyRate: 450,
+          totalAmount: 1350,
+        }));
+        setStays(dynamicStays);
+
+        const dynamicTransfers: OperatorTransferBooking[] = bookings.map((b: any) => ({
+          id: `tr-${b.id}`,
+          bookingRef: b.bookingRef,
+          vehicle: b.carDetails?.vehicleModel || 'Toyota Innova Crysta (Dual AC)',
+          vehicleType: b.carDetails?.vehicleType || 'Executive MPV',
+          chauffeur: b.carDetails?.chauffeurName || 'Arun V.',
+          chauffeurPhone: b.carDetails?.chauffeurPhone || '+91 98470 12345',
+          travelerName: b.user?.name || 'Sarah Mehta',
+          pickup: b.carDetails?.pickupLocation || 'Cochin International Airport T3 (Arrival Gate 4)',
+          dropoff: b.hotelCheckIn?.hotelName || 'Brunton Boatyard, Fort Kochi',
+          dateTime: 'Oct 14, 2025 · 01:45 PM',
+          status: 'Dispatched',
+          flightTracked: b.flightDetails?.flightNumber || 'AI-682',
+        }));
+        setTransfers(dynamicTransfers);
+      }
+    });
+  }, []);
 
   const handleCopy = (text: string, label: string) => {
     navigator.clipboard?.writeText(text);
@@ -46,7 +115,7 @@ export const TravelerBookingsManagerScreen: React.FC<TravelerBookingsManagerScre
   };
 
   const filteredFlights = useMemo(() => {
-    return OPERATOR_FLIGHT_TICKETS.filter(t => {
+    return flights.filter(t => {
       const matchesStatus = statusFilter === 'All' || t.status === statusFilter;
       const q = searchQuery.toLowerCase();
       const matchesSearch =
@@ -61,10 +130,10 @@ export const TravelerBookingsManagerScreen: React.FC<TravelerBookingsManagerScre
         t.tourTitle.toLowerCase().includes(q);
       return matchesStatus && matchesSearch;
     });
-  }, [searchQuery, statusFilter]);
+  }, [flights, searchQuery, statusFilter]);
 
   const filteredStays = useMemo(() => {
-    return OPERATOR_STAY_BOOKINGS.filter(s => {
+    return stays.filter(s => {
       const matchesStatus = statusFilter === 'All' || s.status === statusFilter;
       const q = searchQuery.toLowerCase();
       const matchesSearch =
@@ -77,10 +146,10 @@ export const TravelerBookingsManagerScreen: React.FC<TravelerBookingsManagerScre
         s.roomType.toLowerCase().includes(q);
       return matchesStatus && matchesSearch;
     });
-  }, [searchQuery, statusFilter]);
+  }, [stays, searchQuery, statusFilter]);
 
   const filteredTransfers = useMemo(() => {
-    return OPERATOR_TRANSFER_BOOKINGS.filter(tr => {
+    return transfers.filter(tr => {
       const matchesStatus = statusFilter === 'All' || tr.status === statusFilter;
       const q = searchQuery.toLowerCase();
       const matchesSearch =
@@ -93,7 +162,7 @@ export const TravelerBookingsManagerScreen: React.FC<TravelerBookingsManagerScre
         tr.dropoff.toLowerCase().includes(q);
       return matchesStatus && matchesSearch;
     });
-  }, [searchQuery, statusFilter]);
+  }, [transfers, searchQuery, statusFilter]);
 
   const filteredActivities = useMemo(() => {
     return OPERATOR_ACTIVITY_BOOKINGS.filter(a => {
