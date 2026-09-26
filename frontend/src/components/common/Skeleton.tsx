@@ -383,15 +383,17 @@ export const PackageCardSkeleton: React.FC = () => {
 /**
  * Table Skeleton for Operator Hub screens (Bookings, Cohorts, Guides, Vendors, Payments)
  */
-export const TableSkeleton: React.FC<{ rows?: number; columns?: number }> = ({
+export const TableSkeleton: React.FC<{ rows?: number; columns?: number; cols?: number }> = ({
   rows = 5,
-  columns = 5,
+  columns,
+  cols,
 }) => {
+  const colCount = columns ?? cols ?? 5;
   return (
     <div className="w-full bg-white rounded-2xl border border-slate-200/80 overflow-hidden shadow-2xs">
       {/* Table Header */}
       <div className="bg-slate-50/80 px-4 py-3.5 border-b border-slate-200/80 flex items-center justify-between gap-4">
-        {Array.from({ length: columns }).map((_, c) => (
+        {Array.from({ length: colCount }).map((_, c) => (
           <Skeleton key={c} className="h-3.5 w-24" />
         ))}
       </div>
@@ -411,7 +413,7 @@ export const TableSkeleton: React.FC<{ rows?: number; columns?: number }> = ({
               </div>
             </div>
 
-            {Array.from({ length: columns - 2 }).map((_, c) => (
+            {Array.from({ length: Math.max(0, colCount - 2) }).map((_, c) => (
               <Skeleton key={c} className="h-4 w-20 rounded-md" />
             ))}
 
