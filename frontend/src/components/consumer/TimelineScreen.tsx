@@ -123,22 +123,21 @@ export const TimelineScreen: React.FC<TimelineScreenProps> = ({
       {/* Main View Container */}
       <main className="max-w-[1280px] w-full mx-auto px-4 sm:px-6 py-6 flex-1 flex flex-col gap-6 pb-24 md:pb-12">
         {/* Hero Card with Background & Status Overlays */}
-        <div className="relative w-full rounded-2xl overflow-hidden border border-[#C3C6D7] shadow-xs group">
-          <div className="relative h-64 sm:h-80 md:h-96 w-full overflow-hidden">
+        <div className="relative w-full min-h-[320px] rounded-2xl overflow-hidden border border-[#C3C6D7] shadow-xs group flex flex-col justify-between p-4 sm:p-8 text-white">
+          <div className="absolute inset-0 pointer-events-none overflow-hidden select-none">
             <img
               alt="Kerala Escape Itinerary Hero"
               className="w-full h-full object-cover object-center transition-transform duration-700 ease-out group-hover:scale-[1.015]"
               src={KERALA_TIMELINE_HERO}
             />
-            <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/35 to-transparent"></div>
-            <div className="absolute inset-0 bg-gradient-to-r from-black/60 via-transparent to-transparent"></div>
+            <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/45 to-black/30"></div>
           </div>
 
-          {/* Hero Floating Information */}
-          <div className="absolute inset-0 p-6 sm:p-8 flex flex-col justify-between text-white">
-            {/* Top Status Pills */}
+          {/* Hero Content (Normal flow) */}
+          <div className="relative z-10 space-y-4">
+            {/* Top Status Pills & Quick Action Buttons */}
             <div className="flex flex-wrap items-center justify-between gap-3">
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2 flex-wrap">
                 <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/90 backdrop-blur-md text-[#151c27] text-xs font-semibold shadow-xs border border-white/40">
                   <span
                     className="material-symbols-outlined text-amber-500 text-sm"
@@ -160,7 +159,7 @@ export const TimelineScreen: React.FC<TimelineScreenProps> = ({
               </div>
 
               {/* Quick Action Buttons */}
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2 flex-wrap">
                 <button
                   onClick={onDownloadPDF}
                   className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-white/90 hover:bg-white text-[#151c27] text-xs font-semibold shadow-xs transition-all active:scale-95 border border-[#C3C6D7]/40 cursor-pointer"
@@ -184,22 +183,22 @@ export const TimelineScreen: React.FC<TimelineScreenProps> = ({
                 </button>
               </div>
             </div>
+          </div>
 
-            {/* Bottom Hero Description */}
-            <div className="max-w-2xl text-left">
-              <div className="inline-block px-2.5 py-0.5 rounded bg-[#2563EB] text-white font-mono text-[11px] mb-2 tracking-wide font-semibold">
-                CURATED SIGNATURE ROUTE
-              </div>
-              <h2 className="text-2xl sm:text-4xl text-white tracking-tight font-bold drop-shadow-sm">
-                Monsoon Whispers & Serene Backwaters
-              </h2>
-              <p className="text-white/90 text-xs sm:text-sm mt-1 drop-shadow-sm leading-relaxed max-w-xl">
-                A bespoke, high-touch luxury circuit transitioning from the
-                spice-laden European lanes of Fort Kochi to cloud-covered tea
-                plantations, culminating aboard private wooden houseboats in
-                Alleppey.
-              </p>
+          {/* Bottom Hero Description (Normal flow) */}
+          <div className="relative z-10 max-w-2xl text-left mt-6">
+            <div className="inline-block px-2.5 py-0.5 rounded bg-[#2563EB] text-white font-mono text-[11px] mb-2 tracking-wide font-semibold">
+              CURATED SIGNATURE ROUTE
             </div>
+            <h2 className="text-2xl sm:text-4xl text-white tracking-tight font-bold drop-shadow-sm">
+              Monsoon Whispers & Serene Backwaters
+            </h2>
+            <p className="text-white/90 text-xs sm:text-sm mt-1 drop-shadow-sm leading-relaxed max-w-xl">
+              A bespoke, high-touch luxury circuit transitioning from the
+              spice-laden European lanes of Fort Kochi to cloud-covered tea
+              plantations, culminating aboard private wooden houseboats in
+              Alleppey.
+            </p>
           </div>
         </div>
 

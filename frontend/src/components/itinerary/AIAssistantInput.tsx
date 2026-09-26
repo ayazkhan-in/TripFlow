@@ -105,7 +105,7 @@ export const AIAssistantInput: React.FC<AIAssistantInputProps> = ({
   };
 
   return (
-    <div className="fixed bottom-3.5 left-0 right-0 z-30 px-4 pointer-events-none flex justify-center" ref={containerRef}>
+    <div className="fixed bottom-[60px] md:bottom-3.5 left-0 right-0 z-30 px-2 sm:px-4 pointer-events-none flex justify-center" ref={containerRef}>
       <div className="w-full max-w-lg pointer-events-auto">
         {/* Last AI Feedback Toast (auto-dismisses after 5 seconds) */}
         {visibleFeedback && (
@@ -186,7 +186,7 @@ export const AIAssistantInput: React.FC<AIAssistantInputProps> = ({
             value={prompt}
             onChange={e => setPrompt(e.target.value)}
             onFocus={() => setShowSuggestions(true)}
-            placeholder="Type anything to add or change (e.g. 'Add dinner at Zuma at 8 PM', 'Add sunset boat')..."
+            placeholder="Ask AI to modify trip (e.g. 'Add dinner at 8 PM')..."
             disabled={isLoading}
             className="flex-1 min-w-0 text-xs text-slate-800 placeholder:text-slate-400 bg-transparent focus:outline-none"
           />

@@ -41,11 +41,23 @@ export const ItineraryBuilderScreen: React.FC<ItineraryBuilderScreenProps> = ({
 
   // Active day selection (1-indexed)
   const [activeDayNumber, setActiveDayNumber] = useState<number>(1);
-  const [sidebarCollapsed, setSidebarCollapsed] = useState<boolean>(false);
+  const [sidebarCollapsed, setSidebarCollapsed] = useState<boolean>(() => typeof window !== 'undefined' && window.innerWidth < 768);
 
   // Undo / Redo history stack
   const [history, setHistory] = useState<TripItinerary[]>([initialItinerary || KERALA_6DAY_ITINERARY]);
   const [historyIndex, setHistoryIndex] = useState<number>(0);
+
+  // Auto-collapse sidebar on mobile screen dimensions
+  useEffect(() => {
+    const checkMobile = () => {
+      if (typeof window !== 'undefined' && window.innerWidth < 768) {
+        setSidebarCollapsed(true);
+      }
+    };
+    checkMobile();
+    window.addEventListener('resize', checkMobile);
+    return () => window.removeEventListener('resize', checkMobile);
+  }, []);
 
   // Modals state
   const [isCustomModalOpen, setIsCustomModalOpen] = useState(false);
@@ -143,6 +155,9 @@ export const ItineraryBuilderScreen: React.FC<ItineraryBuilderScreenProps> = ({
     };
 
     pushState(updated);
+    if (typeof window !== 'undefined' && window.innerWidth < 768) {
+      setSidebarCollapsed(true);
+    }
     showToast(`✨ Added "${newItem.title}" to Day ${targetDayNumber}`);
   }, [itinerary, pushState, showToast]);
 
@@ -553,13 +568,15 @@ export const ItineraryBuilderScreen: React.FC<ItineraryBuilderScreenProps> = ({
         onExportPDF={handleExportPDF}
         onExportCSV={handleExportCSV}
         onViewRouteMap={() => setIsRouteMapOpen(true)}
+        onOpenAddDrawer={() => setSidebarCollapsed(false)}
       />
 
-      {/* 3. FLOATING TRIP TOTAL BUTTON (Bottom Right) */}
+      {/* 3. FLOATING TRIP TOTAL BUTTON (Bottom Right / Mobile Dock) */}
       <FloatingTripTotal
         pricing={pricing}
         itinerary={itinerary}
         onOpenBookingModal={() => setIsBookingModalOpen(true)}
+        onOpenAddSidebar={() => setSidebarCollapsed(false)}
         priceDelta={priceDelta}
       />
 

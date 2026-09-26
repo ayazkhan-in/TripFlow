@@ -509,7 +509,9 @@ export function getPackageAmenities(pkg: OperatorCuratedPackage) {
   ];
 
   if (pkg.routeStops && pkg.routeStops.length > 0) {
-    const routeLabel = pkg.routeStops.map(s => s.city).slice(0, 2).join(' → ');
+    const routeLabel = pkg.routeStops.length > 2 
+      ? `${pkg.routeStops.length} Stops` 
+      : pkg.routeStops.map(s => s.city).slice(0, 2).join(' → ');
     amenities.push({ icon: 'route', label: routeLabel });
   }
 

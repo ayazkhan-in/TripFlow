@@ -65,7 +65,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({
         </div>
 
         {/* TOP: Floating Transparent Navigation Header */}
-        <header className="relative z-30 w-full px-6 sm:px-12 lg:px-16 py-8 flex items-center justify-between select-none">
+        <header className="relative z-30 w-full px-4 sm:px-12 lg:px-16 py-6 sm:py-8 flex items-center justify-between select-none">
           {/* Brand Anchor on Left (Matching DOLANAN style) */}
           <div className="flex items-center gap-2.5 text-xl sm:text-2xl font-black tracking-wider text-black uppercase select-none">
             <img src="/bookit-white.png" alt="Bookit" className="w-8 h-8 sm:w-9 sm:h-9 object-contain" />
@@ -206,8 +206,8 @@ export const LandingPage: React.FC<LandingPageProps> = ({
         </header>
 
         {/* MIDDLE: Left-Aligned Large Display Headline & Get Started Button */}
-        <div className="relative z-20 px-6 sm:px-12 lg:px-16 my-auto py-12 max-w-4xl text-left">
-          <h1 className="text-6xl sm:text-7xl lg:text-[5.5rem] font-bold text-white tracking-tight leading-[1.04] drop-shadow-[0_2px_12px_rgba(0,0,0,0.6)]">
+        <div className="relative z-20 px-4 sm:px-12 lg:px-16 my-auto py-8 sm:py-12 max-w-4xl text-left">
+          <h1 className="text-4xl sm:text-6xl lg:text-[5.5rem] font-bold text-white tracking-tight leading-[1.04] drop-shadow-[0_2px_12px_rgba(0,0,0,0.6)]">
             Personalized<br />
             Luxury<br />
             Journeys.
@@ -229,7 +229,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({
         </div>
 
         {/* BOTTOM: Social Proof Avatars & Category Pills */}
-        <div className="relative z-20 px-6 sm:px-12 lg:px-16 pb-10 pt-4 flex flex-col sm:flex-row items-start sm:items-end justify-between gap-6">
+        <div className="relative z-20 px-4 sm:px-12 lg:px-16 pb-8 sm:pb-10 pt-4 flex flex-col sm:flex-row items-start sm:items-end justify-between gap-6">
           {/* Bottom Left: Avatar Stack */}
           <div className="flex items-center gap-3 drop-shadow-[0_1px_8px_rgba(0,0,0,0.6)]">
             <div className="flex -space-x-2.5 overflow-hidden">

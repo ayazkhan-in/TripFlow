@@ -1,8 +1,9 @@
 import React, { useState, useMemo } from 'react';
 import { useOperator } from '../../context/OperatorContext';
 import { formatINR } from '../../utils/pricing';
-import { OperatorCuratedPackage } from '../../data/operatorPackagesData';
+import { OperatorCuratedPackage, getPackageAmenities } from '../../data/operatorPackagesData';
 import { CreateTourPackageModal } from './CreateTourPackageModal';
+import { LuxuryCard } from '../common/LuxuryCard';
 
 interface OperatorPackagesScreenProps {
   showToast: (msg: string) => void;
@@ -222,102 +223,108 @@ export const OperatorPackagesScreen: React.FC<OperatorPackagesScreenProps> = ({
     }, 400);
   };
 
-  const openCreator = onOpenCreatePackageModal || (() => setIsModalOpen(true));
-
   const totalWholesaleValue = packages.reduce((sum, p) => sum + p.totalPriceINR, 0);
   const avgPackagePrice = Math.round(totalWholesaleValue / (packages.length || 1));
 
   return (
     <div className="flex-1 bg-slate-50/60 min-h-screen p-6 sm:p-8 space-y-6 select-none">
-      {/* LUXURY OPERATOR HEADER */}
-      <div className="relative overflow-hidden rounded-3xl bg-gradient-to-r from-slate-900 via-indigo-950 to-blue-950 text-white p-6 sm:p-8 shadow-xl border border-slate-800">
-        <div className="absolute -right-12 -top-12 w-64 h-64 rounded-full bg-blue-500/10 blur-3xl pointer-events-none" />
-        <div className="absolute right-1/3 -bottom-12 w-64 h-64 rounded-full bg-indigo-500/10 blur-3xl pointer-events-none" />
+      {/* LUXURY SCENIC FROSTED OPERATOR HEADER */}
+      <div className="relative overflow-hidden rounded-2xl sm:rounded-3xl bg-slate-900/5 border border-slate-200/90 p-6 sm:p-8 shadow-sm">
+        {/* Scenic Mountain Background Silhouette with Soft Frosted Overlay */}
+        <div className="absolute inset-0 pointer-events-none z-0 overflow-hidden">
+          <img
+            src="https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?auto=format&fit=crop&w=2000&q=80"
+            alt="Misty Mountain Scenic Landscape"
+            className="w-full h-full object-cover object-center scale-105"
+          />
+          {/* Frosted White & Sky Gradient Overlay that preserves mountain visibility */}
+          <div className="absolute inset-0 bg-gradient-to-r from-white/92 via-white/70 to-white/40 backdrop-blur-[1px]" />
+          <div className="absolute inset-0 bg-gradient-to-t from-white/80 via-transparent to-white/30" />
+        </div>
 
         <div className="relative z-10 flex flex-col lg:flex-row lg:items-center justify-between gap-6">
-          <div className="space-y-2 max-w-2xl">
-            <div className="flex items-center gap-2 flex-wrap">
-              <span className="px-3 py-1 rounded-full text-[10px] font-extrabold uppercase tracking-wider bg-blue-500/20 text-blue-300 border border-blue-400/30 flex items-center gap-1.5">
-                <span className="w-1.5 h-1.5 rounded-full bg-blue-400 animate-pulse" />
-                <span>Operator Tour Package Engine</span>
-              </span>
-              <span className="px-3 py-1 rounded-full text-[10px] font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 flex items-center gap-1">
-                <span className="material-symbols-outlined text-xs">currency_rupee</span>
-                <span>Prices in INR (₹)</span>
-              </span>
-              <span className="px-3 py-1 rounded-full text-[10px] font-bold bg-white/10 text-slate-200">
-                Live Discover Sync
-              </span>
+          <div className="space-y-1.5 max-w-2xl">
+            {/* Tag */}
+            <div className="flex items-center gap-1.5 text-[11px] font-bold text-slate-500 uppercase tracking-wider">
+              <span className="w-1.5 h-1.5 rounded-full bg-blue-500" />
+              <span>TOUR PACKAGE ENGINE</span>
             </div>
 
-            <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-white leading-tight">
+            {/* Title */}
+            <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-slate-900 leading-tight">
               Tour Packages & Creator Studio
             </h1>
 
-            <p className="text-xs sm:text-sm text-slate-300 leading-relaxed">
-              Curate multi-day circuits, establish wholesale tariffs in Indian Rupees, and publish directly to travelers in the Discover marketplace. When travelers book after customizing, fulfillment updates sync live across your dispatch tabs.
+            {/* Subtitle */}
+            <p className="text-xs sm:text-sm text-slate-500 font-medium leading-relaxed max-w-xl">
+              Curate multi-day circuits, set wholesale tariffs in INR, and publish directly to travelers in the Discover marketplace.
             </p>
           </div>
 
+          {/* Action Buttons */}
           <div className="flex items-center gap-3 shrink-0 flex-wrap">
             {onNavigateToDiscover && (
               <button
                 type="button"
                 onClick={onNavigateToDiscover}
-                className="px-4 py-2.5 rounded-xl bg-white/10 hover:bg-white/20 text-white text-xs font-bold border border-white/20 transition-all flex items-center gap-2 shadow-xs cursor-pointer active:scale-95"
+                className="px-4 py-2.5 rounded-xl bg-white/80 hover:bg-white text-slate-800 text-xs font-semibold border border-slate-200/90 transition-all flex items-center gap-2 shadow-xs cursor-pointer active:scale-95 backdrop-blur-sm"
               >
-                <span className="material-symbols-outlined text-base text-blue-400">visibility</span>
+                <span className="material-symbols-outlined text-base text-slate-700">visibility</span>
                 <span>Preview Discover Feed</span>
               </button>
             )}
 
             <button
               type="button"
-              onClick={() => {
-                setActiveSubTab('studio');
-              }}
-              className="px-4 py-2.5 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white text-xs font-bold transition-all flex items-center gap-2 shadow-md cursor-pointer active:scale-95"
+              onClick={() => setIsModalOpen(true)}
+              className="px-4 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold transition-all flex items-center gap-2 shadow-md shadow-blue-500/25 border border-blue-400/40 cursor-pointer active:scale-95"
             >
-              <span className="material-symbols-outlined text-base">add_business</span>
-              <span>+ Create Tour Package</span>
+              <span className="material-symbols-outlined text-base">add</span>
+              <span>Create Tour Package</span>
             </button>
           </div>
         </div>
 
         {/* METRICS STRIP */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mt-6 pt-6 border-t border-white/10">
+        <div className="relative z-10 grid grid-cols-2 md:grid-cols-4 gap-6 mt-6 pt-6 border-t border-slate-200/80">
           <div>
-            <span className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider block">
-              Published Circuits
+            <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block mb-1">
+              PUBLISHED CIRCUITS
             </span>
-            <div className="text-2xl font-black text-white mt-0.5">{packages.length} Packages</div>
-            <span className="text-[11px] text-emerald-400 font-medium">100% Discover Active</span>
+            <div className="text-2xl font-black text-slate-900">{packages.length} Packages</div>
+            <div className="text-xs text-emerald-600 font-semibold flex items-center gap-1.5 mt-1">
+              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+              <span>100% Discover Active</span>
+            </div>
           </div>
 
           <div>
-            <span className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider block">
-              Wholesale Valuation
+            <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block mb-1">
+              WHOLESALE VALUATION
             </span>
-            <div className="text-2xl font-black text-white mt-0.5">{formatINR(totalWholesaleValue)}</div>
-            <span className="text-[11px] text-slate-400">Total catalog inventory</span>
+            <div className="text-2xl font-black text-slate-900">{formatINR(totalWholesaleValue)}</div>
+            <div className="text-xs text-slate-400 font-medium mt-1">Total catalog inventory</div>
           </div>
 
           <div>
-            <span className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider block">
-              Average Circuit Rate
+            <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block mb-1">
+              AVERAGE CIRCUIT RATE
             </span>
-            <div className="text-2xl font-black text-white mt-0.5">{formatINR(avgPackagePrice)}</div>
-            <span className="text-[11px] text-blue-300">All-inclusive per package</span>
+            <div className="text-2xl font-black text-slate-900">{formatINR(avgPackagePrice)}</div>
+            <div className="text-xs text-slate-400 font-medium mt-1">All-inclusive per package</div>
           </div>
 
           <div>
-            <span className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider block">
-              Traveler Bookings
+            <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block mb-1">
+              TRAVELER BOOKINGS
             </span>
-            <div className="text-2xl font-black text-white mt-0.5">{packageBookings.length} Manifests</div>
-            <span className="text-[11px] text-amber-400 font-medium">
-              {pendingCustomizedCount > 0 ? `${pendingCustomizedCount} customized awaiting dispatch` : 'Fully dispatched'}
-            </span>
+            <div className="text-2xl font-black text-slate-900">{packageBookings.length} Manifests</div>
+            <div className="text-xs text-slate-600 font-medium flex items-center gap-1.5 mt-1">
+              <span className="w-1.5 h-1.5 rounded-full bg-amber-500" />
+              <span>
+                {pendingCustomizedCount > 0 ? `${pendingCustomizedCount} customized awaiting dispatch` : 'All dispatched'}
+              </span>
+            </div>
           </div>
         </div>
       </div>
@@ -400,11 +407,11 @@ export const OperatorPackagesScreen: React.FC<OperatorPackagesScreenProps> = ({
 
             <button
               type="button"
-              onClick={openCreator}
+              onClick={() => setIsModalOpen(true)}
               className="px-3.5 py-1.5 bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold rounded-xl shadow-xs transition-colors flex items-center gap-1.5 cursor-pointer"
             >
               <span className="material-symbols-outlined text-sm">add</span>
-              <span>Quick Create Modal</span>
+              <span>Create New Package</span>
             </button>
           </div>
         )}
@@ -508,154 +515,70 @@ export const OperatorPackagesScreen: React.FC<OperatorPackagesScreenProps> = ({
             </div>
           </div>
 
-          {/* VIEW: GRID LAYOUT */}
+          {/* VIEW: GRID LAYOUT (Matches Traveler Discover Page with tight, clean gaps) */}
           {viewLayout === 'grid' && (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+            <div className="grid grid-cols-1 sm:grid-cols-[repeat(auto-fill,minmax(280px,320px))] gap-4 sm:gap-5 justify-items-center sm:justify-items-start">
               {filteredPackages.map(pkg => (
-                <div
-                  key={pkg.id}
-                  className="bg-white rounded-3xl border border-slate-200/90 shadow-sm overflow-hidden flex flex-col justify-between hover:shadow-lg transition-all group duration-300"
-                >
-                  <div>
-                    {/* Hero Image */}
-                    <div className="relative h-48 w-full overflow-hidden bg-slate-900">
-                      <img
-                        src={pkg.heroImage}
-                        alt={pkg.title}
-                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
-                      />
-                      <div className="absolute inset-0 bg-gradient-to-t from-slate-950/85 via-slate-950/20 to-transparent" />
+                <div key={pkg.id} className="relative group w-full max-w-[320px]">
+                  <LuxuryCard
+                    id={pkg.id}
+                    title={pkg.title}
+                    description={`${pkg.days} Days · ${pkg.destination} · Curated by ${pkg.operator.name}`}
+                    image={pkg.heroImage}
+                    rating={`${pkg.operator.rating}/5`}
+                    kicker={`${pkg.operator.name} · ${pkg.destination}`}
+                    badge={pkg.isNewlyCreated ? 'Operator Published' : pkg.badgeText}
+                    badgeColor={pkg.isDomestic ? 'emerald' : 'dark'}
+                    amenities={getPackageAmenities(pkg)}
+                    price={`₹${pkg.totalPriceINR.toLocaleString('en-IN')}`}
+                    pricePeriod="/package"
+                    actionVariant="button"
+                    actionLabel="Reserve Tour"
+                    theme="light"
+                    className="w-full max-w-[320px]"
+                    onActionClick={(e) => {
+                      e.stopPropagation();
+                      if (onNavigateToDiscover) {
+                        onNavigateToDiscover();
+                      } else {
+                        showToast(`Package "${pkg.title}" is published on Discover`);
+                      }
+                    }}
+                    onClick={() => {
+                      if (onNavigateToDiscover) {
+                        onNavigateToDiscover();
+                      } else {
+                        showToast(`Package "${pkg.title}" is published on Discover`);
+                      }
+                    }}
+                  />
 
-                      <div className="absolute top-3 left-3 flex items-center gap-1.5 flex-wrap max-w-[80%]">
-                        {pkg.isNewlyCreated && (
-                          <span className="bg-gradient-to-r from-blue-600 to-indigo-600 text-white text-[10px] font-extrabold px-2.5 py-0.5 rounded-full shadow-md flex items-center gap-1">
-                            <span className="material-symbols-outlined text-[11px]">sparkles</span>
-                            <span>Operator Published</span>
-                          </span>
-                        )}
-                        <span className="bg-white/95 backdrop-blur-xs text-slate-900 text-[10px] font-extrabold px-2.5 py-0.5 rounded-full shadow-xs">
-                          {pkg.tag}
-                        </span>
-                      </div>
-
-                      <div className="absolute top-3 right-3">
-                        <span className="px-2.5 py-1 rounded-full text-[10px] font-extrabold bg-emerald-500 text-white shadow-xs flex items-center gap-1">
-                          <span className="w-1.5 h-1.5 rounded-full bg-white animate-pulse" />
-                          <span>Discover Live</span>
-                        </span>
-                      </div>
-
-                      <div className="absolute bottom-3 left-4 right-4 text-white">
-                        <span className="text-[11px] font-semibold text-slate-200 flex items-center gap-1.5">
-                          <span>{pkg.destination}, {pkg.country}</span>
-                          <span>·</span>
-                          <span>{pkg.days} Days / {pkg.days - 1} Nights</span>
-                        </span>
-                        <h3 className="text-base font-bold text-white leading-tight mt-0.5 line-clamp-1">
-                          {pkg.title}
-                        </h3>
-                      </div>
-                    </div>
-
-                    {/* Body Details */}
-                    <div className="p-5 space-y-4">
-                      {/* Route Stops with connected indicators */}
-                      <div>
-                        <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 block mb-1.5">
-                          Circuit Stops & Waypoints
-                        </span>
-                        <div className="flex items-center gap-1.5 flex-wrap">
-                          {pkg.routeStops.map((stop, sIdx) => (
-                            <React.Fragment key={sIdx}>
-                              <span className="px-2.5 py-1 rounded-lg bg-slate-100 text-slate-800 text-xs font-semibold flex items-center gap-1">
-                                <span className="w-1.5 h-1.5 rounded-full bg-blue-600" />
-                                <span>{stop.city}</span>
-                              </span>
-                              {sIdx < pkg.routeStops.length - 1 && (
-                                <span className="text-slate-300 font-bold text-xs">➔</span>
-                              )}
-                            </React.Fragment>
-                          ))}
-                        </div>
-                      </div>
-
-                      {/* Inclusions */}
-                      <div>
-                        <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 block mb-1.5">
-                          Operator Wholesale Inclusions
-                        </span>
-                        <div className="space-y-1.5">
-                          {pkg.inclusions.slice(0, 3).map((inc, iIdx) => (
-                            <div key={iIdx} className="flex items-start gap-2 text-xs text-slate-600">
-                              <span className="material-symbols-outlined text-[15px] text-blue-600 shrink-0 mt-0.5">
-                                {inc.icon || 'check_circle'}
-                              </span>
-                              <span className="line-clamp-1">{inc.text}</span>
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-
-                      {/* Operator Director attribution */}
-                      <div className="pt-3 border-t border-slate-100 flex items-center justify-between text-xs">
-                        <div className="flex items-center gap-2">
-                          <img
-                            src={pkg.operator.avatar}
-                            alt={pkg.operator.leadDirector}
-                            className="w-7 h-7 rounded-full object-cover border border-slate-200"
-                          />
-                          <div>
-                            <span className="font-bold text-slate-900 block leading-tight">
-                              {pkg.operator.leadDirector}
-                            </span>
-                            <span className="text-[10px] text-slate-400">{pkg.operator.dispatchHub}</span>
-                          </div>
-                        </div>
-
-                        <div className="text-right">
-                          <span className="text-[10px] text-slate-400 block">Travelers Booked</span>
-                          <span className="font-bold text-slate-800 text-xs">2 Pax / Booking</span>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Card Bottom Strip */}
-                  <div className="p-5 pt-0">
-                    <div className="p-3.5 rounded-2xl bg-slate-50 border border-slate-200/80 flex items-center justify-between gap-3">
-                      <div>
-                        <span className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider block">
-                          Wholesale Price (INR)
-                        </span>
-                        <div className="flex items-baseline gap-1">
-                          <span className="text-xl font-black text-slate-900 font-mono tracking-tight">
-                            {formatINR(pkg.totalPriceINR)}
-                          </span>
-                          <span className="text-[10px] text-slate-500 font-medium">/ 2 pax</span>
-                        </div>
-                      </div>
-
-                      <div className="flex items-center gap-1.5">
-                        {onNavigateToDiscover ? (
-                          <button
-                            type="button"
-                            onClick={onNavigateToDiscover}
-                            className="px-3.5 py-2 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold transition-all shadow-xs flex items-center gap-1 cursor-pointer active:scale-95"
-                          >
-                            <span className="material-symbols-outlined text-sm">visibility</span>
-                            <span>Discover</span>
-                          </button>
-                        ) : (
-                          <button
-                            type="button"
-                            onClick={() => showToast(`Package "${pkg.title}" is published on Discover`)}
-                            className="px-3.5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold transition-all shadow-xs cursor-pointer"
-                          >
-                            Active
-                          </button>
-                        )}
-                      </div>
-                    </div>
+                  {/* Operator Quick Edit Overlay Button */}
+                  <div className="absolute top-3.5 right-12 z-30 opacity-0 group-hover:opacity-100 transition-opacity">
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setTitle(pkg.title);
+                        setDestination(pkg.destination);
+                        setCountry(pkg.country);
+                        setIsDomestic(pkg.isDomestic);
+                        setDays(pkg.days);
+                        setPriceINR(pkg.totalPriceINR);
+                        setHeroImage(pkg.heroImage);
+                        setTag(pkg.tag);
+                        setRouteStopsInput(pkg.routeStops.map(s => s.city).join(', '));
+                        setInclusionsInput(pkg.inclusions.map(i => i.text).join('\n'));
+                        setDirectorName(pkg.operator.leadDirector);
+                        setActiveSubTab('studio');
+                        showToast(`Loaded "${pkg.title}" into Studio for editing`);
+                      }}
+                      className="px-2.5 py-1 rounded-full bg-white/95 hover:bg-white text-slate-800 text-[10px] font-bold shadow-md border border-slate-200/90 backdrop-blur-xs flex items-center gap-1 cursor-pointer transition-transform hover:scale-105 active:scale-95"
+                      title="Load into Studio"
+                    >
+                      <span className="material-symbols-outlined text-xs text-blue-600">edit</span>
+                      <span>Edit</span>
+                    </button>
                   </div>
                 </div>
               ))}
@@ -1053,110 +976,44 @@ export const OperatorPackagesScreen: React.FC<OperatorPackagesScreenProps> = ({
             {/* RIGHT 5 COLS: LIVE DISCOVER SIMULATOR */}
             <div className="lg:col-span-5 flex flex-col justify-between space-y-6">
               <div className="space-y-4">
-                <div className="flex items-center justify-between pb-2 border-b border-slate-100">
-                  <span className="text-[11px] font-bold uppercase tracking-wider text-slate-500 flex items-center gap-1.5">
-                    <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-                    <span>Live Traveler Discover Simulator</span>
-                  </span>
-                  <span className="text-[10px] font-mono text-blue-600 font-bold bg-blue-50 px-2 py-0.5 rounded-full">
-                    Dynamic Preview
-                  </span>
-                </div>
-
-                {/* Discover Card Mockup */}
-                <div className="bg-white rounded-3xl border border-slate-200/90 shadow-xl overflow-hidden text-left group">
-                  <div className="relative h-56 w-full overflow-hidden bg-slate-900">
-                    <img
-                      src={heroImage || PRESET_IMAGE_OPTIONS[0].url}
-                      alt={title || 'Tour Package'}
-                      className="w-full h-full object-cover"
-                    />
-                    <div className="absolute inset-0 bg-gradient-to-t from-slate-950/90 via-slate-950/20 to-transparent" />
-
-                    <div className="absolute top-3 left-3 flex items-center gap-1.5 flex-wrap max-w-[75%]">
-                      <span className="bg-gradient-to-r from-blue-600 to-indigo-600 text-white text-[10px] font-extrabold px-2.5 py-1 rounded-full shadow-md flex items-center gap-1">
-                        <span className="material-symbols-outlined text-[11px]">sparkles</span>
-                        <span>Operator Published</span>
-                      </span>
-                      <span className="bg-white/95 backdrop-blur-xs text-slate-900 text-[10px] font-extrabold px-2.5 py-1 rounded-full shadow-xs">
-                        {tag}
-                      </span>
-                    </div>
-
-                    <div className="absolute top-3 right-3">
-                      <span className="px-2.5 py-1 rounded-full text-[10px] font-extrabold bg-emerald-500 text-white shadow-xs">
-                        Ready to Book
-                      </span>
-                    </div>
-
-                    <div className="absolute bottom-3.5 left-4 right-4 text-white">
-                      <div className="text-[11px] font-semibold text-slate-200">
-                        {destination || 'Destination'}, {country || 'India'} · {days} Days / {days - 1} Nights
-                      </div>
-                      <h4 className="text-base font-extrabold text-white leading-tight mt-0.5 line-clamp-1">
-                        {title || 'Tour Package Title'}
-                      </h4>
-                    </div>
-                  </div>
-
-                  <div className="p-5 space-y-4">
-                    {/* Route */}
-                    <div>
-                      <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 block mb-1">
-                        Curated Route Stops
-                      </span>
-                      <div className="text-xs font-semibold text-slate-800">
-                        {routeStopsInput || destination}
-                      </div>
-                    </div>
-
-                    {/* Price in INR box */}
-                    <div className="p-3.5 rounded-2xl bg-gradient-to-r from-slate-50 to-blue-50/40 border border-slate-200/80 flex items-center justify-between">
-                      <div>
-                        <span className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider block">
-                          Total Tour Tariff (INR)
-                        </span>
-                        <div className="text-xl font-black text-slate-900 font-mono tracking-tight">
-                          {formatINR(priceINR)}
-                        </div>
-                      </div>
-
-                      <div className="text-right">
-                        <span className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider block">
-                          Per Traveler
-                        </span>
-                        <div className="text-sm font-bold text-blue-600 font-mono">
-                          {formatINR(Math.round(priceINR / 2))}
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* Inclusions checklist */}
-                    <div className="space-y-1.5 pt-1">
-                      {inclusionsInput
+                {/* Live Traveler Discover Simulator Card (Exact LuxuryCard from Discover) */}
+                <div className="flex justify-center">
+                  <LuxuryCard
+                    id="studio-live-preview"
+                    title={title || 'Tour Package Title'}
+                    description={`${days} Days · ${destination || 'Destination'} · Curated by ${directorName || 'Bookit Concierge'}`}
+                    image={heroImage || PRESET_IMAGE_OPTIONS[0].url}
+                    rating="4.9/5"
+                    kicker={`${directorName || 'Bookit Concierge'} · ${destination || 'Signature Circuit'}`}
+                    badge="Operator Published"
+                    badgeColor={isDomestic ? 'emerald' : 'dark'}
+                    amenities={[
+                      { icon: 'calendar_today', label: `${days} Days` },
+                      { icon: 'group', label: '2 Guests' },
+                      { icon: 'route', label: routeStopsInput.split(',')[0]?.trim() || destination || 'Circuit' },
+                      ...inclusionsInput
                         .split('\n')
+                        .map(s => s.trim())
+                        .filter(Boolean)
                         .slice(0, 3)
-                        .map((inc, idx) => (
-                          <div key={idx} className="flex items-center gap-2 text-xs text-slate-600">
-                            <span className="material-symbols-outlined text-sm text-emerald-600 shrink-0">
-                              check_circle
-                            </span>
-                            <span className="line-clamp-1">{inc}</span>
-                          </div>
-                        ))}
-                    </div>
-
-                    {/* Verification & Discover action */}
-                    <div className="pt-3 border-t border-slate-100 flex items-center justify-between text-xs">
-                      <div className="flex items-center gap-1.5 text-emerald-700 font-bold text-[11px]">
-                        <span className="material-symbols-outlined text-sm text-emerald-600">verified</span>
-                        <span>Verified Elite Operator</span>
-                      </div>
-                      <span className="text-xs font-bold text-blue-600">
-                        Traveler Discover Ready ➔
-                      </span>
-                    </div>
-                  </div>
+                        .map(inc => {
+                          let label = inc;
+                          if (label.includes('Flight')) label = 'Flight Inc.';
+                          else if (label.includes('Chauffeur')) label = 'Chauffeur';
+                          else if (label.includes('Hotel') || label.includes('Resort') || label.includes('Villa') || label.includes('Palace')) label = '5-Star Stay';
+                          else if (label.includes('Pass') || label.includes('Ticket')) label = 'VIP Access';
+                          return { icon: 'check_circle', label };
+                        }),
+                    ]}
+                    price={`₹${(Number(priceINR) || 180000).toLocaleString('en-IN')}`}
+                    pricePeriod="/package"
+                    actionVariant="button"
+                    actionLabel="Reserve Tour"
+                    theme="light"
+                    className="w-full max-w-[340px]"
+                    onActionClick={() => showToast('Simulator: Displays live Discover traveler card')}
+                    onClick={() => showToast('Simulator: Displays live Discover traveler card')}
+                  />
                 </div>
 
                 {/* Day-by-Day Route Itinerary preview */}
@@ -1270,13 +1127,15 @@ export const OperatorPackagesScreen: React.FC<OperatorPackagesScreenProps> = ({
         </div>
       )}
 
-      {/* Floating Modal fallback */}
+      {/* Create Tour Package Modal */}
       <CreateTourPackageModal
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
         showToast={showToast}
         onPackageCreated={pkgTitle => {
-          showToast(`🚀 Published "${pkgTitle}" live to Discover!`);
+          setActiveSubTab('catalog');
+          setFilterScope('all');
+          setSearchQuery('');
         }}
       />
     </div>

@@ -276,8 +276,8 @@ export const StoryScreen: React.FC<StoryScreenProps> = ({
   ];
 
   return (
-    <div className="relative w-full h-[calc(100vh-3.5rem)] max-h-[calc(100vh-3.5rem)] bg-[#F8FAFC] flex items-center justify-center select-none font-sans overflow-hidden px-4 py-3 md:py-6">
-      <div className="w-full max-w-4xl h-full flex flex-col lg:flex-row items-center justify-center gap-6 lg:gap-12">
+    <div className="relative w-full h-full max-h-full bg-[#F8FAFC] flex items-center justify-center select-none font-sans overflow-hidden px-2 sm:px-4 py-2 sm:py-3 md:py-6">
+      <div className="w-full max-w-4xl h-full flex flex-col lg:flex-row items-center justify-center gap-4 lg:gap-12 min-h-0">
         {/* ------------------------------------------------------------- */}
         {/* SIDEBAR: TRAVEL STORIES & DESTINATION FILTER CARDS            */}
         {/* ------------------------------------------------------------- */}
@@ -368,7 +368,7 @@ export const StoryScreen: React.FC<StoryScreenProps> = ({
         {/* ------------------------------------------------------------- */}
         {/* CENTER REEL VIEWPORT                                          */}
         {/* ------------------------------------------------------------- */}
-        <div className="relative flex-1 h-full max-h-[calc(100vh-6.5rem)] flex items-center justify-center">
+        <div className="relative flex-1 w-full h-full max-h-full flex items-center justify-center min-h-0">
           {/* Main Phone Frame */}
           <div className="relative w-full max-w-[380px] h-full rounded-2xl md:rounded-3xl overflow-hidden bg-black shadow-xl shadow-slate-900/10 border border-slate-200/80">
             {/* Scroll Container */}

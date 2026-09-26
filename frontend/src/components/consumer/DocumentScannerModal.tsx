@@ -446,7 +446,7 @@ export const DocumentScannerModal: React.FC<DocumentScannerModalProps> = ({
       onClick={onClose}
     >
       <div
-        className="bg-white rounded-3xl shadow-2xl border border-[#E5E7EB] w-full max-w-2xl max-h-[92vh] overflow-hidden flex flex-col animate-in zoom-in-95 duration-200"
+        className="bg-white rounded-3xl shadow-2xl border border-[#E5E7EB] w-full max-w-2xl max-h-[92dvh] overflow-hidden flex flex-col animate-in zoom-in-95 duration-200"
         onClick={e => e.stopPropagation()}
       >
         {/* Modal Header */}

@@ -73,7 +73,7 @@ export const CardDetailOverlay: React.FC<CardDetailOverlayProps> = ({
         aria-hidden="true"
       />
 
-      <div className="relative z-10 bg-white rounded-3xl max-w-lg w-full shadow-2xl border border-neutral-200 overflow-hidden animate-in zoom-in-95 duration-200 max-h-[90vh] flex flex-col">
+      <div className="relative z-10 bg-white rounded-3xl max-w-lg w-full shadow-2xl border border-neutral-200 overflow-hidden animate-in zoom-in-95 duration-200 max-h-[90dvh] flex flex-col">
         {/* Hero Photo Banner */}
         <div className="relative h-48 sm:h-56 w-full bg-neutral-900 overflow-hidden shrink-0">
           <img

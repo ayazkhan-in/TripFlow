@@ -535,7 +535,7 @@ function BookitApp() {
           {/* CONSUMER SURFACE: HOME, TRIPS & BOOKINGS, VAULT, DISCOVER */}
           {/* ========================================================= */}
           {viewMode === 'consumer' && (
-            <div className={`flex-1 min-h-0 flex flex-col ${consumerTab === 'builder' || consumerTab === 'assistant' || consumerTab === 'story' ? 'h-screen max-h-screen overflow-hidden' : ''}`}>
+            <div className={`flex-1 min-h-0 flex flex-col ${consumerTab === 'builder' || consumerTab === 'assistant' || consumerTab === 'story' ? 'h-screen max-h-screen overflow-hidden' : 'min-h-screen'}`}>
               <TopNav
                 activeTab={consumerTab}
                 onTabChange={handleConsumerTabChange}
@@ -551,7 +551,13 @@ function BookitApp() {
                 vaultCount={vaultDocuments.length}
               />
 
-              <main className={`flex-1 min-h-0 flex flex-col ${consumerTab === 'builder' || consumerTab === 'assistant' || consumerTab === 'story' ? 'h-[calc(100vh-3.5rem)] max-h-[calc(100vh-3.5rem)] overflow-hidden' : ''}`}>
+              <main className={`flex-1 min-h-0 flex flex-col ${
+                consumerTab === 'builder'
+                  ? 'h-[calc(100dvh-3.5rem)] max-h-[calc(100dvh-3.5rem)] overflow-hidden'
+                  : consumerTab === 'assistant' || consumerTab === 'story'
+                  ? 'h-[calc(100dvh-3.5rem-3.75rem)] md:h-[calc(100vh-3.5rem)] max-h-[calc(100dvh-3.5rem-3.75rem)] md:max-h-[calc(100vh-3.5rem)] overflow-hidden'
+                  : 'pb-20 md:pb-8'
+              }`}>
                 {consumerTab === 'home' && (
                   <HomeScreen
                     onNavigateTab={handleConsumerTabChange}

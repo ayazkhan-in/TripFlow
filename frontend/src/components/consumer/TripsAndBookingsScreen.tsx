@@ -742,19 +742,19 @@ export const TripsAndBookingsScreen: React.FC<TripsAndBookingsScreenProps> = ({
         ) : (
         <main className="max-w-[1280px] w-full mx-auto px-4 sm:px-6 lg:px-8 py-8 md:py-10 pb-24 md:pb-12 text-left space-y-8 animate-in fade-in duration-200">
           {/* Hero Banner: Luxury Visual with Live Status */}
-          <div className="relative rounded-3xl overflow-hidden min-h-[280px] sm:min-h-[320px] bg-slate-900 shadow-md group">
-            <div className="absolute inset-0">
+          <div className="relative rounded-3xl overflow-hidden min-h-[320px] bg-slate-900 shadow-md group flex flex-col justify-between p-4 sm:p-8 text-white">
+            <div className="absolute inset-0 pointer-events-none">
               <img
                 alt={currentTrip.title || 'Trip hero'}
                 className="w-full h-full object-cover object-center transition-transform duration-700 ease-out group-hover:scale-[1.015]"
                 src={currentTrip.heroImage || KERALA_TIMELINE_HERO}
               />
-              <div className="absolute inset-0 bg-gradient-to-t from-slate-950/90 via-slate-950/40 to-transparent"></div>
+              <div className="absolute inset-0 bg-gradient-to-t from-slate-950/95 via-slate-950/50 to-slate-950/30"></div>
               <div className="absolute inset-0 bg-gradient-to-r from-slate-950/70 via-transparent to-transparent"></div>
             </div>
 
-            {/* Hero Floating Content */}
-            <div className="absolute inset-0 p-6 sm:p-8 flex flex-col justify-between text-white">
+            {/* Hero Content (in normal flow so it naturally expands container height on mobile) */}
+            <div className="relative z-10 flex flex-col justify-between gap-6 min-h-[260px] text-white">
               {/* Top Status & Weather Pills */}
               <div className="flex flex-wrap items-center justify-between gap-3">
                 <div className="flex items-center gap-2 flex-wrap">
@@ -823,7 +823,7 @@ export const TripsAndBookingsScreen: React.FC<TripsAndBookingsScreenProps> = ({
                 </p>
 
                 {/* Route Chain Pill */}
-                <div className="mt-3.5 inline-flex items-center gap-2 px-3 py-1.5 rounded-xl bg-black/40 backdrop-blur-md border border-white/20 text-white text-xs font-semibold">
+                <div className="mt-3.5 inline-flex items-center gap-2 px-3 py-1.5 rounded-xl bg-black/40 backdrop-blur-md border border-white/20 text-white text-xs font-semibold flex-wrap">
                   <span className="text-white font-bold">Cochin Airport</span>
                   <span className="material-symbols-outlined text-xs text-blue-300">arrow_forward</span>
                   <span className="text-blue-200">Fort Kochi</span>
@@ -1133,7 +1133,7 @@ export const TripsAndBookingsScreen: React.FC<TripsAndBookingsScreenProps> = ({
             {/* Left Column: Living Chronological Journey Timeline (8 cols) */}
             <section className="lg:col-span-8 flex flex-col gap-6">
               {/* Day Selector Segmented Tabs */}
-              <div className="bg-white p-1.5 rounded-full border border-slate-200 shadow-2xs flex items-center gap-1 overflow-x-auto custom-scrollbar">
+              <div className="bg-white p-1.5 rounded-2xl sm:rounded-full border border-slate-200 shadow-2xs flex items-center gap-1 overflow-x-auto touch-pan-x custom-scrollbar">
                 <button
                   type="button"
                   onClick={() => setSelectedDayFilter('all')}
@@ -2143,7 +2143,7 @@ export const TripsAndBookingsScreen: React.FC<TripsAndBookingsScreenProps> = ({
         >
           <div
             onClick={e => e.stopPropagation()}
-            className="bg-white rounded-3xl max-w-lg w-full border border-slate-200 shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200 text-left font-sans"
+            className="bg-white rounded-3xl max-w-lg w-full max-h-[90dvh] flex flex-col border border-slate-200 shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200 text-left font-sans"
           >
             {/* Modal Header */}
             <div className="p-5 bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 text-white flex items-center justify-between">

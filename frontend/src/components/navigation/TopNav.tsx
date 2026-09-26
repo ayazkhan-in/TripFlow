@@ -53,7 +53,7 @@ export const TopNav: React.FC<TopNavProps> = ({
   };
 
   return (
-    <header className="relative bg-white border-b border-[#E5E7EB] shadow-xs flex justify-between items-center w-full px-4 sm:px-6 h-14 sticky top-0 z-40 max-w-full">
+    <header className="relative bg-white border-b border-[#E5E7EB] shadow-xs flex justify-between items-center w-full px-4 sm:px-6 h-14 pt-[env(safe-area-inset-top,0px)] sticky top-0 z-40 max-w-full select-none">
       {/* Brand Anchor on Left */}
       <div className="flex items-center shrink-0">
         <a
@@ -241,7 +241,7 @@ export const TopNav: React.FC<TopNavProps> = ({
 
           {/* Profile Menu Dropdown */}
           {isProfileMenuOpen && (
-            <div className="absolute right-0 mt-2 w-64 bg-white rounded-2xl shadow-xl border border-[#E5E7EB] py-2 z-50 animate-in fade-in zoom-in-95 duration-150 text-left">
+            <div className="absolute right-0 mt-2 w-64 max-w-[calc(100vw-2rem)] bg-white rounded-2xl shadow-xl border border-[#E5E7EB] py-2 z-50 animate-in fade-in zoom-in-95 duration-150 text-left">
               <div
                 onClick={handleProfileClick}
                 className="px-4 py-2.5 border-b border-gray-100 hover:bg-[#F8FAFF] cursor-pointer transition-colors flex items-center justify-between"

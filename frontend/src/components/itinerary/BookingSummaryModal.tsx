@@ -57,7 +57,7 @@ export const BookingSummaryModal: React.FC<BookingSummaryModalProps> = ({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-in fade-in duration-150">
-      <div className="bg-white rounded-3xl max-w-xl w-full shadow-2xl border border-slate-200 overflow-hidden animate-in zoom-in-95 duration-200 text-left">
+      <div className="bg-white rounded-3xl max-w-xl w-full max-h-[92dvh] flex flex-col shadow-2xl border border-slate-200 overflow-hidden animate-in zoom-in-95 duration-200 text-left">
         {/* Header */}
         <div className="p-5 bg-gradient-to-r from-blue-600 via-indigo-600 to-blue-700 text-white flex items-center justify-between">
           <div className="flex items-center gap-3">
@@ -88,7 +88,7 @@ export const BookingSummaryModal: React.FC<BookingSummaryModalProps> = ({
         </div>
 
         {/* Content */}
-        <div className="p-5 space-y-4 max-h-[70vh] overflow-y-auto custom-scrollbar">
+        <div className="p-5 space-y-4 flex-1 min-h-0 overflow-y-auto custom-scrollbar">
           {/* Quick Metrics Badges */}
           <div className="grid grid-cols-4 gap-2 bg-slate-50 p-3 rounded-2xl border border-slate-100 text-center text-xs">
             <div>
@@ -352,7 +352,7 @@ export const BookingSummaryModal: React.FC<BookingSummaryModalProps> = ({
         </div>
 
         {/* Footer */}
-        <div className="p-4 bg-slate-50 border-t border-slate-100 flex items-center justify-end gap-2">
+        <div className="p-4 bg-slate-50 border-t border-slate-100 flex items-center justify-end gap-2 shrink-0">
           <button
             type="button"
             onClick={onClose}

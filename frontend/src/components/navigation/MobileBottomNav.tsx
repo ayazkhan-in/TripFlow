@@ -13,14 +13,14 @@ export const MobileBottomNav: React.FC<MobileBottomNavProps> = ({
   const isTripsActive = activeTab === 'trips' || activeTab === 'bookings';
 
   return (
-    <nav className="md:hidden fixed bottom-0 left-0 right-0 z-50 bg-white/95 backdrop-blur-md shadow-lg flex justify-around items-center px-4 py-2 border-t border-[#E5E7EB]">
+    <nav className="md:hidden fixed bottom-0 left-0 right-0 z-50 bg-white/95 backdrop-blur-md shadow-lg flex items-center justify-between px-1 sm:px-2 pt-1.5 pb-[max(0.5rem,env(safe-area-inset-bottom))] border-t border-[#E5E7EB] select-none touch-manipulation">
       <a
         href="/home"
         onClick={e => {
           e.preventDefault();
           onTabChange('home');
         }}
-        className={`flex flex-col items-center gap-0.5 py-1 transition-colors cursor-pointer ${
+        className={`flex-1 min-w-0 flex flex-col items-center gap-0.5 py-1 px-0.5 transition-transform active:scale-95 cursor-pointer ${
           activeTab === 'home' ? 'text-[#004AC6]' : 'text-[#737686] hover:text-[#151c27]'
         }`}
       >
@@ -30,7 +30,7 @@ export const MobileBottomNav: React.FC<MobileBottomNavProps> = ({
         >
           home
         </span>
-        <span className="text-[10px] font-semibold">Home</span>
+        <span className="text-[9px] sm:text-[10px] font-semibold truncate max-w-full">Home</span>
       </a>
 
       <a
@@ -39,7 +39,7 @@ export const MobileBottomNav: React.FC<MobileBottomNavProps> = ({
           e.preventDefault();
           onTabChange('discover');
         }}
-        className={`flex flex-col items-center gap-0.5 py-1 transition-colors cursor-pointer ${
+        className={`flex-1 min-w-0 flex flex-col items-center gap-0.5 py-1 px-0.5 transition-transform active:scale-95 cursor-pointer ${
           activeTab === 'discover' ? 'text-[#004AC6]' : 'text-[#737686] hover:text-[#151c27]'
         }`}
       >
@@ -49,7 +49,7 @@ export const MobileBottomNav: React.FC<MobileBottomNavProps> = ({
         >
           explore
         </span>
-        <span className="text-[10px] font-semibold">Discover</span>
+        <span className="text-[9px] sm:text-[10px] font-semibold truncate max-w-full">Discover</span>
       </a>
 
       <a
@@ -58,7 +58,7 @@ export const MobileBottomNav: React.FC<MobileBottomNavProps> = ({
           e.preventDefault();
           onTabChange('story');
         }}
-        className={`flex flex-col items-center gap-0.5 py-1 transition-colors cursor-pointer ${
+        className={`flex-1 min-w-0 flex flex-col items-center gap-0.5 py-1 px-0.5 transition-transform active:scale-95 cursor-pointer ${
           activeTab === 'story' ? 'text-[#004AC6]' : 'text-[#737686] hover:text-[#151c27]'
         }`}
       >
@@ -68,7 +68,7 @@ export const MobileBottomNav: React.FC<MobileBottomNavProps> = ({
         >
           play_circle
         </span>
-        <span className="text-[10px] font-semibold">Story</span>
+        <span className="text-[9px] sm:text-[10px] font-semibold truncate max-w-full">Story</span>
       </a>
 
       <a
@@ -77,7 +77,7 @@ export const MobileBottomNav: React.FC<MobileBottomNavProps> = ({
           e.preventDefault();
           onTabChange('assistant');
         }}
-        className={`flex flex-col items-center gap-0.5 py-1 transition-colors cursor-pointer ${
+        className={`flex-1 min-w-0 flex flex-col items-center gap-0.5 py-1 px-0.5 transition-transform active:scale-95 cursor-pointer ${
           activeTab === 'assistant' ? 'text-[#004AC6]' : 'text-[#737686] hover:text-[#151c27]'
         }`}
       >
@@ -87,7 +87,7 @@ export const MobileBottomNav: React.FC<MobileBottomNavProps> = ({
         >
           auto_awesome
         </span>
-        <span className="text-[10px] font-semibold">Assistant</span>
+        <span className="text-[9px] sm:text-[10px] font-semibold truncate max-w-full">AI Concierge</span>
       </a>
 
       <a
@@ -96,7 +96,7 @@ export const MobileBottomNav: React.FC<MobileBottomNavProps> = ({
           e.preventDefault();
           onTabChange('builder');
         }}
-        className={`flex flex-col items-center gap-0.5 py-1 transition-colors cursor-pointer ${
+        className={`flex-1 min-w-0 flex flex-col items-center gap-0.5 py-1 px-0.5 transition-transform active:scale-95 cursor-pointer ${
           activeTab === 'builder' ? 'text-[#004AC6]' : 'text-[#737686] hover:text-[#151c27]'
         }`}
       >
@@ -106,7 +106,7 @@ export const MobileBottomNav: React.FC<MobileBottomNavProps> = ({
         >
           dashboard_customize
         </span>
-        <span className="text-[10px] font-semibold">Builder</span>
+        <span className="text-[9px] sm:text-[10px] font-semibold truncate max-w-full">Builder</span>
       </a>
 
       <a
@@ -115,7 +115,7 @@ export const MobileBottomNav: React.FC<MobileBottomNavProps> = ({
           e.preventDefault();
           onTabChange('trips');
         }}
-        className={`flex flex-col items-center gap-0.5 py-1 transition-colors cursor-pointer ${
+        className={`flex-1 min-w-0 flex flex-col items-center gap-0.5 py-1 px-0.5 transition-transform active:scale-95 cursor-pointer ${
           isTripsActive ? 'text-[#004AC6]' : 'text-[#737686] hover:text-[#151c27]'
         }`}
       >
@@ -125,7 +125,7 @@ export const MobileBottomNav: React.FC<MobileBottomNavProps> = ({
         >
           luggage
         </span>
-        <span className="text-[10px] font-semibold">Trips</span>
+        <span className="text-[9px] sm:text-[10px] font-semibold truncate max-w-full">Trips</span>
       </a>
 
       <a
@@ -134,7 +134,7 @@ export const MobileBottomNav: React.FC<MobileBottomNavProps> = ({
           e.preventDefault();
           onTabChange('vault');
         }}
-        className={`flex flex-col items-center gap-0.5 py-1 transition-colors cursor-pointer ${
+        className={`flex-1 min-w-0 flex flex-col items-center gap-0.5 py-1 px-0.5 transition-transform active:scale-95 cursor-pointer ${
           activeTab === 'vault' ? 'text-[#004AC6]' : 'text-[#737686] hover:text-[#151c27]'
         }`}
       >
@@ -144,7 +144,7 @@ export const MobileBottomNav: React.FC<MobileBottomNavProps> = ({
         >
           lock
         </span>
-        <span className="text-[10px] font-semibold">Vault</span>
+        <span className="text-[9px] sm:text-[10px] font-semibold truncate max-w-full">Vault</span>
       </a>
     </nav>
   );

@@ -529,7 +529,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
               </div>
 
               {/* Action Buttons in single clean row */}
-              <div className="pt-2 flex items-center gap-2 border-t border-slate-200/60">
+              <div className="pt-2 flex flex-wrap items-center gap-2 border-t border-slate-200/60">
                 <button
                   type="button"
                   onClick={() => onNavigateTab('trips')}
@@ -549,7 +549,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
                 <button
                   type="button"
                   onClick={onOpenContactDriver}
-                  className="px-3 py-1.5 rounded-full bg-white hover:bg-slate-100 text-slate-800 text-xs font-semibold border border-slate-200 flex items-center gap-1.5 transition-colors cursor-pointer shadow-2xs active:scale-98 ml-auto sm:ml-0"
+                  className="px-3 py-1.5 rounded-full bg-white hover:bg-slate-100 text-slate-800 text-xs font-semibold border border-slate-200 flex items-center gap-1.5 transition-colors cursor-pointer shadow-2xs active:scale-98"
                 >
                   <span className="material-symbols-outlined text-sm text-emerald-600">call</span>
                   <span>Call Driver</span>
@@ -721,7 +721,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
       {/* Footer */}
       <footer className="border-t border-slate-200 pt-8 text-slate-500 text-xs">
         <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 flex-wrap justify-center sm:justify-start text-center sm:text-left">
             <img src="/bookit.png" alt="Bookit" className="w-5 h-5 object-contain" />
             <span className="text-sm font-extrabold text-blue-600 tracking-tight">
               Bookit
@@ -731,7 +731,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
               Discerning travel orchestration & intelligent dispatch mesh
             </span>
           </div>
-          <div className="flex items-center gap-6">
+          <div className="flex flex-wrap items-center justify-center sm:justify-start gap-4 sm:gap-6 text-center sm:text-left">
             <button
               type="button"
               onClick={onOpenPreferences}

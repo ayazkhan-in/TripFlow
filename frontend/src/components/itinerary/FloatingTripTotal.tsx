@@ -6,6 +6,7 @@ interface FloatingTripTotalProps {
   pricing: PriceBreakdown;
   itinerary: TripItinerary;
   onOpenBookingModal: () => void;
+  onOpenAddSidebar?: () => void;
   onShareItinerary?: () => void;
   priceDelta?: number | null;
 }
@@ -14,15 +15,16 @@ export const FloatingTripTotal: React.FC<FloatingTripTotalProps> = ({
   pricing,
   itinerary,
   onOpenBookingModal,
+  onOpenAddSidebar,
   priceDelta,
 }) => {
   const [isExpanded, setIsExpanded] = useState(false);
 
   return (
-    <div className="fixed bottom-3 right-4 sm:right-6 z-40 select-none">
+    <div className="fixed bottom-0 left-0 right-0 z-40 bg-white/95 backdrop-blur-md border-t border-slate-200/90 px-3 py-2 sm:px-4 sm:py-2.5 pb-[max(0.625rem,env(safe-area-inset-bottom))] shadow-[0_-4px_20px_rgba(0,0,0,0.06)] md:shadow-none md:border-0 md:p-0 md:bottom-3 md:right-6 md:left-auto md:w-auto md:bg-transparent select-none">
       {/* Expanded Breakdown Popover */}
       {isExpanded && (
-        <div className="mb-2 w-72 bg-white rounded-2xl shadow-2xl border border-neutral-200/90 p-3.5 text-xs animate-in fade-in zoom-in-95 duration-100">
+        <div className="absolute md:static bottom-full mb-2 left-3 right-3 md:left-auto md:right-0 md:w-72 bg-white rounded-2xl shadow-2xl border border-neutral-200/90 p-3.5 text-xs animate-in fade-in zoom-in-95 duration-100 z-50">
           <div className="flex items-center justify-between pb-2 border-b border-neutral-100 font-bold text-neutral-800">
             <div className="flex items-center gap-1.5">
               <span className="material-symbols-outlined text-base text-blue-600">
@@ -39,7 +41,7 @@ export const FloatingTripTotal: React.FC<FloatingTripTotalProps> = ({
             </button>
           </div>
 
-          <div className="py-2 space-y-1.5">
+          <div className="py-2 space-y-1.5 max-h-[40vh] overflow-y-auto custom-scrollbar">
             {(
               ['hotel', 'activity', 'transport', 'meal', 'experience'] as const
             ).map(catKey => {
@@ -83,24 +85,24 @@ export const FloatingTripTotal: React.FC<FloatingTripTotalProps> = ({
         </div>
       )}
 
-      {/* Floating Card in Bottom-Right Corner */}
-      <div className="flex items-center bg-white/95 backdrop-blur-md rounded-2xl shadow-xl border border-neutral-200/90 px-3.5 py-2 gap-3 text-xs">
+      {/* Floating Card on Desktop / Bottom Bar Content on Mobile */}
+      <div className="flex items-center justify-between md:justify-start bg-transparent md:bg-white/95 md:backdrop-blur-md rounded-2xl md:shadow-xl md:border md:border-neutral-200/90 px-0 md:px-3.5 py-0 md:py-2 gap-2 sm:gap-3 text-xs">
         <button
           type="button"
           onClick={() => setIsExpanded(!isExpanded)}
-          className="flex items-center gap-2 cursor-pointer text-neutral-700 hover:text-neutral-900 group"
+          className="flex items-center gap-2 cursor-pointer text-neutral-700 hover:text-neutral-900 group min-w-0"
           title="Click to view category breakdown"
         >
-          <div className="w-7 h-7 rounded-lg bg-emerald-50 text-emerald-600 flex items-center justify-center shrink-0">
-            <span className="material-symbols-outlined text-sm">account_balance_wallet</span>
+          <div className="w-8 h-8 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center shrink-0 border border-emerald-100">
+            <span className="material-symbols-outlined text-base">account_balance_wallet</span>
           </div>
 
-          <div className="text-left">
+          <div className="text-left min-w-0">
             <div className="flex items-center gap-1">
-              <span className="text-[10px] uppercase font-bold text-neutral-400 tracking-wider">
+              <span className="hidden sm:inline text-[10px] uppercase font-bold text-neutral-400 tracking-wider">
                 Budget:
               </span>
-              <span className="font-extrabold text-neutral-900 text-sm">
+              <span className="font-extrabold text-neutral-900 text-sm tracking-tight truncate">
                 {formatCurrency(pricing.total)}
               </span>
               {priceDelta != null && priceDelta !== 0 && (
@@ -113,26 +115,38 @@ export const FloatingTripTotal: React.FC<FloatingTripTotalProps> = ({
                 </span>
               )}
             </div>
-            <div className="text-[10px] text-neutral-400">
-              {formatCurrency(pricing.perPerson)}/person
+            <div className="text-[10px] text-neutral-500 font-medium flex items-center gap-1">
+              <span>{formatCurrency(pricing.perPerson)}/pax</span>
+              <span className="text-neutral-400">• Breakdown</span>
+              <span className="material-symbols-outlined text-xs text-neutral-400 group-hover:text-neutral-600 transition-transform">
+                {isExpanded ? 'expand_more' : 'expand_less'}
+              </span>
             </div>
           </div>
-
-          <span className="material-symbols-outlined text-xs text-neutral-400 group-hover:text-neutral-600 transition-transform">
-            {isExpanded ? 'expand_more' : 'expand_less'}
-          </span>
         </button>
 
-        <div className="w-px h-6 bg-neutral-200" />
+        <div className="flex items-center gap-2 shrink-0">
+          {onOpenAddSidebar && (
+            <button
+              type="button"
+              onClick={onOpenAddSidebar}
+              className="md:hidden px-3 py-1.5 bg-slate-100 hover:bg-slate-200 active:scale-95 text-slate-800 rounded-xl text-xs font-bold cursor-pointer transition-all border border-slate-200 flex items-center gap-1"
+              title="Add activities, hotels, and transport"
+            >
+              <span className="material-symbols-outlined text-sm text-blue-600">add</span>
+              <span>Add</span>
+            </button>
+          )}
 
-        <button
-          type="button"
-          onClick={onOpenBookingModal}
-          className="px-3 py-1.5 bg-blue-600 hover:bg-blue-700 active:scale-95 text-white rounded-xl text-xs font-bold cursor-pointer transition-all shadow-xs flex items-center gap-1"
-        >
-          <span>Reserve</span>
-          <span className="material-symbols-outlined text-xs">arrow_forward</span>
-        </button>
+          <button
+            type="button"
+            onClick={onOpenBookingModal}
+            className="px-3.5 sm:px-4 py-1.5 sm:py-2 bg-blue-600 hover:bg-blue-700 active:scale-95 text-white rounded-xl text-xs font-bold cursor-pointer transition-all shadow-xs flex items-center gap-1 shrink-0"
+          >
+            <span>Reserve</span>
+            <span className="material-symbols-outlined text-sm">arrow_forward</span>
+          </button>
+        </div>
       </div>
     </div>
   );

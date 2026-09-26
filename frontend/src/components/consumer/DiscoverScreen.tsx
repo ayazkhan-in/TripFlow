@@ -1865,7 +1865,7 @@ export const DiscoverScreen: React.FC<DiscoverScreenProps> = ({
               </button>
 
               {isTravelersOpen && (
-                <div className="absolute top-full left-0 mt-1.5 w-56 bg-white rounded-2xl shadow-xl border border-slate-150 py-1.5 z-50 animate-in fade-in zoom-in-95 duration-100">
+                <div className="absolute top-full right-0 sm:right-auto sm:left-0 mt-1.5 w-56 max-w-[calc(100vw-2rem)] bg-white rounded-2xl shadow-xl border border-slate-150 py-1.5 z-50 animate-in fade-in zoom-in-95 duration-100">
                   {TRAVELER_OPTIONS.map(opt => (
                     <button
                       key={opt.value}
@@ -1924,7 +1924,7 @@ export const DiscoverScreen: React.FC<DiscoverScreenProps> = ({
               </button>
 
               {isDatePickerOpen && (
-                <div className="absolute top-full left-0 sm:left-auto sm:right-0 mt-1.5 w-72 bg-white rounded-2xl shadow-xl border border-slate-150 p-3.5 z-50 animate-in fade-in zoom-in-95 duration-100 select-none">
+                <div className="absolute top-full left-0 sm:left-auto sm:right-0 mt-1.5 w-72 max-w-[calc(100vw-2rem)] bg-white rounded-2xl shadow-xl border border-slate-150 p-3.5 z-50 animate-in fade-in zoom-in-95 duration-100 select-none">
                   {/* Month & Year Navigation */}
                   <div className="flex items-center justify-between mb-2.5 px-1">
                     <span className="text-xs font-extrabold text-slate-900">
@@ -2067,7 +2067,7 @@ export const DiscoverScreen: React.FC<DiscoverScreenProps> = ({
               </button>
 
               {isDurationOpen && (
-                <div className="absolute top-full left-0 sm:left-auto sm:right-0 mt-1.5 w-52 bg-white rounded-2xl shadow-xl border border-slate-150 py-1.5 z-50 animate-in fade-in zoom-in-95 duration-100">
+                <div className="absolute top-full right-0 sm:right-0 mt-1.5 w-52 max-w-[calc(100vw-2rem)] bg-white rounded-2xl shadow-xl border border-slate-150 py-1.5 z-50 animate-in fade-in zoom-in-95 duration-100">
                   {DURATION_OPTIONS.map(opt => (
                     <button
                       key={opt.value}

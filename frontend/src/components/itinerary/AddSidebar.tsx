@@ -288,7 +288,7 @@ export const AddSidebar: React.FC<AddSidebarProps> = ({
   // Collapsed Sidebar View
   if (isCollapsed) {
     return (
-      <aside className="w-14 bg-white border-r border-slate-200/80 flex flex-col items-center py-4 shrink-0 select-none shadow-2xs">
+      <aside className="hidden md:flex w-14 bg-white border-r border-slate-200/80 flex-col items-center py-4 shrink-0 select-none shadow-2xs">
         <button
           type="button"
           onClick={onToggleCollapse}
@@ -326,37 +326,44 @@ export const AddSidebar: React.FC<AddSidebarProps> = ({
   }
 
   return (
-    <aside className="w-72 lg:w-80 bg-white border-r border-slate-200/80 flex flex-col shrink-0 h-full max-h-full min-h-0 overflow-hidden select-none shadow-2xs">
-      {/* 1. Header Toolbar */}
-      <div className="px-4 py-3 border-b border-slate-100 flex items-center justify-between shrink-0 bg-white">
-        <div className="flex items-center gap-2">
-          <span className="material-symbols-outlined text-blue-600 text-xl font-medium">
-            layers
-          </span>
-          <span className="text-sm font-bold text-slate-900 tracking-tight">Add to Trip</span>
-        </div>
+    <>
+      {/* Mobile Drawer Backdrop */}
+      <div
+        className="fixed inset-0 bg-slate-950/60 backdrop-blur-xs z-50 md:hidden animate-in fade-in duration-200"
+        onClick={onToggleCollapse}
+      />
 
-        <div className="flex items-center gap-1.5">
-          <button
-            type="button"
-            onClick={onOpenCustomItemModal}
-            className="text-xs font-semibold text-slate-600 hover:text-blue-600 hover:bg-blue-50 px-2.5 py-1 rounded-lg cursor-pointer transition-colors border border-slate-200/70"
-            title="Create a custom item for this itinerary"
-          >
-            + Custom
-          </button>
-          {onToggleCollapse && (
+      <aside className="fixed md:static inset-y-0 left-0 z-50 w-[88vw] max-w-[340px] md:w-72 lg:w-80 bg-white md:border-r border-slate-200/80 flex flex-col shrink-0 h-full max-h-full min-h-0 overflow-hidden select-none shadow-2xl md:shadow-2xs animate-in slide-in-from-left duration-250 md:animate-none">
+        {/* 1. Header Toolbar */}
+        <div className="px-4 py-3 border-b border-slate-100 flex items-center justify-between shrink-0 bg-white">
+          <div className="flex items-center gap-2">
+            <span className="material-symbols-outlined text-blue-600 text-xl font-medium">
+              layers
+            </span>
+            <span className="text-sm font-bold text-slate-900 tracking-tight">Add to Trip</span>
+          </div>
+
+          <div className="flex items-center gap-1.5">
             <button
               type="button"
-              onClick={onToggleCollapse}
-              className="w-7 h-7 flex items-center justify-center text-slate-400 hover:text-slate-700 hover:bg-slate-100 rounded-lg cursor-pointer transition-colors"
-              title="Collapse sidebar"
+              onClick={onOpenCustomItemModal}
+              className="text-xs font-semibold text-slate-600 hover:text-blue-600 hover:bg-blue-50 px-2.5 py-1 rounded-lg cursor-pointer transition-colors border border-slate-200/70"
+              title="Create a custom item for this itinerary"
             >
-              <span className="material-symbols-outlined text-base">chevron_left</span>
+              + Custom
             </button>
-          )}
+            {onToggleCollapse && (
+              <button
+                type="button"
+                onClick={onToggleCollapse}
+                className="w-8 h-8 flex items-center justify-center text-slate-500 hover:text-slate-800 hover:bg-slate-100 rounded-xl cursor-pointer transition-colors"
+                title="Close sidebar"
+              >
+                <span className="material-symbols-outlined text-base">close</span>
+              </button>
+            )}
+          </div>
         </div>
-      </div>
 
       {/* 2. Target Day Selector & Search Filter */}
       <div className="p-3 bg-slate-50/60 border-b border-slate-100/90 flex flex-col gap-2 shrink-0">
@@ -543,6 +550,7 @@ export const AddSidebar: React.FC<AddSidebarProps> = ({
           );
         })}
       </div>
-    </aside>
+      </aside>
+    </>
   );
 };

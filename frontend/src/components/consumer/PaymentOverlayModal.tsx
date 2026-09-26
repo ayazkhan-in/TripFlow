@@ -326,7 +326,7 @@ export const PaymentOverlayModal: React.FC<PaymentOverlayModalProps> = ({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-slate-950/75 backdrop-blur-md animate-in fade-in duration-200 overflow-y-auto font-sans">
-      <div className="relative w-full max-w-4xl bg-white rounded-3xl shadow-2xl border border-slate-200/80 overflow-hidden my-auto animate-in zoom-in-95 duration-200 text-left">
+      <div className="relative w-full max-w-4xl max-h-[92dvh] flex flex-col bg-white rounded-3xl shadow-2xl border border-slate-200/80 overflow-hidden my-auto animate-in zoom-in-95 duration-200 text-left">
         
         {/* ========================================================= */}
         {/* MODAL HEADER WITH LUXURY GRADIENT & PROGRESS              */}
@@ -372,7 +372,7 @@ export const PaymentOverlayModal: React.FC<PaymentOverlayModalProps> = ({
         {/* ========================================================= */}
         {/* MODAL BODY: 2-COLUMN LAYOUT (CONTROLS & SUMMARY)          */}
         {/* ========================================================= */}
-        <div className="grid grid-cols-1 lg:grid-cols-12 max-h-[76vh] overflow-y-auto custom-scrollbar">
+        <div className="grid grid-cols-1 lg:grid-cols-12 flex-1 min-h-0 overflow-y-auto custom-scrollbar">
           
           {/* ------------------------------------------------------- */}
           {/* LEFT / MAIN COLUMN: PAYMENT OPTIONS & DETAILS           */}
@@ -389,7 +389,7 @@ export const PaymentOverlayModal: React.FC<PaymentOverlayModalProps> = ({
                 <span className="text-[11px] text-slate-500 font-medium">All options include zero extra fees</span>
               </div>
 
-              <div className="grid grid-cols-3 gap-2">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
                 {/* Option 1: Pay in Full */}
                 <button
                   type="button"

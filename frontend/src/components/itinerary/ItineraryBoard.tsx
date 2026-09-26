@@ -32,6 +32,7 @@ interface ItineraryBoardProps {
   onExportPDF?: () => void;
   onExportCSV?: () => void;
   onViewRouteMap?: () => void;
+  onOpenAddDrawer?: () => void;
 }
 
 export const ItineraryBoard: React.FC<ItineraryBoardProps> = ({
@@ -51,6 +52,7 @@ export const ItineraryBoard: React.FC<ItineraryBoardProps> = ({
   onExportPDF,
   onExportCSV,
   onViewRouteMap,
+  onOpenAddDrawer,
 }) => {
   const [viewMode, setViewMode] = useState<'single' | 'board'>('single');
   const [dragOverDayNumber, setDragOverDayNumber] = useState<number | null>(null);
@@ -304,7 +306,7 @@ export const ItineraryBoard: React.FC<ItineraryBoardProps> = ({
           onDrop={e => handleDrop(e, currentDay.dayNumber)}
           className="flex-1 min-h-0 overflow-y-auto px-4 py-3 custom-scrollbar animate-in fade-in duration-200"
         >
-          <div className="w-full max-w-2xl mx-auto flex flex-col gap-3.5 pb-16 select-none">
+          <div className="w-full max-w-3xl sm:max-w-4xl mx-auto flex flex-col gap-3.5 pb-36 sm:pb-20 select-none">
             {/* 1. SCROLLABLE TOP BANNER (Scrolls naturally with content, identical width to section below) */}
             <TripHeroHeader
               itinerary={itinerary}
@@ -324,10 +326,10 @@ export const ItineraryBoard: React.FC<ItineraryBoardProps> = ({
                 : 'border-slate-100'
             }`}>
               {/* Day Header Info */}
-              <div className="flex items-center justify-between pb-3.5 border-b border-slate-100">
-                <div className="flex flex-col">
-                  <div className="flex items-center gap-2">
-                    <span className="px-2.5 py-0.5 rounded-full bg-blue-50 text-blue-700 text-xs font-bold border border-blue-100">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3.5 border-b border-slate-100">
+                <div className="flex flex-col min-w-0">
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <span className="px-2.5 py-0.5 rounded-full bg-blue-50 text-blue-700 text-xs font-bold border border-blue-100 shrink-0">
                       Day {currentDay.dayNumber}
                     </span>
                     <h2 className="text-base sm:text-lg font-bold text-slate-900 tracking-tight">
@@ -339,7 +341,7 @@ export const ItineraryBoard: React.FC<ItineraryBoardProps> = ({
                   </p>
                 </div>
 
-                <div className="text-right">
+                <div className="flex sm:flex-col items-center sm:items-end justify-between border-t sm:border-t-0 pt-2.5 sm:pt-0 border-slate-100 shrink-0">
                   <div className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Day Total</div>
                   <div className="text-base font-extrabold text-blue-600">
                     {formatCurrency(currentDayTotal)}
@@ -350,8 +352,18 @@ export const ItineraryBoard: React.FC<ItineraryBoardProps> = ({
               {/* Divided Items List (Maintains full Drag & Drop while dividing cards) */}
               <div className="flex flex-col">
                 {currentDay.items.length === 0 ? (
-                  <div className="text-center py-10 text-slate-400 text-xs">
-                    No scheduled items for Day {currentDay.dayNumber}. Drag items from the sidebar or click below to add.
+                  <div className="text-center py-8 text-slate-400 text-xs flex flex-col items-center gap-2.5">
+                    <span>No scheduled items for Day {currentDay.dayNumber}.</span>
+                    {onOpenAddDrawer && (
+                      <button
+                        type="button"
+                        onClick={onOpenAddDrawer}
+                        className="px-4 py-2 rounded-full bg-blue-50 text-blue-600 hover:bg-blue-100 text-xs font-bold flex items-center gap-1.5 cursor-pointer transition-colors shadow-2xs"
+                      >
+                        <span className="material-symbols-outlined text-sm">add</span>
+                        <span>Browse Activities & Stays</span>
+                      </button>
+                    )}
                   </div>
                 ) : (
                   currentDay.items.map((item, idx) => {
@@ -378,11 +390,11 @@ export const ItineraryBoard: React.FC<ItineraryBoardProps> = ({
                           }`}
                         >
                           {/* Left Side: Drag Grip & Category Icon */}
-                          <div className="flex items-start gap-2.5 sm:gap-3.5 min-w-0 flex-1">
+                          <div className="flex items-start gap-2 sm:gap-3.5 min-w-0 flex-1">
                             <div className="flex items-center gap-1 shrink-0 pt-0.5">
                               {/* Grip Indicator */}
                               <span
-                                className="material-symbols-outlined text-slate-300 group-hover:text-slate-500 text-sm cursor-grab active:cursor-grabbing transition-colors -ml-1"
+                                className="hidden sm:inline-flex material-symbols-outlined text-slate-300 group-hover:text-slate-500 text-sm cursor-grab active:cursor-grabbing transition-colors -ml-1"
                                 title="Drag to reorder or move to another day"
                               >
                                 drag_indicator
@@ -390,45 +402,45 @@ export const ItineraryBoard: React.FC<ItineraryBoardProps> = ({
 
                               {/* Circular Icon matching Reference */}
                               <div
-                                className={`w-10 h-10 rounded-full flex items-center justify-center shrink-0 border-2 border-white shadow-2xs z-10 ${theme.iconBg}`}
+                                className={`w-9 h-9 sm:w-10 sm:h-10 rounded-full flex items-center justify-center shrink-0 border-2 border-white shadow-2xs z-10 ${theme.iconBg}`}
                               >
-                                <span className="material-symbols-outlined text-lg">
+                                <span className="material-symbols-outlined text-base sm:text-lg">
                                   {theme.iconName}
                                 </span>
                               </div>
                             </div>
 
                             {/* Middle Details */}
-                            <div className="min-w-0 pt-0.5 flex-1">
-                              <span className="text-[11px] font-semibold text-slate-400 block tracking-wide uppercase">
+                            <div className="min-w-0 pt-0.5 flex-1 pr-1">
+                              <span className="text-[10px] sm:text-[11px] font-semibold text-slate-400 block tracking-wide uppercase">
                                 {item.time || '11:30 AM'}
                               </span>
                               <h3
                                 onClick={() => onSelectItemForDetail && onSelectItemForDetail(item, currentDay.dayNumber)}
-                                className="font-bold text-sm text-slate-900 group-hover:text-blue-600 cursor-pointer transition-colors leading-snug line-clamp-1"
+                                className="font-bold text-xs sm:text-sm text-slate-900 group-hover:text-blue-600 cursor-pointer transition-colors leading-snug line-clamp-2"
                               >
                                 {item.title}
                               </h3>
-                              <div className="flex items-center gap-1 text-slate-500 text-xs mt-0.5 truncate">
-                                <span className="material-symbols-outlined text-xs text-slate-400">
+                              <div className="flex items-center gap-1 text-slate-500 text-[11px] sm:text-xs mt-0.5 truncate">
+                                <span className="material-symbols-outlined text-xs text-slate-400 shrink-0">
                                   location_on
                                 </span>
                                 <span className="truncate">{item.location || 'Central Location'}</span>
                               </div>
-                              <div className="flex items-center gap-1.5 mt-1.5">
+                              <div className="flex items-center gap-1.5 mt-1.5 flex-wrap">
                                 <span
                                   className={`px-2 py-0.5 rounded-md text-[10px] font-semibold ${theme.badgeBg}`}
                                 >
                                   {theme.label}
                                 </span>
                                 <span className="text-slate-300">•</span>
-                                <span className="text-xs text-slate-400 font-medium">
+                                <span className="text-[11px] sm:text-xs text-slate-400 font-medium">
                                   {item.duration || '2 hrs'}
                                 </span>
                                 {item.price > 0 && (
                                   <>
                                     <span className="text-slate-300">•</span>
-                                    <span className="text-xs font-bold text-slate-800">
+                                    <span className="text-[11px] sm:text-xs font-bold text-slate-800">
                                       {formatCurrency(item.price)}
                                     </span>
                                   </>
@@ -441,7 +453,7 @@ export const ItineraryBoard: React.FC<ItineraryBoardProps> = ({
                           <div className="flex items-center gap-2 shrink-0">
                             <div
                               onClick={() => onSelectItemForDetail && onSelectItemForDetail(item, currentDay.dayNumber)}
-                              className="w-24 sm:w-28 h-18 sm:h-20 rounded-xl overflow-hidden shadow-2xs border border-slate-100 shrink-0 cursor-pointer group-hover:scale-105 transition-transform duration-300 relative"
+                              className="w-20 sm:w-28 h-16 sm:h-20 rounded-xl overflow-hidden shadow-2xs border border-slate-100 shrink-0 cursor-pointer group-hover:scale-105 transition-transform duration-300 relative"
                             >
                               <img
                                 src={itemThumbnail}

@@ -382,7 +382,7 @@ export const AssistantScreen: React.FC<AssistantScreenProps> = ({
 }) => {
   const [sessions, setSessions] = useState<ChatSession[]>([DEFAULT_WELCOME_SESSION]);
   const [activeSessionId, setActiveSessionId] = useState<string>(DEFAULT_WELCOME_SESSION.id);
-  const [isSidebarOpen, setIsSidebarOpen] = useState<boolean>(true);
+  const [isSidebarOpen, setIsSidebarOpen] = useState<boolean>(() => typeof window !== 'undefined' && window.innerWidth >= 768);
   const [searchHistoryQuery, setSearchHistoryQuery] = useState<string>('');
 
   const [inputMessage, setInputMessage] = useState<string>('');
@@ -588,6 +588,9 @@ export const AssistantScreen: React.FC<AssistantScreenProps> = ({
     setSessions(prev => [newSession, ...prev]);
     setActiveSessionId(newSession.id);
     setInputMessage('');
+    if (typeof window !== 'undefined' && window.innerWidth < 768) {
+      setIsSidebarOpen(false);
+    }
     persistSessionToDb(newSession);
   };
 
@@ -875,12 +878,22 @@ I have calibrated flight routes, luxury accommodations, and private transfers st
   }, [sessions, searchHistoryQuery]);
 
   return (
-    <div className="flex-1 w-full h-[calc(100vh-3.5rem)] flex bg-[#FAFBFD] text-[#0F172A] overflow-hidden select-none">
+    <div className="flex-1 w-full h-full max-h-full flex bg-[#FAFBFD] text-[#0F172A] overflow-hidden select-none relative">
+      {/* Mobile Drawer Backdrop */}
+      {isSidebarOpen && (
+        <div
+          onClick={() => setIsSidebarOpen(false)}
+          className="md:hidden fixed inset-0 z-40 bg-slate-950/40 backdrop-blur-xs animate-in fade-in duration-200"
+        />
+      )}
+
       {/* 1. LEFT SIDEBAR: CHAT SESSIONS */}
       <aside
         className={`${
-          isSidebarOpen ? 'w-64 sm:w-72' : 'w-0'
-        } transition-all duration-300 ease-in-out bg-[#F8F9FA] border-r border-slate-200/80 flex flex-col shrink-0 overflow-hidden z-20`}
+          isSidebarOpen
+            ? 'w-72 max-w-[85vw] translate-x-0'
+            : '-translate-x-full md:translate-x-0 md:w-0'
+        } fixed inset-y-0 left-0 z-50 md:static md:z-20 transition-all duration-300 ease-in-out bg-[#F8F9FA] border-r border-slate-200/80 flex flex-col shrink-0 overflow-hidden shadow-2xl md:shadow-none`}
       >
         <div className="p-3.5 border-b border-slate-200/60 flex items-center justify-between shrink-0">
           <div className="flex items-center gap-2">
@@ -945,7 +958,12 @@ I have calibrated flight routes, luxury accommodations, and private transfers st
             return (
               <div
                 key={session.id}
-                onClick={() => setActiveSessionId(session.id)}
+                onClick={() => {
+                  setActiveSessionId(session.id);
+                  if (typeof window !== 'undefined' && window.innerWidth < 768) {
+                    setIsSidebarOpen(false);
+                  }
+                }}
                 className={`group relative px-2.5 py-2 rounded-lg flex items-center justify-between cursor-pointer transition-colors ${
                   isActive
                     ? 'bg-white shadow-2xs border border-slate-200/80 text-slate-900 font-semibold'
@@ -1133,7 +1151,7 @@ I have calibrated flight routes, luxury accommodations, and private transfers st
         </div>
 
         {/* 3. INPUT BAR */}
-        <div className="p-4 sm:p-5 border-t border-slate-100 bg-white">
+        <div className="p-3 sm:p-5 border-t border-slate-100 bg-white">
           <div className="max-w-3xl mx-auto">
             <div className="relative rounded-2xl border border-slate-200/90 bg-slate-50/70 p-2 shadow-2xs focus-within:border-blue-500 focus-within:bg-white focus-within:ring-2 focus-within:ring-blue-100 transition-all">
               <textarea
@@ -1164,9 +1182,9 @@ I have calibrated flight routes, luxury accommodations, and private transfers st
                 <span className="material-symbols-outlined text-base">arrow_upward</span>
               </button>
             </div>
-            <div className="flex items-center justify-between text-[11px] text-slate-400 mt-2 px-1">
+            <div className="flex items-center justify-between text-[11px] text-slate-400 mt-1.5 px-1">
               <span>Press Enter to send inquiry</span>
-              <span>Bookit AI · Instant Budget-Calibrated Travel Curation</span>
+              <span className="hidden sm:inline">Bookit AI · Instant Budget-Calibrated Travel Curation</span>
             </div>
           </div>
         </div>

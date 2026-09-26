@@ -141,16 +141,15 @@ export const TripHeroHeader: React.FC<TripHeroHeaderProps> = ({
         />
       </div>
 
-      {/* Top Header Row: Trip Title & Metadata + Controls (Slider, Export, Map) */}
-      <div className="relative z-10 flex items-center justify-between gap-2.5 flex-wrap">
-        {/* Left Side: Trip Icon + Editable Title + Metadata (+ Day Badge in single mode) */}
-        <div className="flex items-center gap-2 flex-wrap min-w-0">
+      {/* 1. Top Section: Trip Title & Subtitle Metadata */}
+      <div className="relative z-10 flex flex-col gap-1 min-w-0">
+        <div className="flex items-center gap-2.5 min-w-0">
           <span className="text-xl sm:text-2xl select-none shrink-0" role="img" aria-label="Trip Icon">
             ⛩️
           </span>
 
           {isEditingTitle ? (
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 flex-1">
               <input
                 type="text"
                 value={titleInput}
@@ -158,12 +157,12 @@ export const TripHeroHeader: React.FC<TripHeroHeaderProps> = ({
                 onBlur={handleSaveTitle}
                 onKeyDown={e => e.key === 'Enter' && handleSaveTitle()}
                 autoFocus
-                className="text-base sm:text-lg font-bold text-white bg-black/80 border border-white/40 rounded-lg px-2.5 py-0.5 focus:outline-none"
+                className="text-base sm:text-lg lg:text-xl font-bold text-white bg-black/80 border border-white/40 rounded-lg px-2.5 py-0.5 focus:outline-none w-full max-w-md"
               />
               <button
                 type="button"
                 onClick={handleSaveTitle}
-                className="px-2.5 py-0.5 bg-white text-neutral-900 rounded-md text-xs font-bold cursor-pointer"
+                className="px-2.5 py-0.5 bg-white text-neutral-900 rounded-md text-xs font-bold cursor-pointer shrink-0"
               >
                 Save
               </button>
@@ -171,7 +170,7 @@ export const TripHeroHeader: React.FC<TripHeroHeaderProps> = ({
           ) : (
             <h1
               onClick={() => setIsEditingTitle(true)}
-              className="text-base sm:text-lg font-bold text-white hover:text-blue-200 cursor-pointer transition-colors truncate max-w-xs sm:max-w-md inline-flex items-center gap-1.5 group drop-shadow-sm tracking-tight"
+              className="text-base sm:text-lg lg:text-xl font-bold text-white hover:text-blue-200 cursor-pointer transition-colors truncate max-w-full inline-flex items-center gap-1.5 group drop-shadow-sm tracking-tight"
               title="Click to rename trip"
             >
               <span>{itinerary.title}</span>
@@ -180,28 +179,37 @@ export const TripHeroHeader: React.FC<TripHeroHeaderProps> = ({
               </span>
             </h1>
           )}
+        </div>
 
-          {/* If Single mode, show frosted Day Badge and weather */}
+        {/* Subtitle / Trip Metadata */}
+        <div className="text-[11px] sm:text-xs text-white/85 font-medium drop-shadow-sm flex items-center gap-2 pl-0.5 flex-wrap">
+          <span>{itinerary.days.length} Days</span>
+          <span className="text-white/40">•</span>
+          <span>{itinerary.travelStyle || `Bespoke AI Journey (${itinerary.days.length} Days)`}</span>
+          <span className="text-white/40">•</span>
+          <span>{itinerary.travelers || 2} Travelers</span>
+        </div>
+      </div>
+
+      {/* 2. Middle Row: Badges (Left) & Controls (Right) */}
+      <div className="relative z-10 flex items-center justify-between gap-2.5 flex-wrap">
+        {/* Left Side: Day & Weather Badges (in Single Mode) */}
+        <div className="flex items-center gap-2 shrink-0">
           {isSingle && (
-            <div className="flex items-center gap-1.5 shrink-0">
-              <span className="px-2.5 py-0.5 rounded-full bg-blue-600/90 text-white text-[11px] font-bold shadow-2xs border border-blue-400/40">
+            <>
+              <span className="px-2.5 py-1 rounded-full bg-blue-600/90 text-white text-[11px] font-bold shadow-2xs border border-blue-400/40">
                 Day {activeDayNumber} of {itinerary.days.length}
               </span>
-              <span className="hidden sm:inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-white/15 backdrop-blur-md text-white text-[11px] font-medium border border-white/20">
+              <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-white/15 backdrop-blur-md text-white text-[11px] font-medium border border-white/20">
                 <span className="material-symbols-outlined text-amber-400 text-xs">wb_sunny</span>
                 <span>{weatherTemp} {weatherCity}</span>
               </span>
-            </div>
+            </>
           )}
-
-          {/* Metadata */}
-          <span className="text-xs text-white/90 font-medium drop-shadow-md hidden md:inline">
-            • {itinerary.days.length} Days • {itinerary.travelStyle || `Bespoke AI Journey (${itinerary.days.length} Days)`} • {itinerary.travelers || 2} Travelers
-          </span>
         </div>
 
-        {/* Right Side: ONEDAY / ALL DAY SLIDER + EXPORT + MAP BUTTONS */}
-        <div className="flex items-center gap-2 shrink-0">
+        {/* Right Side: View Mode Slider + Export + Map */}
+        <div className="flex items-center gap-2 shrink-0 flex-wrap sm:flex-nowrap">
           {/* View Mode Slider inside Banner (Requirement 3) */}
           {onViewModeChange && (
             <div className="bg-black/55 backdrop-blur-md p-0.5 sm:p-1 rounded-xl flex items-center border border-white/20 shadow-xs">
@@ -243,7 +251,7 @@ export const TripHeroHeader: React.FC<TripHeroHeaderProps> = ({
               title="Export Itinerary"
             >
               <span className="material-symbols-outlined text-sm text-neutral-200">ios_share</span>
-              <span className="hidden sm:inline">Export</span>
+              <span className="inline">Export</span>
               <span className="material-symbols-outlined text-xs text-neutral-300">
                 {isExportMenuOpen ? 'expand_less' : 'expand_more'}
               </span>
@@ -306,7 +314,7 @@ export const TripHeroHeader: React.FC<TripHeroHeaderProps> = ({
             title="View Route Map"
           >
             <span className="material-symbols-outlined text-sm text-amber-400">map</span>
-            <span className="hidden sm:inline">Map</span>
+            <span className="inline">Map</span>
           </button>
         </div>
       </div>
