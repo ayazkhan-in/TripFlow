@@ -17,6 +17,7 @@ import {
   generateVaultDocsForTrip,
   AIGenerateParams,
 } from './data/premadeItineraries';
+import { JAPAN_5DAY_ITINERARY } from './data/itineraryData';
 import { TripFlowApi } from './services/api';
 import { USER_AVATAR, ALEX_DISPATCH_AVATAR } from './data/mockData';
 import { TopNav } from './components/navigation/TopNav';
@@ -234,16 +235,16 @@ function TripFlowApp() {
 
   const handleOpenItineraryBuilder = () => {
     setAuthUser({
-      id: 'user-sarah-1024',
-      name: 'Sarah Mehta',
-      email: 'sarah.mehta@concierge.tripflow.io',
+      id: 'user-umme-1024',
+      name: 'Umme hani Shaikh',
+      email: 'ummeh@tripflow.io',
       role: 'traveler',
-      avatar: USER_AVATAR,
-      membership: 'Concierge Elite Member',
+      avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=150&q=80',
+      membership: 'Standard Concierge Member',
     });
     setViewMode('consumer');
     setModifyingTripId(null);
-    setCurrentItinerary(PREMADE_KERALA_ITINERARY);
+    setCurrentItinerary(JAPAN_5DAY_ITINERARY);
     setConsumerTab('builder');
     setCurrentRoute('app');
     showToast('✨ Opened TripFlow Itinerary Builder!');
@@ -436,21 +437,23 @@ function TripFlowApp() {
           {/* ========================================================= */}
           {viewMode === 'consumer' && (
             <div className={`flex-1 min-h-0 flex flex-col ${consumerTab === 'builder' || consumerTab === 'assistant' || consumerTab === 'story' ? 'h-screen max-h-screen overflow-hidden' : ''}`}>
-              <TopNav
-                activeTab={consumerTab}
-                onTabChange={handleConsumerTabChange}
-                onOpenNotifications={() =>
-                  showToast(
-                    'Live flight telemetry sync active. No pending delays on current leg.'
-                  )
-                }
-                user={authUser}
-                onOpenProfile={() => setIsProfileOpen(true)}
-                onSignOut={handleSignOut}
-                onGoToLanding={() => setCurrentRoute('landing')}
-              />
+              {consumerTab !== 'builder' && (
+                <TopNav
+                  activeTab={consumerTab}
+                  onTabChange={handleConsumerTabChange}
+                  onOpenNotifications={() =>
+                    showToast(
+                      'Live flight telemetry sync active. No pending delays on current leg.'
+                    )
+                  }
+                  user={authUser}
+                  onOpenProfile={() => setIsProfileOpen(true)}
+                  onSignOut={handleSignOut}
+                  onGoToLanding={() => setCurrentRoute('landing')}
+                />
+              )}
 
-              <main className={`flex-1 min-h-0 flex flex-col ${consumerTab === 'builder' || consumerTab === 'assistant' || consumerTab === 'story' ? 'h-[calc(100vh-3.5rem)] max-h-[calc(100vh-3.5rem)] overflow-hidden' : ''}`}>
+              <main className={`flex-1 min-h-0 flex flex-col ${consumerTab === 'builder' ? 'h-screen max-h-screen overflow-hidden' : (consumerTab === 'assistant' || consumerTab === 'story') ? 'h-[calc(100vh-3.5rem)] max-h-[calc(100vh-3.5rem)] overflow-hidden' : ''}`}>
                 {consumerTab === 'home' && (
                   <HomeScreen
                     onNavigateTab={handleConsumerTabChange}
@@ -553,15 +556,18 @@ function TripFlowApp() {
                     onSaveModifications={handleSaveModifications}
                     onOpenPayment={handleOpenPayment}
                     showToast={showToast}
+                    user={authUser}
                   />
                 )}
               </main>
 
               {/* Mobile Bottom Navigation Bar */}
-              <MobileBottomNav
-                activeTab={consumerTab}
-                onTabChange={handleConsumerTabChange}
-              />
+              {consumerTab !== 'builder' && (
+                <MobileBottomNav
+                  activeTab={consumerTab}
+                  onTabChange={handleConsumerTabChange}
+                />
+              )}
             </div>
           )}
 

@@ -1,17 +1,10 @@
-import React, { useState, useEffect, useMemo, useCallback } from 'react';
-import { INITIAL_TRIP_ITINERARY } from '../../data/itineraryData';
+import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react';
+import { JAPAN_5DAY_ITINERARY, INITIAL_TRIP_ITINERARY, CATALOG_ITEMS } from '../../data/itineraryData';
 import { CatalogItem, ItineraryDay, ItineraryItem, TripItinerary } from '../../types/itinerary';
-import { processNaturalLanguageChange } from '../../utils/itineraryAI';
 import { calculateTripPricing } from '../../utils/pricing';
-import { AddBottomSheet } from './AddBottomSheet';
-import { AddSidebar } from './AddSidebar';
-import { AIAssistantInput } from './AIAssistantInput';
 import { BookingSummaryModal } from './BookingSummaryModal';
 import { CardDetailOverlay } from './CardDetailOverlay';
 import { CustomItemModal } from './CustomItemModal';
-import { FloatingTripTotal } from './FloatingTripTotal';
-import { ItineraryBoard } from './ItineraryBoard';
-import { MobileTimelineView } from './MobileTimelineView';
 
 interface ItineraryBuilderScreenProps {
   initialItinerary?: TripItinerary;
@@ -22,6 +15,7 @@ interface ItineraryBuilderScreenProps {
   onProceedToBooking?: (itinerary: TripItinerary, total: number, customizations?: any) => void;
   onSaveModifications?: (itinerary: TripItinerary, total: number) => void;
   onOpenPayment?: (itinerary: TripItinerary, total: number, customizations?: any) => void;
+  user?: any;
 }
 
 export const ItineraryBuilderScreen: React.FC<ItineraryBuilderScreenProps> = ({
@@ -33,131 +27,111 @@ export const ItineraryBuilderScreen: React.FC<ItineraryBuilderScreenProps> = ({
   onProceedToBooking,
   onSaveModifications,
   onOpenPayment,
+  user,
 }) => {
-  // Itinerary Core State
+  // Itinerary Core State - Defaults to 5-Day Japan Journey matching screenshot
   const [itinerary, setItinerary] = useState<TripItinerary>(() => {
     if (initialItinerary) return initialItinerary;
-    const saved = localStorage.getItem('tripflow_itinerary_v1');
-    if (saved) {
-      try {
-        return JSON.parse(saved);
-      } catch (e) {
-        console.warn('Failed to parse cached itinerary, using initial:', e);
-      }
-    }
-    return INITIAL_TRIP_ITINERARY;
+    return JAPAN_5DAY_ITINERARY;
   });
 
-  // Re-sync if initialItinerary changes from outside (e.g. user selected another premade trip or clicked modify)
+  // Re-sync if initialItinerary changes from outside
   useEffect(() => {
     if (initialItinerary) {
       setItinerary(initialItinerary);
-      setHistory([initialItinerary]);
-      setHistoryIndex(0);
       setActiveDayNumber(1);
     }
   }, [initialItinerary?.id]);
 
-  // History stack for Undo / Redo
-  const [history, setHistory] = useState<TripItinerary[]>([itinerary]);
-  const [historyIndex, setHistoryIndex] = useState<number>(0);
-
-  // Active day selection
+  // Active day selection (1-indexed)
   const [activeDayNumber, setActiveDayNumber] = useState<number>(1);
-
-  // Responsive state
-  const [isMobile, setIsMobile] = useState<boolean>(() =>
-    typeof window !== 'undefined' ? window.innerWidth < 768 : false
-  );
-  const [sidebarCollapsed, setSidebarCollapsed] = useState<boolean>(false);
+  const [activeSidebarNav, setActiveSidebarNav] = useState<'overview' | 'itinerary' | 'ai_picks' | 'activities' | 'hotels' | 'transport'>('itinerary');
 
   // Modals state
-  const [isAddBottomSheetOpen, setIsAddBottomSheetOpen] = useState(false);
   const [isCustomModalOpen, setIsCustomModalOpen] = useState(false);
   const [customModalTargetDay, setCustomModalTargetDay] = useState(1);
   const [isBookingModalOpen, setIsBookingModalOpen] = useState(false);
-
-  // Card Detail Modal State
   const [selectedDetailItem, setSelectedDetailItem] = useState<{
     item: CatalogItem | ItineraryItem;
     source: 'sidebar' | 'board';
     dayNumber?: number;
   } | null>(null);
 
-  // AI Assistant state
-  const [isAILoading, setIsAILoading] = useState(false);
-  const [lastAIFeedback, setLastAIFeedback] = useState<string | null>(null);
-  const [priceDelta, setPriceDelta] = useState<number | null>(null);
+  // Touch Swipe Handling
+  const touchStartXRef = useRef<number | null>(null);
 
-  // Window resize listener
-  useEffect(() => {
-    const handleResize = () => {
-      setIsMobile(window.innerWidth < 768);
-    };
-    window.addEventListener('resize', handleResize);
-    return () => window.removeEventListener('resize', handleResize);
-  }, []);
-
-  // Save to localStorage
-  useEffect(() => {
-    try {
-      localStorage.setItem('tripflow_itinerary_v1', JSON.stringify(itinerary));
-    } catch (e) {
-      console.warn('LocalStorage error:', e);
-    }
-  }, [itinerary]);
-
-  // Pricing calculation
-  const pricing = useMemo(() => calculateTripPricing(itinerary), [itinerary]);
-
-  // Push new state to history
-  const pushState = useCallback((newItinerary: TripItinerary, delta?: number) => {
-    setItinerary(newItinerary);
-    setHistory(prev => [...prev.slice(0, historyIndex + 1), newItinerary]);
-    setHistoryIndex(prev => prev + 1);
-    if (delta !== undefined) {
-      setPriceDelta(delta);
-      setTimeout(() => setPriceDelta(null), 3000);
-    }
-  }, [historyIndex]);
-
-  // Undo / Redo
-  const handleUndo = () => {
-    if (historyIndex > 0) {
-      const prev = history[historyIndex - 1];
-      setHistoryIndex(historyIndex - 1);
-      setItinerary(prev);
-      showToast('Undid last change');
-    }
+  const handleTouchStart = (e: React.TouchEvent) => {
+    touchStartXRef.current = e.touches[0].clientX;
   };
 
-  const handleRedo = () => {
-    if (historyIndex < history.length - 1) {
-      const next = history[historyIndex + 1];
-      setHistoryIndex(historyIndex + 1);
-      setItinerary(next);
-      showToast('Redid change');
+  const handleTouchEnd = (e: React.TouchEvent) => {
+    if (touchStartXRef.current === null) return;
+    const touchEndX = e.changedTouches[0].clientX;
+    const diff = touchStartXRef.current - touchEndX;
+    if (diff > 50) {
+      // Swiped Left -> Next Day
+      if (activeDayNumber < itinerary.days.length) {
+        setActiveDayNumber(prev => prev + 1);
+      }
+    } else if (diff < -50) {
+      // Swiped Right -> Prev Day
+      if (activeDayNumber > 1) {
+        setActiveDayNumber(prev => prev - 1);
+      }
     }
+    touchStartXRef.current = null;
   };
 
-  // Keyboard shortcut listener for Ctrl+Z, Ctrl+Y
+  // Keyboard navigation (Arrow Left / Arrow Right)
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      if ((e.metaKey || e.ctrlKey) && e.key === 'z') {
-        if (e.shiftKey) {
-          handleRedo();
-        } else {
-          handleUndo();
-        }
-      } else if ((e.metaKey || e.ctrlKey) && e.key === 'y') {
-        handleRedo();
+      if (e.key === 'ArrowLeft') {
+        setActiveDayNumber(prev => Math.max(1, prev - 1));
+      } else if (e.key === 'ArrowRight') {
+        setActiveDayNumber(prev => Math.min(itinerary.days.length, prev + 1));
       }
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [historyIndex, history]);
+  }, [itinerary.days.length]);
 
-  // Add Item from Catalog to Day
+  // Pricing calculation
+  const pricing = useMemo(() => calculateTripPricing(itinerary), [itinerary]);
+
+  // Active Day object
+  const currentDay = itinerary.days.find(d => d.dayNumber === activeDayNumber) || itinerary.days[0] || {
+    id: 'day-1',
+    dayNumber: 1,
+    date: 'Day 1',
+    title: itinerary.destination || 'Tokyo',
+    subtitle: 'Activities & Lodging',
+    items: [],
+  };
+
+  // Filtered items based on left sidebar selection
+  const displayedItems = useMemo(() => {
+    if (activeSidebarNav === 'activities') {
+      return currentDay.items.filter(i => i.category === 'activity' || i.category === 'experience');
+    }
+    if (activeSidebarNav === 'hotels') {
+      return currentDay.items.filter(i => i.category === 'hotel');
+    }
+    if (activeSidebarNav === 'transport') {
+      return currentDay.items.filter(i => i.category === 'transport');
+    }
+    return currentDay.items;
+  }, [currentDay.items, activeSidebarNav]);
+
+  // Calculate day total
+  const currentDayTotal = useMemo(() => {
+    return currentDay.items.reduce((sum, item) => sum + (item.price || 0), 0);
+  }, [currentDay.items]);
+
+  // Day stats
+  const activityCount = currentDay.items.filter(i => i.category !== 'hotel').length;
+  const hotelCount = currentDay.items.filter(i => i.category === 'hotel').length;
+
+  // Add Item
   const handleAddItemToDay = (catalogItem: CatalogItem, targetDayNumber: number) => {
     const newItem: ItineraryItem = {
       id: `item-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
@@ -165,7 +139,7 @@ export const ItineraryBuilderScreen: React.FC<ItineraryBuilderScreenProps> = ({
       title: catalogItem.title,
       category: catalogItem.category,
       price: catalogItem.price,
-      time: catalogItem.timeSlotDefault,
+      time: catalogItem.timeSlotDefault || '11:00 AM',
       duration: catalogItem.duration,
       location: catalogItem.location,
       description: catalogItem.description,
@@ -173,7 +147,6 @@ export const ItineraryBuilderScreen: React.FC<ItineraryBuilderScreenProps> = ({
       rating: catalogItem.rating,
       reviewsCount: catalogItem.reviewsCount,
       tags: catalogItem.tags,
-      transitToNext: { mode: 'car', duration: '15 min' },
     };
 
     const updatedDays = itinerary.days.map(day => {
@@ -186,27 +159,17 @@ export const ItineraryBuilderScreen: React.FC<ItineraryBuilderScreenProps> = ({
       return day;
     });
 
-    const updatedItinerary = {
+    setItinerary({
       ...itinerary,
       days: updatedDays,
-    };
-
-    pushState(updatedItinerary, newItem.price);
-    showToast(`Added "${newItem.title}" to Day ${targetDayNumber} (+$${newItem.price})`);
+    });
+    showToast(`Added "${newItem.title}" to Day ${targetDayNumber}`);
   };
 
-  // Remove Item from Day
+  // Remove Item
   const handleRemoveItem = (dayNumber: number, itemId: string) => {
-    let removedPrice = 0;
-    let itemTitle = 'Item';
-
     const updatedDays = itinerary.days.map(day => {
       if (day.dayNumber === dayNumber) {
-        const found = day.items.find(i => i.id === itemId);
-        if (found) {
-          removedPrice = found.price;
-          itemTitle = found.title;
-        }
         return {
           ...day,
           items: day.items.filter(i => i.id !== itemId),
@@ -215,380 +178,503 @@ export const ItineraryBuilderScreen: React.FC<ItineraryBuilderScreenProps> = ({
       return day;
     });
 
-    const updatedItinerary = {
+    setItinerary({
       ...itinerary,
       days: updatedDays,
-    };
-
-    pushState(updatedItinerary, -removedPrice);
-    showToast(`Removed "${itemTitle}" from Day ${dayNumber}`);
-  };
-
-  // Move Item Between Days
-  const handleMoveItem = (fromDayNumber: number, toDayNumber: number, itemId: string) => {
-    if (fromDayNumber === toDayNumber) return;
-
-    let movedItem: ItineraryItem | null = null;
-
-    // Step 1: Remove from source day
-    const afterRemoval = itinerary.days.map(day => {
-      if (day.dayNumber === fromDayNumber) {
-        const found = day.items.find(i => i.id === itemId);
-        if (found) movedItem = found;
-        return {
-          ...day,
-          items: day.items.filter(i => i.id !== itemId),
-        };
-      }
-      return day;
     });
-
-    if (!movedItem) return;
-
-    // Step 2: Add to destination day
-    const finalDays = afterRemoval.map(day => {
-      if (day.dayNumber === toDayNumber) {
-        return {
-          ...day,
-          items: [...day.items, movedItem!],
-        };
-      }
-      return day;
-    });
-
-    pushState({ ...itinerary, days: finalDays });
-    showToast(`Moved "${(movedItem as ItineraryItem).title}" to Day ${toDayNumber}`);
+    showToast(`Removed item from Day ${dayNumber}`);
   };
 
-  // Reorder Items within a Day
-  const handleReorderItems = (dayNumber: number, reorderedItems: ItineraryItem[]) => {
-    const updatedDays = itinerary.days.map(day => {
-      if (day.dayNumber === dayNumber) {
-        return {
-          ...day,
-          items: reorderedItems,
-        };
-      }
-      return day;
-    });
+  // User presentation data
+  const userName = user?.name || 'Umme hani Shaikh';
+  const userRole = user?.membership || 'Standard Concierge Member';
+  const userAvatar = user?.avatar || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=150&q=80';
 
-    pushState({ ...itinerary, days: updatedDays });
-  };
-
-  // Add New Day
-  const handleAddDay = () => {
-    const nextDayNumber = itinerary.days.length + 1;
-    const newDay: ItineraryDay = {
-      id: `day-${nextDayNumber}-${Date.now()}`,
-      dayNumber: nextDayNumber,
-      date: `Day ${nextDayNumber}`,
-      title: `Day ${nextDayNumber} Exploration`,
-      subtitle: 'Free Exploration & Leisurely Discovery',
-      items: [],
-    };
-
-    const updatedItinerary = {
-      ...itinerary,
-      days: [...itinerary.days, newDay],
-    };
-
-    pushState(updatedItinerary);
-    setActiveDayNumber(nextDayNumber);
-    showToast(`Added Day ${nextDayNumber} to itinerary`);
-  };
-
-  // Delete Day
-  const handleDeleteDay = (dayNumber: number) => {
-    if (itinerary.days.length <= 1) {
-      showToast('Itinerary must have at least one day.');
-      return;
+  // Day hero image selection (Japan Mount Fuji fallback for Tokyo)
+  const dayHeroImage = useMemo(() => {
+    const dest = (currentDay.title || itinerary.destination || '').toLowerCase();
+    if (dest.includes('tokyo') || dest.includes('japan')) {
+      return 'https://images.unsplash.com/photo-1493976040374-85c8e12f0c0e?auto=format&fit=crop&w=1600&q=80';
     }
-
-    const filtered = itinerary.days.filter(d => d.dayNumber !== dayNumber);
-    const reindexedDays = filtered.map((d, index) => ({
-      ...d,
-      dayNumber: index + 1,
-      date: d.date.startsWith('Day ') ? `Day ${index + 1}` : d.date,
-    }));
-
-    pushState({ ...itinerary, days: reindexedDays });
-    setActiveDayNumber(Math.max(1, Math.min(dayNumber, reindexedDays.length)));
-    showToast(`Deleted Day ${dayNumber}`);
-  };
-
-  // Duplicate Day
-  const handleDuplicateDay = (dayNumber: number) => {
-    const sourceDay = itinerary.days.find(d => d.dayNumber === dayNumber);
-    if (!sourceDay) return;
-
-    const nextDayNum = itinerary.days.length + 1;
-    const duplicatedItems: ItineraryItem[] = sourceDay.items.map(it => ({
-      ...it,
-      id: `dup-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
-    }));
-
-    const newDay: ItineraryDay = {
-      id: `day-${nextDayNum}-${Date.now()}`,
-      dayNumber: nextDayNum,
-      date: `Day ${nextDayNum}`,
-      title: `${sourceDay.title} (Copy)`,
-      subtitle: sourceDay.subtitle,
-      items: duplicatedItems,
-    };
-
-    pushState({ ...itinerary, days: [...itinerary.days, newDay] });
-    setActiveDayNumber(nextDayNum);
-    showToast(`Duplicated Day ${dayNumber} into Day ${nextDayNum}`);
-  };
-
-  // Clear Day items
-  const handleClearDay = (dayNumber: number) => {
-    const updatedDays = itinerary.days.map(d => {
-      if (d.dayNumber === dayNumber) {
-        return { ...d, items: [] };
-      }
-      return d;
-    });
-
-    pushState({ ...itinerary, days: updatedDays });
-    showToast(`Cleared all items from Day ${dayNumber}`);
-  };
-
-  // Natural Language AI Modification Handler
-  const handleNaturalLanguageChange = async (prompt: string) => {
-    setIsAILoading(true);
-    setLastAIFeedback(null);
-
-    try {
-      const result = await processNaturalLanguageChange(prompt, itinerary, activeDayNumber);
-
-      if (result.success && result.updatedDays) {
-
-        const updatedItinerary = {
-          ...itinerary,
-          days: result.updatedDays,
-        };
-        pushState(updatedItinerary, result.priceDelta);
-        setLastAIFeedback(result.explanation);
-        setTimeout(() => {
-          setLastAIFeedback(null);
-        }, 5500);
-        if (result.highlightDayNumber) {
-          setActiveDayNumber(result.highlightDayNumber);
-        }
-        showToast(result.explanation);
-      } else {
-        showToast(result.explanation || 'Could not understand that request.');
-      }
-    } catch (err: any) {
-      console.error('Error applying AI change:', err);
-      showToast('An error occurred while modifying the itinerary.');
-    } finally {
-      setIsAILoading(false);
+    if (dest.includes('kyoto')) {
+      return 'https://images.unsplash.com/photo-1503899036084-c55cdd92da26?auto=format&fit=crop&w=1600&q=80';
     }
-  };
-
-  // Reset to default sample
-  const handleResetToDefault = () => {
-    if (confirm('Reset itinerary back to the curated Tokyo & Kyoto 7-day trip?')) {
-      pushState(INITIAL_TRIP_ITINERARY);
-      setActiveDayNumber(1);
-      showToast('Reset itinerary to default Tokyo & Kyoto showcase');
+    if (dest.includes('kerala')) {
+      return 'https://images.unsplash.com/photo-1602216056096-3b40cc0c9944?auto=format&fit=crop&w=1600&q=80';
     }
-  };
+    return itinerary.heroImage || 'https://images.unsplash.com/photo-1493976040374-85c8e12f0c0e?auto=format&fit=crop&w=1600&q=80';
+  }, [currentDay.title, itinerary.destination, itinerary.heroImage]);
 
-  // Share itinerary
-  const handleShareItinerary = () => {
-    const shareText = `Check out my TripFlow Itinerary: "${itinerary.title}" — ${itinerary.days.length} Days in ${itinerary.destination} with ${pricing.itemCount} curated experiences! Total: $${pricing.total.toLocaleString()} ($${pricing.perPerson.toLocaleString()}/person).`;
-    navigator.clipboard?.writeText(shareText);
-    showToast('Itinerary summary copied to clipboard! Ready to share.');
-  };
-
-  // Export CSV
-  const handleExportCSV = () => {
-    const rows = [
-      ['Day', 'Date', 'Time', 'Category', 'Title', 'Location', 'Price ($)'],
-    ];
-    itinerary.days.forEach(day => {
-      day.items.forEach(it => {
-        rows.push([
-          `Day ${day.dayNumber}`,
-          `"${day.date}"`,
-          `"${it.time}"`,
-          `"${it.category}"`,
-          `"${it.title.replace(/"/g, '""')}"`,
-          `"${it.location.replace(/"/g, '""')}"`,
-          it.price.toString(),
-        ]);
-      });
-    });
-    const csvContent =
-      'data:text/csv;charset=utf-8,' + rows.map(e => e.join(',')).join('\n');
-    const encodedUri = encodeURI(csvContent);
-    const link = document.createElement('a');
-    link.setAttribute('href', encodedUri);
-    link.setAttribute(
-      'download',
-      `${itinerary.title.toLowerCase().replace(/[^a-z0-9]/g, '_')}_itinerary.csv`
-    );
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    showToast('Exported CSV guide successfully!');
-  };
-
-  // Export PDF Guide
-  const handleExportPDF = () => {
-    window.print();
-    showToast('Opening print dialog to save or print as PDF...');
-  };
+  const currentCityName = useMemo(() => {
+    return currentDay.title.split(' ')[0] || itinerary.destination || 'Tokyo';
+  }, [currentDay.title, itinerary.destination]);
 
   return (
-    <div className="flex-1 min-h-0 flex flex-col h-full max-h-full bg-[#FBFBFA] relative overflow-hidden select-none">
-      {/* Modification Banner if user is modifying an existing booked trip */}
-      {isModifyingBookedTrip && (
-        <div className="bg-amber-50 border-b border-amber-200 px-4 sm:px-6 py-2.5 flex flex-wrap items-center justify-between gap-3 z-30 shrink-0 shadow-2xs">
-          <div className="flex items-center gap-2.5 text-xs text-left">
-            <span className="w-7 h-7 rounded-xl bg-amber-500 text-white flex items-center justify-center font-bold text-xs shrink-0 shadow-xs">
-              <span className="material-symbols-outlined text-base">edit</span>
+    <div className="w-full h-screen max-h-screen bg-[#FAFBFD] flex flex-col md:flex-row overflow-hidden font-sans text-slate-800 select-none">
+      {/* ============================================================= */}
+      {/* 1. LEFT SIDEBAR                                               */}
+      {/* ============================================================= */}
+      <aside className="w-full md:w-56 lg:w-60 bg-white border-r border-slate-100 flex flex-col justify-between shrink-0 p-4 lg:p-5 z-20">
+        <div>
+          {/* Logo Brand */}
+          <button
+            onClick={onBackToHome}
+            className="flex items-center gap-2.5 text-left cursor-pointer group focus:outline-none mb-4"
+            title="Return to TripFlow Home"
+          >
+            <span className="w-8 h-8 rounded-full bg-[#2563EB] flex items-center justify-center text-white shadow-xs group-hover:bg-[#1D4ED8] transition-colors">
+              <span className="material-symbols-outlined text-lg">flight_takeoff</span>
             </span>
-            <div>
-              <div className="flex items-center gap-2">
-                <span className="font-extrabold text-amber-950">
-                  Modifying Confirmed Booking: {itinerary.title}
-                </span>
-                <span className="px-2 py-0.2 rounded-full bg-amber-200/80 text-amber-900 font-mono text-[10px] font-bold">
-                  Live Pricing Active
-                </span>
-              </div>
-              <div className="flex items-center gap-2 text-amber-800 text-[11px] mt-0.5 font-medium">
-                <span>Original Paid: ₹{originalBookedPrice?.toLocaleString('en-IN') || pricing.total.toLocaleString('en-IN')}</span>
-                <span>·</span>
-                <span>Current Price: ₹{pricing.total.toLocaleString('en-IN')}</span>
-                {originalBookedPrice !== undefined && pricing.total !== originalBookedPrice && (
-                  <span className={`px-2 py-0.5 rounded-full font-bold font-mono text-[10px] ${
-                    pricing.total > originalBookedPrice
-                      ? 'bg-amber-200 text-amber-900 border border-amber-300'
-                      : 'bg-emerald-200 text-emerald-900 border border-emerald-300'
-                  }`}>
-                    {pricing.total > originalBookedPrice
-                      ? `+₹${(pricing.total - originalBookedPrice).toLocaleString('en-IN')} Difference`
-                      : `-₹${(originalBookedPrice - pricing.total).toLocaleString('en-IN')} Refund Credit`}
-                  </span>
-                )}
-              </div>
-            </div>
-          </div>
+            <span className="text-[18px] font-bold text-slate-900 tracking-tight">
+              TripFlow
+            </span>
+          </button>
 
-          <div className="flex items-center gap-2">
-            <button
-              type="button"
-              onClick={() => setIsBookingModalOpen(true)}
-              className="px-4 py-2 rounded-xl bg-amber-600 hover:bg-amber-700 active:bg-amber-800 text-white text-xs font-bold shadow-xs cursor-pointer flex items-center gap-1.5 transition-all active:scale-95"
-            >
-              <span className="material-symbols-outlined text-sm">save</span>
-              <span>Review & Save Modifications</span>
-            </button>
-          </div>
-        </div>
-      )}
-
-      {/* Main Workspace: Desktop (Sidebar + Board) vs Mobile (Timeline) */}
-      <div className="flex-1 min-h-0 flex flex-row h-full max-h-full overflow-hidden">
-        {/* Desktop Left Sidebar: "Add to Trip" */}
-        {!isMobile && (
-          <AddSidebar
-            onAddItem={handleAddItemToDay}
-            activeDayNumber={activeDayNumber}
-            totalDays={itinerary.days.length}
-            onOpenCustomItemModal={() => {
+          {/* + Add to Trip Button */}
+          <button
+            onClick={() => {
               setCustomModalTargetDay(activeDayNumber);
               setIsCustomModalOpen(true);
             }}
-            onSelectItemForDetail={item =>
-              setSelectedDetailItem({ item, source: 'sidebar', dayNumber: activeDayNumber })
-            }
-            isCollapsed={sidebarCollapsed}
-            onToggleCollapse={() => setSidebarCollapsed(!sidebarCollapsed)}
-          />
-        )}
+            className="w-full mb-6 flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-[#EFF4FF] hover:bg-[#E2EDFF] text-[#2563EB] font-semibold text-xs border border-blue-100/70 transition-all cursor-pointer shadow-2xs active:scale-98"
+          >
+            <span className="material-symbols-outlined text-base">add</span>
+            <span>Add to Trip</span>
+          </button>
 
-        {/* Center Itinerary: Board (Desktop) or Vertical Timeline (Mobile) */}
-        {isMobile ? (
-          <MobileTimelineView
-            itinerary={itinerary}
-            activeDayNumber={activeDayNumber}
-            setActiveDayNumber={setActiveDayNumber}
-            onOpenAddBottomSheet={() => setIsAddBottomSheetOpen(true)}
-            onRemoveItem={handleRemoveItem}
-            onMoveItem={handleMoveItem}
-            onReorderItems={handleReorderItems}
-            onAddDay={handleAddDay}
-            onDeleteDay={handleDeleteDay}
-            onDuplicateDay={handleDuplicateDay}
-            onClearDay={handleClearDay}
-          />
-        ) : (
-          <ItineraryBoard
-            itinerary={itinerary}
-            pricing={pricing}
-            onUpdateItinerary={updated => pushState(updated)}
-            onAddItemToDay={handleAddItemToDay}
-            onRemoveItem={handleRemoveItem}
-            onMoveItem={handleMoveItem}
-            onReorderItems={handleReorderItems}
-            onAddDay={handleAddDay}
-            onDeleteDay={handleDeleteDay}
-            onDuplicateDay={handleDuplicateDay}
-            onClearDay={handleClearDay}
-            onOpenAddModalForDay={dayNum => {
-              setCustomModalTargetDay(dayNum);
-              setIsCustomModalOpen(true);
+          {/* Nav Links */}
+          <nav className="space-y-1">
+            <button
+              onClick={() => {
+                setActiveSidebarNav('overview');
+                if (onBackToHome) onBackToHome();
+              }}
+              className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs font-medium transition-colors cursor-pointer ${
+                activeSidebarNav === 'overview'
+                  ? 'bg-blue-50 text-[#2563EB] font-semibold'
+                  : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50'
+              }`}
+            >
+              <span className="material-symbols-outlined text-lg text-slate-500">home</span>
+              <span>Overview</span>
+            </button>
+
+            <button
+              onClick={() => setActiveSidebarNav('itinerary')}
+              className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs font-medium transition-colors cursor-pointer ${
+                activeSidebarNav === 'itinerary'
+                  ? 'bg-[#EFF4FF] text-[#2563EB] font-semibold'
+                  : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50'
+              }`}
+            >
+              <span className="material-symbols-outlined text-lg text-[#2563EB]">calendar_month</span>
+              <span>Itinerary</span>
+            </button>
+
+            <button
+              onClick={() => {
+                setActiveSidebarNav('ai_picks');
+                showToast('✨ Showing AI-optimized recommendations for this circuit');
+              }}
+              className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs font-medium transition-colors cursor-pointer ${
+                activeSidebarNav === 'ai_picks'
+                  ? 'bg-[#EFF4FF] text-[#2563EB] font-semibold'
+                  : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50'
+              }`}
+            >
+              <span className="material-symbols-outlined text-lg text-slate-500">auto_awesome</span>
+              <span>AI Picks</span>
+            </button>
+
+            <button
+              onClick={() => setActiveSidebarNav('activities')}
+              className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs font-medium transition-colors cursor-pointer ${
+                activeSidebarNav === 'activities'
+                  ? 'bg-[#EFF4FF] text-[#2563EB] font-semibold'
+                  : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50'
+              }`}
+            >
+              <span className="material-symbols-outlined text-lg text-slate-500">confirmation_number</span>
+              <span>Activities</span>
+            </button>
+
+            <button
+              onClick={() => setActiveSidebarNav('hotels')}
+              className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs font-medium transition-colors cursor-pointer ${
+                activeSidebarNav === 'hotels'
+                  ? 'bg-[#EFF4FF] text-[#2563EB] font-semibold'
+                  : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50'
+              }`}
+            >
+              <span className="material-symbols-outlined text-lg text-slate-500">hotel</span>
+              <span>Hotels</span>
+            </button>
+
+            <button
+              onClick={() => setActiveSidebarNav('transport')}
+              className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs font-medium transition-colors cursor-pointer ${
+                activeSidebarNav === 'transport'
+                  ? 'bg-[#EFF4FF] text-[#2563EB] font-semibold'
+                  : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50'
+              }`}
+            >
+              <span className="material-symbols-outlined text-lg text-slate-500">flight</span>
+              <span>Transport</span>
+            </button>
+          </nav>
+        </div>
+
+        {/* Bottom Mountain Sketch Illustration & Slogan */}
+        <div className="hidden md:block pt-6 pb-2 px-2 border-t border-slate-100/80">
+          <svg
+            className="w-11 h-8 text-slate-400 stroke-current fill-none stroke-[1.4] mb-1.5"
+            viewBox="0 0 44 28"
+          >
+            <path d="M4 24L17 7L25 18L30 11L40 24H4Z" strokeLinejoin="round" />
+            <path d="M13 12L17 7L21 12" />
+            <path d="M28 14L30 11L32 14" />
+          </svg>
+          <div className="text-[11px] font-medium text-slate-400 leading-snug">
+            Better trips.
+            <br />
+            Less planning.
+          </div>
+        </div>
+      </aside>
+
+      {/* ============================================================= */}
+      {/* 2. MAIN CONTENT AREA                                          */}
+      {/* ============================================================= */}
+      <div className="flex-1 flex flex-col min-w-0 h-full overflow-y-auto">
+        {/* Top Header */}
+        <header className="w-full bg-white/95 backdrop-blur-md border-b border-slate-100 px-6 py-3.5 flex items-center justify-between shrink-0 sticky top-0 z-30">
+          {/* Trip Info */}
+          <div>
+            <h1 className="text-sm font-bold text-slate-900 tracking-tight">
+              {itinerary.title || '5-Day Japan Journey'}
+            </h1>
+            <p className="text-xs text-slate-500 mt-0.5">
+              {itinerary.routeStops?.map(s => s.city.replace(/^\d+\.\s*/, '')).join(' → ') || 'Tokyo → Kyoto'} •{' '}
+              {itinerary.travelers || 2} Travelers • {itinerary.dates || 'Sep 28 – Oct 2'}
+            </p>
+          </div>
+
+          {/* Right Header Utility Cluster */}
+          <div className="flex items-center gap-3 sm:gap-4">
+            <button
+              onClick={() => showToast('Search active across activities & reservations')}
+              className="p-1.5 text-slate-500 hover:text-slate-800 hover:bg-slate-50 rounded-full transition-colors cursor-pointer"
+              title="Search"
+            >
+              <span className="material-symbols-outlined text-lg">search</span>
+            </button>
+
+            <button
+              onClick={() => showToast('No pending flight delays for this circuit')}
+              className="p-1.5 text-slate-500 hover:text-slate-800 hover:bg-slate-50 rounded-full transition-colors cursor-pointer relative"
+              title="Notifications"
+            >
+              <span className="material-symbols-outlined text-lg">notifications</span>
+              <span className="absolute top-1 right-1 w-2 h-2 rounded-full bg-blue-600 ring-2 ring-white"></span>
+            </button>
+
+            {/* Profile Tag */}
+            <div className="flex items-center gap-2 pl-2 border-l border-slate-100">
+              <img
+                src={userAvatar}
+                alt={userName}
+                className="w-8 h-8 rounded-full object-cover ring-1 ring-slate-200"
+              />
+              <div className="hidden sm:block text-left">
+                <div className="text-xs font-bold text-slate-900 leading-tight">
+                  {userName}
+                </div>
+                <div className="text-[10px] text-slate-400 leading-tight">
+                  {userRole}
+                </div>
+              </div>
+            </div>
+          </div>
+        </header>
+
+        {/* Central Card Column & Right Helper Card */}
+        <div
+          className="flex-1 flex items-start justify-center p-4 sm:p-6 lg:p-8 gap-6 max-w-6xl mx-auto w-full"
+          onTouchStart={handleTouchStart}
+          onTouchEnd={handleTouchEnd}
+        >
+          {/* Main Day Card Column */}
+          <div className="w-full max-w-[640px] flex flex-col gap-4">
+            {/* --------------------------------------------------------- */}
+            {/* HERO PANORAMIC DAY BANNER                                 */}
+            {/* --------------------------------------------------------- */}
+            <div className="relative w-full h-48 sm:h-52 rounded-2xl overflow-hidden shadow-sm border border-slate-100">
+              <img
+                src={dayHeroImage}
+                alt={currentCityName}
+                className="w-full h-full object-cover"
+              />
+
+              {/* Gradient Overlay for Text Legibility */}
+              <div className="absolute inset-0 bg-gradient-to-t from-black/75 via-black/25 to-transparent" />
+
+              {/* Top-Left Frosted Pill: Day X of Y */}
+              <div className="absolute top-3.5 left-3.5 z-10">
+                <span className="px-3 py-1 rounded-full bg-white/80 backdrop-blur-md text-slate-800 text-xs font-semibold shadow-2xs border border-white/40">
+                  Day {currentDay.dayNumber} of {itinerary.days.length}
+                </span>
+              </div>
+
+              {/* Top-Right Frosted Weather Pill */}
+              <div className="absolute top-3.5 right-3.5 z-10 flex items-center gap-2 px-3 py-1.5 rounded-xl bg-white/85 backdrop-blur-md shadow-2xs border border-white/50">
+                <span className="material-symbols-outlined text-amber-500 text-lg">wb_sunny</span>
+                <div className="text-left">
+                  <div className="text-xs font-bold text-slate-900 leading-none">24°C</div>
+                  <div className="text-[9px] text-slate-500 font-medium leading-none mt-0.5">{currentCityName}</div>
+                </div>
+              </div>
+
+              {/* Bottom-Left City & Day Details */}
+              <div className="absolute bottom-3.5 left-4 z-10 text-white">
+                <h2 className="text-2xl sm:text-3xl font-extrabold text-white tracking-tight drop-shadow-md">
+                  {currentCityName}
+                </h2>
+                <p className="text-xs text-white/90 font-medium mt-0.5 drop-shadow-sm">
+                  {currentDay.date || 'Sep 28, 2026'} • {activityCount} activities • {hotelCount} hotel
+                </p>
+              </div>
+            </div>
+
+            {/* --------------------------------------------------------- */}
+            {/* TIMELINE ITEMS CONTAINER CARD                             */}
+            {/* --------------------------------------------------------- */}
+            <div className="w-full bg-white rounded-2xl sm:rounded-3xl p-5 sm:p-7 shadow-xs border border-slate-100 flex flex-col gap-5 relative">
+              {/* Connecting Vertical Timeline Line */}
+              {displayedItems.length > 1 && (
+                <div className="absolute left-[39px] sm:left-[47px] top-9 bottom-28 w-[1.5px] bg-slate-100 pointer-events-none" />
+              )}
+
+              {/* Timeline Items List */}
+              <div className="flex flex-col gap-6">
+                {displayedItems.length === 0 ? (
+                  <div className="text-center py-8 text-slate-400 text-xs">
+                    No items found for this filter. Tap "+ Add to Trip" to personalize.
+                  </div>
+                ) : (
+                  displayedItems.map((item, idx) => {
+                    // Determine category icon and styling
+                    let iconName = 'local_activity';
+                    let iconBg = 'bg-emerald-50 text-emerald-600';
+                    let badgeBg = 'bg-emerald-50 text-emerald-700';
+
+                    if (item.category === 'hotel') {
+                      iconName = 'hotel';
+                      iconBg = 'bg-blue-50 text-blue-500';
+                      badgeBg = 'bg-blue-50 text-blue-600';
+                    } else if (item.category === 'meal') {
+                      iconName = 'restaurant';
+                      iconBg = 'bg-amber-50 text-amber-600';
+                      badgeBg = 'bg-amber-50 text-amber-700';
+                    } else if (item.category === 'transport') {
+                      iconName = 'flight';
+                      iconBg = 'bg-purple-50 text-purple-600';
+                      badgeBg = 'bg-purple-50 text-purple-700';
+                    } else if (item.category === 'experience') {
+                      iconName = 'verified';
+                      iconBg = 'bg-emerald-50 text-emerald-600';
+                      badgeBg = 'bg-emerald-50 text-emerald-700';
+                    }
+
+                    const categoryLabel = item.category === 'hotel'
+                      ? 'Hotel'
+                      : item.category === 'meal'
+                      ? 'Dining'
+                      : item.category === 'experience'
+                      ? 'Experience'
+                      : item.category === 'transport'
+                      ? 'Transport'
+                      : 'Activity';
+
+                    return (
+                      <div
+                        key={item.id || idx}
+                        className="flex items-start justify-between gap-3 sm:gap-4 relative group"
+                      >
+                        {/* Left Side: Icon & Details */}
+                        <div className="flex items-start gap-3 sm:gap-4 min-w-0">
+                          {/* Category Circle Icon on Timeline */}
+                          <div
+                            className={`w-10 h-10 rounded-full flex items-center justify-center shrink-0 border-2 border-white shadow-2xs z-10 ${iconBg}`}
+                          >
+                            <span className="material-symbols-outlined text-lg">
+                              {iconName}
+                            </span>
+                          </div>
+
+                          {/* Item Details */}
+                          <div className="min-w-0 pt-0.5">
+                            <span className="text-[11px] font-semibold text-slate-400 block">
+                              {item.time || '10:00 AM'}
+                            </span>
+                            <h3
+                              onClick={() => setSelectedDetailItem({ item, source: 'board', dayNumber: activeDayNumber })}
+                              className="font-bold text-sm text-slate-900 hover:text-blue-600 cursor-pointer transition-colors leading-snug line-clamp-1"
+                            >
+                              {item.title}
+                            </h3>
+                            <div className="flex items-center gap-1 text-slate-500 text-xs mt-0.5 truncate">
+                              <span className="material-symbols-outlined text-xs text-slate-400">
+                                location_on
+                              </span>
+                              <span className="truncate">{item.location}</span>
+                            </div>
+                            <div className="flex items-center gap-1.5 mt-1.5">
+                              <span
+                                className={`px-2 py-0.5 rounded-md text-[10px] font-semibold ${badgeBg}`}
+                              >
+                                {categoryLabel}
+                              </span>
+                              <span className="text-slate-300">•</span>
+                              <span className="text-xs text-slate-400 font-medium">
+                                {item.duration || '2 hrs'}
+                              </span>
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Right Side: Thumbnail Image */}
+                        {item.image && (
+                          <div
+                            onClick={() => setSelectedDetailItem({ item, source: 'board', dayNumber: activeDayNumber })}
+                            className="w-24 sm:w-28 h-18 sm:h-20 rounded-xl overflow-hidden shadow-2xs border border-slate-100 shrink-0 cursor-pointer hover:opacity-95 transition-opacity"
+                          >
+                            <img
+                              src={item.image}
+                              alt={item.title}
+                              className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                            />
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })
+                )}
+              </div>
+
+              {/* ------------------------------------------------------- */}
+              {/* DAY TOTAL CARD AT BOTTOM                                */}
+              {/* ------------------------------------------------------- */}
+              <div
+                onClick={() => setIsBookingModalOpen(true)}
+                className="w-full bg-[#F3F6FD] hover:bg-[#EBF1FD] border border-blue-100/70 rounded-2xl p-3.5 px-4 flex items-center justify-between cursor-pointer transition-all mt-2 shadow-2xs group"
+              >
+                <div className="flex items-center gap-3">
+                  <div className="w-9 h-9 rounded-xl bg-blue-100/80 text-[#2563EB] flex items-center justify-center shrink-0">
+                    <span className="material-symbols-outlined text-lg">auto_awesome</span>
+                  </div>
+                  <div>
+                    <div className="text-[11px] text-slate-500 font-medium leading-none">
+                      Day total
+                    </div>
+                    <div className="text-base font-extrabold text-slate-900 leading-tight mt-0.5">
+                      ₹{currentDayTotal.toLocaleString('en-IN')}
+                    </div>
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-1 text-slate-400 group-hover:text-blue-600 transition-colors">
+                  <span className="material-symbols-outlined text-xl">chevron_right</span>
+                </div>
+              </div>
+            </div>
+
+            {/* --------------------------------------------------------- */}
+            {/* BOTTOM CAROUSEL DAY PAGINATION & ARROWS                   */}
+            {/* --------------------------------------------------------- */}
+            <div className="flex flex-col items-center justify-center py-2 pb-6">
+              <div className="flex items-center gap-3">
+                {/* Left Arrow Button */}
+                <button
+                  onClick={() => setActiveDayNumber(prev => Math.max(1, prev - 1))}
+                  disabled={activeDayNumber === 1}
+                  className={`w-9 h-9 rounded-full border border-slate-200 bg-white text-slate-600 flex items-center justify-center shadow-2xs transition-all ${
+                    activeDayNumber === 1
+                      ? 'opacity-40 cursor-not-allowed'
+                      : 'hover:bg-slate-50 hover:border-slate-300 cursor-pointer active:scale-95'
+                  }`}
+                  title="Previous Day"
+                >
+                  <span className="material-symbols-outlined text-lg">chevron_left</span>
+                </button>
+
+                {/* Dots Indicator */}
+                <div className="flex items-center gap-1.5 px-2">
+                  {itinerary.days.map(day => (
+                    <button
+                      key={day.dayNumber}
+                      onClick={() => setActiveDayNumber(day.dayNumber)}
+                      className={`transition-all cursor-pointer ${
+                        day.dayNumber === activeDayNumber
+                          ? 'w-2 h-2 rounded-full bg-[#2563EB]'
+                          : 'w-1.5 h-1.5 rounded-full bg-slate-300 hover:bg-slate-400'
+                      }`}
+                      title={`Go to Day ${day.dayNumber}`}
+                    />
+                  ))}
+                </div>
+
+                {/* Right Arrow Button */}
+                <button
+                  onClick={() => setActiveDayNumber(prev => Math.min(itinerary.days.length, prev + 1))}
+                  disabled={activeDayNumber === itinerary.days.length}
+                  className={`w-9 h-9 rounded-full border border-slate-200 bg-white text-slate-600 flex items-center justify-center shadow-2xs transition-all ${
+                    activeDayNumber === itinerary.days.length
+                      ? 'opacity-40 cursor-not-allowed'
+                      : 'hover:bg-slate-50 hover:border-slate-300 cursor-pointer active:scale-95'
+                  }`}
+                  title="Next Day"
+                >
+                  <span className="material-symbols-outlined text-lg">chevron_right</span>
+                </button>
+              </div>
+
+              {/* Swipe Helper Text */}
+              <p className="text-[11px] text-slate-400 font-medium mt-2">
+                Swipe to view next day
+              </p>
+            </div>
+          </div>
+
+          {/* =========================================================== */}
+          {/* 3. RIGHT SIDE FLOATING HELPER CARD                          */}
+          {/* =========================================================== */}
+          <div
+            onClick={() => {
+              if (activeDayNumber < itinerary.days.length) {
+                setActiveDayNumber(prev => prev + 1);
+              } else {
+                setActiveDayNumber(1);
+              }
             }}
-            onSelectItemForDetail={(item, dayNumber) =>
-              setSelectedDetailItem({ item, source: 'board', dayNumber })
-            }
-            activeDayNumber={activeDayNumber}
-            setActiveDayNumber={setActiveDayNumber}
-            onUndo={handleUndo}
-            onRedo={handleRedo}
-            canUndo={historyIndex > 0}
-            canRedo={historyIndex < history.length - 1}
-            onResetToDefault={handleResetToDefault}
-            onShareItinerary={handleShareItinerary}
-            onOpenBookingModal={() => setIsBookingModalOpen(true)}
-            onOpenAISuggestions={() => {
-              const el = document.getElementById('ai-assistant-input');
-              if (el) el.focus();
-              showToast('Type a modification in the AI prompt below!');
-            }}
-            onExportPDF={handleExportPDF}
-            onExportCSV={handleExportCSV}
-            onViewRouteMap={() => {
-              showToast(
-                `Current Route: ${itinerary.routeStops?.map(s => s.city).join(' → ') || itinerary.destination}`
-              );
-            }}
-          />
-        )}
+            className="hidden xl:flex flex-col items-center justify-center text-center w-36 lg:w-40 h-44 rounded-2xl bg-white border border-slate-200/70 p-5 shadow-xs gap-2 shrink-0 cursor-pointer hover:border-blue-300 hover:shadow-sm transition-all"
+            title="Click to advance to next day"
+          >
+            <div className="w-10 h-10 rounded-full bg-blue-50 text-blue-500 flex items-center justify-center mb-1">
+              <span className="material-symbols-outlined text-xl">calendar_today</span>
+            </div>
+            <p className="text-xs font-semibold text-slate-700 leading-snug">
+              View other days by swiping
+            </p>
+            <div className="flex items-center justify-center text-slate-400 mt-1">
+              <span className="material-symbols-outlined text-2xl">swipe</span>
+            </div>
+          </div>
+        </div>
       </div>
 
-      {/* Mobile "+ Add" Bottom Sheet */}
-      {isMobile && (
-        <AddBottomSheet
-          isOpen={isAddBottomSheetOpen}
-          onClose={() => setIsAddBottomSheetOpen(false)}
-          onAddItem={handleAddItemToDay}
-          activeDayNumber={activeDayNumber}
-          totalDays={itinerary.days.length}
-          onOpenCustomItemModal={() => {
-            setCustomModalTargetDay(activeDayNumber);
-            setIsCustomModalOpen(true);
-          }}
-        />
-      )}
-
-      {/* Custom Item Modal */}
+      {/* ============================================================= */}
+      {/* 4. MODALS & OVERLAYS                                          */}
+      {/* ============================================================= */}
       <CustomItemModal
         isOpen={isCustomModalOpen}
         onClose={() => setIsCustomModalOpen(false)}
@@ -597,60 +683,6 @@ export const ItineraryBuilderScreen: React.FC<ItineraryBuilderScreenProps> = ({
         totalDays={itinerary.days.length}
       />
 
-      {/* Booking Summary Modal */}
-      <BookingSummaryModal
-        isOpen={isBookingModalOpen}
-        onClose={() => setIsBookingModalOpen(false)}
-        itinerary={itinerary}
-        pricing={pricing}
-        isModifying={isModifyingBookedTrip}
-        originalPrice={originalBookedPrice}
-        onConfirmBooking={customPref => {
-          const customItems = itinerary.days
-            .flatMap(d => d.items.map(it => ({ ...it, dayNumber: d.dayNumber })))
-            .filter(it => it.tags?.includes('Custom') || it.price > 0 || it.category === 'activity')
-            .map(it => ({
-              id: it.id,
-              title: it.title,
-              category: it.category,
-              dayNumber: it.dayNumber,
-              price: it.price,
-              description: it.description,
-              location: it.location,
-            }));
-
-          const customizationDetails = {
-            isCustomized: true,
-            basePackageTitle: itinerary.title,
-            basePrice: originalBookedPrice || Math.round(pricing.total * 0.8),
-            customPrice: pricing.total,
-            deltaPrice: Math.round(pricing.total - (originalBookedPrice || pricing.total * 0.8)),
-            customRequests: customPref?.customRequests || 'Customized circuit with added experiences & preferences.',
-            dietaryRestrictions: customPref?.dietaryRestrictions || 'Strict Vegetarian',
-            transferPreference: customPref?.transferPreference || 'Toyota Vellfire Executive Lounge',
-            customItemsAdded: customItems,
-            fulfillmentStatus: {
-              hotelBooked: false,
-              flightBooked: false,
-              transferBooked: false,
-              activityBooked: false,
-              guideAssigned: false,
-            },
-          };
-
-          if (isModifyingBookedTrip && onSaveModifications) {
-            onSaveModifications(itinerary, pricing.total);
-          } else if (onOpenPayment) {
-            onOpenPayment(itinerary, pricing.total, customizationDetails);
-          } else if (onProceedToBooking) {
-            onProceedToBooking(itinerary, pricing.total, customizationDetails);
-          } else {
-            showToast(`Trip booked! All ${pricing.itemCount} reservations held with 24/7 concierge.`);
-          }
-        }}
-      />
-
-      {/* Card Detail Overlay (View & Edit item when clicking cards in board or sidebar) */}
       <CardDetailOverlay
         isOpen={!!selectedDetailItem}
         onClose={() => setSelectedDetailItem(null)}
@@ -662,48 +694,33 @@ export const ItineraryBuilderScreen: React.FC<ItineraryBuilderScreenProps> = ({
           handleAddItemToDay(catItem, dayNum);
           setSelectedDetailItem(null);
         }}
-        onMoveToDay={(itemId, targetDay) => {
-          if (selectedDetailItem?.dayNumber) {
-            handleMoveItem(selectedDetailItem.dayNumber, targetDay, itemId);
-          }
-          setSelectedDetailItem(null);
-        }}
         onRemoveItem={itemId => {
           if (selectedDetailItem?.dayNumber) {
             handleRemoveItem(selectedDetailItem.dayNumber, itemId);
           }
           setSelectedDetailItem(null);
         }}
-        onUpdateItem={updated => {
-          if (selectedDetailItem?.dayNumber) {
-            const day = itinerary.days.find(d => d.dayNumber === selectedDetailItem.dayNumber);
-            if (day) {
-              const newItems = day.items.map(it => (it.id === updated.id ? updated : it));
-              handleReorderItems(selectedDetailItem.dayNumber, newItems);
-            }
+      />
+
+      <BookingSummaryModal
+        isOpen={isBookingModalOpen}
+        onClose={() => setIsBookingModalOpen(false)}
+        itinerary={itinerary}
+        pricing={pricing}
+        isModifying={isModifyingBookedTrip}
+        originalPrice={originalBookedPrice}
+        onConfirmBooking={customPref => {
+          if (isModifyingBookedTrip && onSaveModifications) {
+            onSaveModifications(itinerary, pricing.total);
+          } else if (onOpenPayment) {
+            onOpenPayment(itinerary, pricing.total, customPref);
+          } else if (onProceedToBooking) {
+            onProceedToBooking(itinerary, pricing.total, customPref);
+          } else {
+            showToast(`Trip booked! All reservations held with priority concierge.`);
           }
-          setSelectedDetailItem(null);
         }}
       />
-
-      {/* Floating Budget Card in Right Bottom Corner */}
-      <FloatingTripTotal
-        pricing={pricing}
-        itinerary={itinerary}
-        onOpenBookingModal={() => setIsBookingModalOpen(true)}
-        onShareItinerary={handleShareItinerary}
-        priceDelta={priceDelta}
-      />
-
-      {/* Bottom "✨ What would you like to change?" AI Input */}
-      <AIAssistantInput
-        onSubmitPrompt={handleNaturalLanguageChange}
-        isLoading={isAILoading}
-        lastFeedback={lastAIFeedback}
-        activeDayNumber={activeDayNumber}
-        destination={itinerary.destination}
-      />
-
     </div>
   );
 };
