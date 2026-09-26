@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { motion } from 'framer-motion';
 import { RouteStop, TripItinerary } from '../../types/itinerary';
 
@@ -28,10 +28,21 @@ export const TripHeroHeader: React.FC<TripHeroHeaderProps> = ({
   const [isExportMenuOpen, setIsExportMenuOpen] = useState(false);
   const [isAddCityOpen, setIsAddCityOpen] = useState(false);
   const [newCityName, setNewCityName] = useState('');
+  const exportMenuRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     setTitleInput(itinerary.title);
   }, [itinerary.title]);
+
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (exportMenuRef.current && !exportMenuRef.current.contains(e.target as Node)) {
+        setIsExportMenuOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
 
   // Active day helper for single-day mode
   const currentDay = itinerary.days.find(d => d.dayNumber === activeDayNumber) || itinerary.days[0] || {
@@ -123,13 +134,13 @@ export const TripHeroHeader: React.FC<TripHeroHeaderProps> = ({
       initial={{ opacity: 0, y: -10, filter: 'blur(8px)' }}
       animate={{ opacity: 1, y: 0, filter: 'blur(0px)' }}
       transition={{ duration: 0.45, ease: [0.21, 0.47, 0.32, 0.98] }}
-      className={`relative w-full text-white bg-neutral-950 border shadow-sm select-none overflow-hidden transition-all duration-300 ease-in-out ${
+      className={`relative w-full text-white bg-neutral-950 border shadow-xs select-none overflow-hidden transition-all duration-300 ease-in-out ${
         isSingle
-          ? 'rounded-2xl sm:rounded-3xl border-slate-100/30 p-3.5 sm:p-4.5 flex flex-col justify-between gap-3'
+          ? 'rounded-2xl sm:rounded-3xl border-white/10 p-3.5 sm:p-4.5 flex flex-col justify-between gap-3'
           : 'rounded-2xl border-white/10 p-3 sm:p-3.5 flex flex-col justify-between gap-2.5'
       }`}
     >
-      {/* Background Image with Dark Cinematic Overlay (Same image for both views) */}
+      {/* Background Image with Dark Cinematic Overlay */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none z-0">
         <img
           src={heroBg}
@@ -139,126 +150,123 @@ export const TripHeroHeader: React.FC<TripHeroHeaderProps> = ({
         <div
           className={`absolute inset-0 transition-opacity duration-300 ${
             isSingle
-              ? 'bg-gradient-to-r from-black/50 via-black/30 to-black/45'
-              : 'bg-gradient-to-r from-black/55 via-black/35 to-black/50'
+              ? 'bg-gradient-to-r from-black/60 via-black/40 to-black/55'
+              : 'bg-gradient-to-r from-black/65 via-black/45 to-black/60'
           }`}
         />
       </div>
 
-      {/* 1. Top Section: Trip Title & Subtitle Metadata */}
-      <div className="relative z-10 flex flex-col gap-1 min-w-0">
-        <div className="flex items-center gap-2.5 min-w-0">
-          <span className="text-xl sm:text-2xl select-none shrink-0" role="img" aria-label="Trip Icon">
-            ⛩️
-          </span>
+      {/* 1. Top Section: Trip Title & Subtitle (Left) + Minimal Controls (Right) */}
+      <div className="relative z-10 flex items-start justify-between gap-3 flex-wrap sm:flex-nowrap">
+        {/* Left: Title + Subtitle Metadata & Badges */}
+        <div className="flex flex-col gap-1 min-w-0 flex-1">
+          <div className="flex items-center gap-2 min-w-0">
+            <span className="text-lg sm:text-xl select-none shrink-0" role="img" aria-label="Trip Icon">
+              ⛩️
+            </span>
 
-          {isEditingTitle ? (
-            <div className="flex items-center gap-2 flex-1">
-              <input
-                type="text"
-                value={titleInput}
-                onChange={e => setTitleInput(e.target.value)}
-                onBlur={handleSaveTitle}
-                onKeyDown={e => e.key === 'Enter' && handleSaveTitle()}
-                autoFocus
-                className="text-base sm:text-lg lg:text-xl font-bold text-white bg-black/80 border border-white/40 rounded-lg px-2.5 py-0.5 focus:outline-none w-full max-w-md"
-              />
-              <button
-                type="button"
-                onClick={handleSaveTitle}
-                className="px-2.5 py-0.5 bg-white text-neutral-900 rounded-md text-xs font-bold cursor-pointer shrink-0"
+            {isEditingTitle ? (
+              <div className="flex items-center gap-2 flex-1">
+                <input
+                  type="text"
+                  value={titleInput}
+                  onChange={e => setTitleInput(e.target.value)}
+                  onBlur={handleSaveTitle}
+                  onKeyDown={e => e.key === 'Enter' && handleSaveTitle()}
+                  autoFocus
+                  className="text-base sm:text-lg font-bold text-white bg-black/80 border border-white/40 rounded-lg px-2.5 py-0.5 focus:outline-none w-full max-w-md"
+                />
+                <button
+                  type="button"
+                  onClick={handleSaveTitle}
+                  className="px-2.5 py-0.5 bg-white text-neutral-900 rounded-md text-xs font-bold cursor-pointer shrink-0"
+                >
+                  Save
+                </button>
+              </div>
+            ) : (
+              <h1
+                onClick={() => setIsEditingTitle(true)}
+                className="text-base sm:text-lg lg:text-xl font-bold text-white hover:text-blue-200 cursor-pointer transition-colors truncate inline-flex items-center gap-1.5 group drop-shadow-sm tracking-tight"
+                title="Click to rename trip"
               >
-                Save
-              </button>
-            </div>
-          ) : (
-            <h1
-              onClick={() => setIsEditingTitle(true)}
-              className="text-base sm:text-lg lg:text-xl font-bold text-white hover:text-blue-200 cursor-pointer transition-colors truncate max-w-full inline-flex items-center gap-1.5 group drop-shadow-sm tracking-tight"
-              title="Click to rename trip"
-            >
-              <span>{itinerary.title}</span>
-              <span className="material-symbols-outlined text-sm opacity-0 group-hover:opacity-100 transition-opacity text-neutral-400">
-                edit
-              </span>
-            </h1>
-          )}
+                <span className="truncate">{itinerary.title}</span>
+                <span className="material-symbols-outlined text-xs opacity-0 group-hover:opacity-100 transition-opacity text-white/60">
+                  edit
+                </span>
+              </h1>
+            )}
+          </div>
+
+          {/* Subtitle / Trip Metadata & Context Badges */}
+          <div className="text-[11px] sm:text-xs text-white/80 font-medium drop-shadow-sm flex items-center gap-2 flex-wrap pl-0.5">
+            <span>{itinerary.days.length} {itinerary.days.length === 1 ? 'Day' : 'Days'}</span>
+            <span className="text-white/30">•</span>
+            <span>{itinerary.travelStyle || 'Bespoke AI Journey'}</span>
+            <span className="text-white/30">•</span>
+            <span>{itinerary.travelers || 2} Travelers</span>
+            {isSingle && (
+              <>
+                <span className="text-white/30">•</span>
+                <span className="px-2 py-0.5 rounded-full bg-blue-600/85 text-white text-[10px] font-bold border border-blue-400/40">
+                  Day {activeDayNumber} of {itinerary.days.length}
+                </span>
+                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-white/15 backdrop-blur-md text-white text-[10px] font-medium border border-white/20">
+                  <span className="material-symbols-outlined text-amber-400 text-xs">wb_sunny</span>
+                  <span>{weatherTemp} {weatherCity}</span>
+                </span>
+              </>
+            )}
+          </div>
         </div>
 
-        {/* Subtitle / Trip Metadata */}
-        <div className="text-[11px] sm:text-xs text-white/85 font-medium drop-shadow-sm flex items-center gap-2 pl-0.5 flex-wrap">
-          <span>{itinerary.days.length} Days</span>
-          <span className="text-white/40">•</span>
-          <span>{itinerary.travelStyle || `Bespoke AI Journey (${itinerary.days.length} Days)`}</span>
-          <span className="text-white/40">•</span>
-          <span>{itinerary.travelers || 2} Travelers</span>
-        </div>
-      </div>
-
-      {/* 2. Middle Row: Badges (Left) & Controls (Right) */}
-      <div className="relative z-10 flex items-center justify-between gap-2.5 flex-wrap">
-        {/* Left Side: Day & Weather Badges (in Single Mode) */}
-        <div className="flex items-center gap-2 shrink-0">
-          {isSingle && (
-            <>
-              <span className="px-2.5 py-1 rounded-full bg-blue-600/90 text-white text-[11px] font-bold shadow-2xs border border-blue-400/40">
-                Day {activeDayNumber} of {itinerary.days.length}
-              </span>
-              <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-white/15 backdrop-blur-md text-white text-[11px] font-medium border border-white/20">
-                <span className="material-symbols-outlined text-amber-400 text-xs">wb_sunny</span>
-                <span>{weatherTemp} {weatherCity}</span>
-              </span>
-            </>
-          )}
-        </div>
-
-        {/* Right Side: View Mode Slider + Export + Map */}
-        <div className="flex items-center gap-2 shrink-0 flex-wrap sm:flex-nowrap">
-          {/* View Mode Slider inside Banner (Requirement 3) */}
+        {/* Right: Minimal Control Cluster */}
+        <div className="flex items-center gap-1.5 sm:gap-2 shrink-0 self-start">
+          {/* View Mode Toggle */}
           {onViewModeChange && (
-            <div className="bg-black/55 backdrop-blur-md p-0.5 sm:p-1 rounded-xl flex items-center border border-white/20 shadow-xs">
+            <div className="bg-black/45 backdrop-blur-md p-0.5 rounded-xl flex items-center border border-white/15 shadow-2xs">
               <button
                 type="button"
                 onClick={() => onViewModeChange('single')}
-                className={`px-2.5 sm:px-3 py-1 rounded-lg text-xs font-bold flex items-center gap-1.5 transition-all cursor-pointer ${
+                className={`px-2.5 py-1 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition-all cursor-pointer ${
                   isSingle
                     ? 'bg-white text-blue-600 shadow-sm'
-                    : 'text-neutral-300 hover:text-white'
+                    : 'text-white/70 hover:text-white'
                 }`}
-                title="Show one day at a time"
+                title="Single Day View"
               >
                 <span className="material-symbols-outlined text-xs sm:text-sm">calendar_today</span>
-                <span>One Day</span>
+                <span className="hidden sm:inline">One Day</span>
               </button>
               <button
                 type="button"
                 onClick={() => onViewModeChange('board')}
-                className={`px-2.5 sm:px-3 py-1 rounded-lg text-xs font-bold flex items-center gap-1.5 transition-all cursor-pointer ${
+                className={`px-2.5 py-1 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition-all cursor-pointer ${
                   !isSingle
                     ? 'bg-white text-blue-600 shadow-sm'
-                    : 'text-neutral-300 hover:text-white'
+                    : 'text-white/70 hover:text-white'
                 }`}
-                title="Show all days side by side as columns"
+                title="All Days Board View"
               >
                 <span className="material-symbols-outlined text-xs sm:text-sm">view_column</span>
-                <span>All Days</span>
+                <span className="hidden sm:inline">All Days</span>
               </button>
             </div>
           )}
 
-          {/* Export Dropdown Button */}
-          <div className="relative">
+          {/* Minimal Export Icon Button */}
+          <div className="relative" ref={exportMenuRef}>
             <button
               type="button"
               onClick={() => setIsExportMenuOpen(!isExportMenuOpen)}
-              className="px-2.5 sm:px-3 py-1.5 bg-black/55 hover:bg-black/70 active:bg-black/85 backdrop-blur-md border border-white/20 text-white rounded-xl text-xs font-semibold shadow-xs flex items-center gap-1.5 cursor-pointer transition-colors"
-              title="Export Itinerary"
+              className={`w-8 h-8 rounded-xl flex items-center justify-center transition-all cursor-pointer backdrop-blur-md border shadow-2xs ${
+                isExportMenuOpen
+                  ? 'bg-white text-slate-900 border-white'
+                  : 'bg-black/45 hover:bg-black/65 border-white/15 text-white/90 hover:text-white hover:border-white/30'
+              }`}
+              title="Export Itinerary (PDF, CSV, Link)"
             >
-              <span className="material-symbols-outlined text-sm text-neutral-200">ios_share</span>
-              <span className="inline">Export</span>
-              <span className="material-symbols-outlined text-xs text-neutral-300">
-                {isExportMenuOpen ? 'expand_less' : 'expand_more'}
-              </span>
+              <span className="material-symbols-outlined text-sm sm:text-base">ios_share</span>
             </button>
 
             {isExportMenuOpen && (
@@ -310,26 +318,28 @@ export const TripHeroHeader: React.FC<TripHeroHeaderProps> = ({
             )}
           </div>
 
-          {/* Map Button */}
+          {/* Minimal Map Icon Button */}
           <button
             type="button"
             onClick={onViewRouteMap}
-            className="px-2.5 sm:px-3 py-1.5 bg-black/55 hover:bg-black/70 active:bg-black/85 backdrop-blur-md border border-white/20 text-white rounded-xl text-xs font-semibold shadow-xs flex items-center gap-1.5 cursor-pointer transition-colors"
-            title="View Route Map"
+            className="w-8 h-8 rounded-xl flex items-center justify-center bg-black/45 hover:bg-black/65 active:bg-black/80 backdrop-blur-md border border-white/15 hover:border-white/30 text-amber-300 hover:text-amber-200 transition-all cursor-pointer shadow-2xs"
+            title="View Route & Logistics Map"
           >
-            <span className="material-symbols-outlined text-sm text-amber-400">map</span>
-            <span className="inline">Map</span>
+            <span className="material-symbols-outlined text-sm sm:text-base">map</span>
           </button>
         </div>
       </div>
 
-      {/* Bottom Area: ROUTE & LOGISTICS CHIPS (Present in BOTH views) */}
-      <div className="relative z-10 flex items-center gap-2 sm:gap-2.5 flex-wrap text-xs pt-0.5">
-        <span className="text-[11px] font-bold text-slate-200 uppercase tracking-wider shrink-0 drop-shadow-md">
-          ROUTE & LOGISTICS:
-        </span>
+      {/* 2. Bottom Row: ROUTE & LOGISTICS */}
+      <div className="relative z-10 flex items-center gap-2 sm:gap-2.5 flex-wrap text-xs pt-1 border-t border-white/10">
+        <div className="flex items-center gap-1 text-white/60 shrink-0">
+          <span className="material-symbols-outlined text-xs text-white/50">route</span>
+          <span className="text-[10px] font-bold tracking-wider uppercase text-white/60">
+            Route:
+          </span>
+        </div>
 
-        <div className="flex items-center gap-1.5 sm:gap-2 flex-wrap overflow-x-auto no-scrollbar py-0.5">
+        <div className="flex items-center gap-1.5 flex-wrap overflow-x-auto no-scrollbar py-0.5">
           {routeStops.map((stop, idx) => {
             const isStopForCurrentDay = isSingle && idx === activeDayNumber - 1;
             return (
@@ -337,26 +347,18 @@ export const TripHeroHeader: React.FC<TripHeroHeaderProps> = ({
                 key={stop.id}
                 initial={{ opacity: 0, x: -8, filter: 'blur(4px)' }}
                 animate={{ opacity: 1, x: 0, filter: 'blur(0px)' }}
-                transition={{ duration: 0.3, delay: idx * 0.05 }}
-                className={`inline-flex items-center gap-1.5 sm:gap-2 backdrop-blur-md rounded-full px-2.5 sm:px-3 py-1 text-xs text-white shadow-2xs transition-all ${
+                transition={{ duration: 0.3, delay: idx * 0.04 }}
+                className={`inline-flex items-center gap-1.5 backdrop-blur-md rounded-full px-2.5 py-0.5 text-xs text-white shadow-2xs transition-all ${
                   isStopForCurrentDay
-                    ? 'bg-blue-600/85 border border-blue-300 ring-2 ring-blue-400/50 scale-[1.02]'
-                    : 'bg-black/60 hover:bg-black/75 border border-white/20'
+                    ? 'bg-blue-600/85 border border-blue-300/80 ring-1 ring-blue-400/40'
+                    : 'bg-black/40 hover:bg-black/60 border border-white/15'
                 }`}
               >
-                <span className="font-semibold text-white">{stop.city.replace(/^\d+\.\s*/, '')}</span>
-                {stop.weather && (
-                  <span className={`text-[11px] font-medium ${isStopForCurrentDay ? 'text-white' : 'text-sky-300'}`}>
-                    {stop.weather}
-                  </span>
-                )}
-                {stop.hotel && (
-                  <span className="text-[11px] text-slate-300 truncate max-w-[120px] hidden sm:inline">
-                    🏨 {stop.hotel}
-                  </span>
-                )}
+                <span className="font-semibold text-[11px] text-white">
+                  {stop.city.replace(/^\d+\.\s*/, '')}
+                </span>
                 {stop.transitMode && (
-                  <span className="text-[10px] text-white font-bold uppercase tracking-wider bg-indigo-600/90 px-1.5 py-0.5 rounded-md">
+                  <span className="text-[9px] text-white/90 font-bold uppercase tracking-wider bg-white/20 px-1.5 py-0.5 rounded">
                     {stop.transitMode}
                   </span>
                 )}
@@ -364,7 +366,7 @@ export const TripHeroHeader: React.FC<TripHeroHeaderProps> = ({
                   <button
                     type="button"
                     onClick={() => handleRemoveCityStop(stop.id)}
-                    className="text-neutral-400 hover:text-white text-xs ml-0.5 cursor-pointer leading-none"
+                    className="text-white/40 hover:text-white text-xs ml-0.5 cursor-pointer leading-none"
                     title="Remove stop"
                   >
                     ✕
@@ -378,7 +380,7 @@ export const TripHeroHeader: React.FC<TripHeroHeaderProps> = ({
           {isAddCityOpen ? (
             <form
               onSubmit={handleAddCityStop}
-              className="inline-flex items-center gap-1.5 bg-black/70 backdrop-blur-md rounded-full px-3 py-0.5 border border-white/30"
+              className="inline-flex items-center gap-1.5 bg-black/70 backdrop-blur-md rounded-full px-2.5 py-0.5 border border-white/30"
             >
               <input
                 type="text"
@@ -386,18 +388,18 @@ export const TripHeroHeader: React.FC<TripHeroHeaderProps> = ({
                 onChange={e => setNewCityName(e.target.value)}
                 placeholder="City name..."
                 autoFocus
-                className="px-1 text-xs text-white placeholder:text-neutral-400 bg-transparent focus:outline-none w-28"
+                className="px-1 text-xs text-white placeholder:text-neutral-400 bg-transparent focus:outline-none w-24"
               />
               <button
                 type="submit"
-                className="px-2 py-0.5 bg-blue-600 hover:bg-blue-500 text-white rounded-full text-[11px] font-bold cursor-pointer"
+                className="px-2 py-0.5 bg-blue-600 hover:bg-blue-500 text-white rounded-full text-[10px] font-bold cursor-pointer"
               >
                 Add
               </button>
               <button
                 type="button"
                 onClick={() => setIsAddCityOpen(false)}
-                className="text-neutral-300 hover:text-white text-xs px-1 cursor-pointer"
+                className="text-neutral-300 hover:text-white text-xs px-0.5 cursor-pointer"
               >
                 ✕
               </button>
@@ -406,10 +408,11 @@ export const TripHeroHeader: React.FC<TripHeroHeaderProps> = ({
             <button
               type="button"
               onClick={() => setIsAddCityOpen(true)}
-              className="inline-flex items-center gap-1 border border-dashed border-slate-500 hover:border-white bg-black/40 hover:bg-black/60 text-slate-300 hover:text-white rounded-full px-2.5 sm:px-3 py-1 text-xs font-medium transition-all cursor-pointer"
+              className="inline-flex items-center gap-1 border border-dashed border-white/25 hover:border-white/50 bg-black/25 hover:bg-black/45 text-white/70 hover:text-white rounded-full px-2 py-0.5 text-xs font-medium transition-all cursor-pointer"
+              title="Add a destination stop"
             >
               <span className="material-symbols-outlined text-xs">add</span>
-              <span>Add City</span>
+              <span className="text-[10px]">Add City</span>
             </button>
           )}
         </div>
