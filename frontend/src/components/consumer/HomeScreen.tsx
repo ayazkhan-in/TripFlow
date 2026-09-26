@@ -37,13 +37,13 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
 
   const scrollLeft = () => {
     if (scrollContainerRef.current) {
-      scrollContainerRef.current.scrollBy({ left: -320, behavior: 'smooth' });
+      scrollContainerRef.current.scrollBy({ left: -360, behavior: 'smooth' });
     }
   };
 
   const scrollRight = () => {
     if (scrollContainerRef.current) {
-      scrollContainerRef.current.scrollBy({ left: 320, behavior: 'smooth' });
+      scrollContainerRef.current.scrollBy({ left: 360, behavior: 'smooth' });
     }
   };
 
@@ -550,7 +550,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
         <div className="relative">
           <div
             ref={scrollContainerRef}
-            className="flex gap-4 overflow-x-auto pb-4 pt-1 px-1 custom-scrollbar snap-x snap-mandatory scroll-smooth items-stretch"
+            className="flex gap-6 overflow-x-auto pb-6 pt-3 px-1 custom-scrollbar snap-x snap-mandatory scroll-smooth items-stretch"
           >
             {filteredPackages.map(pkg => (
               <LuxuryCard
@@ -569,6 +569,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
                 actionVariant="button"
                 actionLabel="Select & Customize"
                 theme="light"
+                className="w-[320px] sm:w-[340px] shrink-0"
                 onActionClick={() => handleSelectPackage(pkg)}
                 onClick={() => handleSelectPackage(pkg)}
               />

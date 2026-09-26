@@ -81,7 +81,7 @@ export const LuxuryCard: React.FC<LuxuryCardProps> = ({
   const isDark = theme === 'dark';
   const widthClasses = className && (className.includes('w-') || className.includes('max-w-'))
     ? ''
-    : 'w-[270px] sm:w-[285px] shrink-0';
+    : 'w-[320px] sm:w-[340px] shrink-0';
 
   return (
     <article

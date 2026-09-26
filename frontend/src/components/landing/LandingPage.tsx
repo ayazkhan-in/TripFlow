@@ -1,7 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import {
   CURATED_DESTINATIONS,
-  KERALA_HERO_IMAGE,
   KERALA_TIMELINE_HERO,
   ROUTE_MAP_IMAGE,
   RADAR_MAP_IMAGE,
@@ -27,6 +26,18 @@ export const LandingPage: React.FC<LandingPageProps> = ({
 }) => {
   const [activeFaq, setActiveFaq] = useState<number | null>(null);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const videoRef = useRef<HTMLVideoElement>(null);
+
+  useEffect(() => {
+    const video = videoRef.current;
+    if (video) {
+      video.defaultMuted = true;
+      video.muted = true;
+      video.play().catch(err => {
+        console.warn('Video autoPlay prevented:', err);
+      });
+    }
+  }, []);
 
   const toggleFaq = (index: number) => {
     setActiveFaq(activeFaq === index ? null : index);
@@ -35,318 +46,215 @@ export const LandingPage: React.FC<LandingPageProps> = ({
   return (
     <div className="min-h-screen bg-[#F7F8FA] text-[#151c27] flex flex-col font-sans selection:bg-[#2563EB] selection:text-white">
       {/* ------------------------------------------------------------- */}
-      {/* LANDING NAVIGATION HEADER                                     */}
+      {/* CINEMATIC HERO SECTION WITH FLOATING HEADER (REFERENCE LAYOUT)*/}
       {/* ------------------------------------------------------------- */}
-      <header className="sticky top-0 z-40 bg-white/90 backdrop-blur-md border-b border-neutral-200/80 px-4 sm:px-8 h-16 flex items-center justify-between relative select-none">
-        {/* Brand Anchor on Left */}
-        <div className="flex items-center gap-2.5 shrink-0">
-          <span className="w-8 h-8 rounded-xl bg-[#2563EB] flex items-center justify-center text-white shadow-xs">
-            <span className="material-symbols-outlined text-lg">flight_takeoff</span>
-          </span>
-          <span className="text-[19px] font-bold text-[#004AC6] tracking-tight">
+      <section className="relative min-h-screen flex flex-col justify-between text-white overflow-hidden isolate font-['Plus_Jakarta_Sans',sans-serif]">
+        {/* Background Media with Hero Video (No dark overlay) */}
+        <div className="absolute inset-0 pointer-events-none overflow-hidden select-none z-0">
+          <video
+            ref={videoRef}
+            autoPlay
+            loop
+            muted
+            playsInline
+            className="w-full h-full object-cover object-center"
+          >
+            <source src="/hero.mp4" type="video/mp4" />
+          </video>
+        </div>
+
+        {/* TOP: Floating Transparent Navigation Header */}
+        <header className="relative z-30 w-full px-6 sm:px-12 lg:px-16 py-8 flex items-center justify-between select-none">
+          {/* Brand Anchor on Left (Matching DOLANAN style) */}
+          <div className="text-xl sm:text-2xl font-bold tracking-wider text-white uppercase select-none drop-shadow-[0_1px_4px_rgba(0,0,0,0.4)]">
             TripFlow
-          </span>
-        </div>
+          </div>
 
-        {/* Center Navigation Links */}
-        <nav className="hidden md:flex items-center gap-6 lg:gap-8 text-xs font-semibold text-neutral-600 absolute left-1/2 -translate-x-1/2">
-          <a
-            href="#features"
-            className="hover:text-[#004AC6] transition-colors py-1 flex items-center gap-1.5"
-          >
-            <span>Features</span>
-          </a>
-
-          {onOpenBuilder && (
-            <button
-              type="button"
-              onClick={onOpenBuilder}
-              className="hover:text-[#004AC6] transition-colors py-1 flex items-center gap-1.5 cursor-pointer text-neutral-600 hover:text-neutral-900"
-            >
-              <span>Itinerary Builder</span>
-            </button>
-          )}
-
-          <a
-            href="#vault"
-            className="hover:text-[#004AC6] transition-colors py-1 flex items-center gap-1.5"
-          >
-            <span>Vault</span>
-          </a>
-
-          <a
-            href="#destinations"
-            className="hover:text-[#004AC6] transition-colors py-1 flex items-center gap-1.5"
-          >
-            <span>Destinations</span>
-          </a>
-
-          <a
-            href="#dual-surface"
-            className="hover:text-[#004AC6] transition-colors py-1 flex items-center gap-1.5"
-          >
-            <span>Operations</span>
-          </a>
-        </nav>
-
-        {/* Right CTA Cluster */}
-        <div className="flex items-center gap-2 sm:gap-3 shrink-0">
-          <button
-            type="button"
-            onClick={() => onOpenAuth('traveler')}
-            className="px-3.5 py-1.5 rounded-xl text-xs font-semibold text-neutral-600 hover:text-neutral-900 hover:bg-neutral-100 transition-colors cursor-pointer"
-          >
-            Sign In
-          </button>
-          <button
-            type="button"
-            onClick={onExploreDemo}
-            className="px-4 py-2 rounded-xl bg-[#2563EB] hover:bg-[#1D4ED8] active:scale-95 text-white text-xs font-bold transition-all shadow-xs flex items-center gap-1.5 cursor-pointer"
-          >
-            <span>Launch App</span>
-            <span className="material-symbols-outlined text-xs">arrow_forward</span>
-          </button>
-
-          {/* Mobile Menu Toggle Button */}
-          <button
-            type="button"
-            onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-            className="md:hidden w-8 h-8 rounded-lg flex items-center justify-center text-neutral-600 hover:bg-neutral-100 cursor-pointer"
-            aria-label="Toggle Menu"
-          >
-            <span className="material-symbols-outlined text-lg">
-              {mobileMenuOpen ? 'close' : 'menu'}
-            </span>
-          </button>
-        </div>
-
-        {/* Mobile Dropdown Menu */}
-        {mobileMenuOpen && (
-          <div className="md:hidden absolute top-16 left-0 right-0 bg-white border-b border-neutral-200 px-6 py-4 shadow-xl flex flex-col gap-3 text-xs font-semibold text-neutral-700 animate-in fade-in duration-150">
-            <a
-              href="#features"
-              onClick={() => setMobileMenuOpen(false)}
-              className="py-1.5 hover:text-[#004AC6]"
-            >
-              Features
+          {/* Center Navigation Links */}
+          <nav className="hidden md:flex items-center gap-8 lg:gap-10 text-sm font-medium text-white/90 absolute left-1/2 -translate-x-1/2 drop-shadow-[0_1px_4px_rgba(0,0,0,0.4)]">
+            <a href="#destinations" className="hover:text-white transition-colors">
+              Destinations
             </a>
             {onOpenBuilder && (
               <button
                 type="button"
-                onClick={() => {
-                  setMobileMenuOpen(false);
-                  onOpenBuilder();
-                }}
-                className="py-1.5 text-left text-[#2563EB] font-bold"
+                onClick={onOpenBuilder}
+                className="hover:text-white transition-colors cursor-pointer"
               >
-                Itinerary Builder
+                Builder
               </button>
             )}
-            <a
-              href="#vault"
-              onClick={() => setMobileMenuOpen(false)}
-              className="py-1.5 hover:text-[#004AC6]"
-            >
-              Vault
-            </a>
-            <a
-              href="#destinations"
-              onClick={() => setMobileMenuOpen(false)}
-              className="py-1.5 hover:text-[#004AC6]"
-            >
-              Destinations
-            </a>
-            <a
-              href="#dual-surface"
-              onClick={() => setMobileMenuOpen(false)}
-              className="py-1.5 hover:text-[#004AC6]"
-            >
+            <a href="#dual-surface" className="hover:text-white transition-colors">
               Operations
             </a>
+            <a href="#vault" className="hover:text-white transition-colors">
+              Vault
+            </a>
+            <a href="#features" className="hover:text-white transition-colors">
+              Features
+            </a>
+          </nav>
+
+          {/* Right CTA Cluster */}
+          <div className="flex items-center gap-3 shrink-0">
+            <button
+              type="button"
+              onClick={() => onOpenAuth('traveler')}
+              className="hidden sm:inline-block text-xs font-semibold text-white/90 hover:text-white transition-colors px-3 py-1.5 cursor-pointer drop-shadow-sm"
+            >
+              Sign In
+            </button>
+            <button
+              type="button"
+              onClick={onExploreDemo}
+              className="px-6 py-2.5 rounded-full bg-white text-slate-900 hover:bg-slate-100 active:scale-95 text-xs sm:text-sm font-semibold transition-all shadow-md cursor-pointer"
+            >
+              Register Now
+            </button>
+
+            {/* Mobile Menu Toggle Button */}
+            <button
+              type="button"
+              onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+              className="md:hidden w-9 h-9 rounded-full flex items-center justify-center text-white bg-black/30 backdrop-blur-md cursor-pointer"
+              aria-label="Toggle Menu"
+            >
+              <span className="material-symbols-outlined text-xl">
+                {mobileMenuOpen ? 'close' : 'menu'}
+              </span>
+            </button>
           </div>
-        )}
-      </header>
 
-      {/* ------------------------------------------------------------- */}
-      {/* HERO SECTION                                                  */}
-      {/* ------------------------------------------------------------- */}
-      <section className="relative overflow-hidden pt-12 pb-20 px-4 sm:px-8 border-b border-[#E5E7EB] bg-linear-to-b from-white via-[#F7F8FA] to-[#F0F3FF]">
-        {/* Subtle decorative glow */}
-        <div className="absolute top-1/4 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[700px] h-[350px] bg-blue-100/40 rounded-full blur-3xl pointer-events-none -z-10" />
-
-        <div className="max-w-6xl mx-auto">
-          {/* Eyebrow badge */}
-          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[#EBF1FF] border border-[#BFDBFE] text-[#1E40AF] text-xs font-semibold mb-6 shadow-2xs">
-            <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
-            <span>Live Telemetry & Concierge Orchestration Platform</span>
-          </div>
-
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 items-center">
-            {/* Left Column: Headline & Value Prop */}
-            <div className="lg:col-span-7 space-y-6">
-              <h1 className="text-3xl sm:text-5xl lg:text-6xl font-extrabold text-[#111827] tracking-tight leading-[1.12]">
-                Personalized luxury journeys, backed by{' '}
-                <span className="text-[#004AC6] underline decoration-[#93C5FD] decoration-wavy underline-offset-8">
-                  live operational telemetry
-                </span>
-                .
-              </h1>
-              <p className="text-base sm:text-lg text-[#4B5563] leading-relaxed max-w-xl">
-                Experience bespoke, hand-crafted private itineraries that automatically adapt
-                to flight delays, weather shifts, and chauffeur tracking in real time. Backed by
-                a 24/7 dedicated WhatsApp concierge and regional master drivers.
-              </p>
-
-              {/* CTAs */}
-              <div className="flex flex-wrap items-center gap-3 pt-2">
-                {onOpenBuilder && (
-                  <button
-                    onClick={onOpenBuilder}
-                    className="px-6 py-3.5 rounded-full bg-linear-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white text-sm font-bold transition-all shadow-md hover:shadow-lg flex items-center gap-2 cursor-pointer"
-                  >
-                    <span className="material-symbols-outlined text-base">dashboard_customize</span>
-                    <span>Interactive Itinerary Builder</span>
-                    <span className="text-[10px] bg-white/20 px-2 py-0.5 rounded-full font-bold">New</span>
-                  </button>
-                )}
-
+          {/* Mobile Dropdown Menu */}
+          {mobileMenuOpen && (
+            <div className="md:hidden absolute top-20 left-6 right-6 bg-slate-900/95 backdrop-blur-xl border border-white/15 rounded-2xl p-6 shadow-2xl flex flex-col gap-4 text-sm font-semibold text-white z-50 animate-in fade-in duration-200">
+              <a
+                href="#destinations"
+                onClick={() => setMobileMenuOpen(false)}
+                className="py-1 hover:text-blue-400"
+              >
+                Destinations
+              </a>
+              {onOpenBuilder && (
                 <button
-                  onClick={onExploreDemo}
-                  className="px-6 py-3.5 rounded-full bg-[#2563EB] hover:bg-[#1D4ED8] text-white text-sm font-bold transition-all shadow-md hover:shadow-lg flex items-center gap-2 cursor-pointer group"
+                  type="button"
+                  onClick={() => {
+                    setMobileMenuOpen(false);
+                    onOpenBuilder();
+                  }}
+                  className="py-1 text-left hover:text-blue-400"
                 >
-                  <span>Experience Traveler Concierge</span>
-                  <span className="material-symbols-outlined text-base group-hover:translate-x-0.5 transition-transform">
-                    east
-                  </span>
+                  Itinerary Builder
                 </button>
-
+              )}
+              <a
+                href="#dual-surface"
+                onClick={() => setMobileMenuOpen(false)}
+                className="py-1 hover:text-blue-400"
+              >
+                Operations
+              </a>
+              <a
+                href="#vault"
+                onClick={() => setMobileMenuOpen(false)}
+                className="py-1 hover:text-blue-400"
+              >
+                Vault
+              </a>
+              <a
+                href="#features"
+                onClick={() => setMobileMenuOpen(false)}
+                className="py-1 hover:text-blue-400"
+              >
+                Features
+              </a>
+              <div className="pt-3 border-t border-white/15 flex items-center justify-between">
                 <button
-                  onClick={onExploreOps}
-                  className="px-6 py-3.5 rounded-full bg-white hover:bg-gray-50 text-[#1F2937] border border-[#D1D5DB] text-sm font-semibold transition-all shadow-xs flex items-center gap-2 cursor-pointer"
+                  type="button"
+                  onClick={() => {
+                    setMobileMenuOpen(false);
+                    onOpenAuth('traveler');
+                  }}
+                  className="text-xs text-white/80 hover:text-white"
                 >
-                  <span className="material-symbols-outlined text-[#004AC6] text-base">
-                    hub
-                  </span>
-                  <span>View Operations Hub Demo</span>
+                  Sign In
                 </button>
-              </div>
-
-              {/* Verified Trust Badges */}
-              <div className="pt-4 flex flex-wrap items-center gap-6 text-xs text-[#6B7280]">
-                <div className="flex items-center gap-1.5">
-                  <span className="material-symbols-outlined text-emerald-600 text-base">
-                    verified_user
-                  </span>
-                  <span>Verified 24/7 Human Concierge</span>
-                </div>
-                <div className="flex items-center gap-1.5">
-                  <span className="material-symbols-outlined text-blue-600 text-base">
-                    airline_stops
-                  </span>
-                  <span>Autonomous Flight Delay Cascade</span>
-                </div>
-                <div className="flex items-center gap-1.5">
-                  <span className="material-symbols-outlined text-purple-600 text-base">
-                    lock
-                  </span>
-                  <span>Curated Luxury Stays & Vouchers</span>
-                </div>
-              </div>
-            </div>
-
-            {/* Right Column: Hero Live Bento Preview Card */}
-            <div className="lg:col-span-5">
-              <div className="relative bg-white rounded-3xl p-5 shadow-xl border border-[#E5E7EB] space-y-4">
-                {/* Floating Active Tour Pill */}
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-ping"></span>
-                    <span className="text-xs font-bold text-[#111827]">Active Tour · LIVE</span>
-                  </div>
-                  <span className="text-[11px] font-mono font-semibold px-2.5 py-0.5 rounded-full bg-[#EBF1FF] text-[#1E40AF]">
-                    REF #TF-1024
-                  </span>
-                </div>
-
-                {/* Tour Visual & Header */}
-                <div className="relative rounded-2xl overflow-hidden h-44 shadow-xs">
-                  <img
-                    src={KERALA_HERO_IMAGE}
-                    alt="Kerala Backwaters & Tea Hills"
-                    className="w-full h-full object-cover"
-                  />
-                  <div className="absolute inset-0 bg-linear-to-t from-black/80 via-black/20 to-transparent flex flex-col justify-end p-4 text-white">
-                    <div className="text-[11px] uppercase tracking-wider text-emerald-300 font-semibold">
-                      Kochi → Munnar → Alleppey
-                    </div>
-                    <div className="text-lg font-bold">Kerala 6-Day Luxury Escape</div>
-                    <div className="text-xs text-white/80">Oct 14 – 19, 2025 · 2 Travelers</div>
-                  </div>
-                </div>
-
-                {/* Live Cascade Telemetry Snippet */}
-                <div className="bg-[#FFFBEB] border border-[#FDE68A] p-3 rounded-xl flex items-start gap-2.5">
-                  <span className="material-symbols-outlined text-amber-600 text-base shrink-0 mt-0.5">
-                    bolt
-                  </span>
-                  <div className="text-xs">
-                    <div className="font-bold text-amber-900 flex items-center justify-between">
-                      <span>Flight AI-682 (+1h 45m Delay)</span>
-                      <span className="text-[10px] bg-amber-200/80 px-1.5 py-0.2 rounded font-medium text-amber-900">
-                        Auto-Synchronized
-                      </span>
-                    </div>
-                    <p className="text-amber-800 text-[11px] mt-0.5 leading-snug">
-                      Chauffeur Rajesh K. rescheduled to 02:30 PM. Fort Kochi sunset walk moved
-                      to 05:30 PM smoothly.
-                    </p>
-                  </div>
-                </div>
-
-                {/* Chauffeur & Concierge Row */}
-                <div className="grid grid-cols-2 gap-3 pt-1">
-                  <div className="p-2.5 rounded-xl bg-[#F9FAFB] border border-[#E5E7EB] flex items-center gap-2.5">
-                    <img
-                      src={CONCIERGE_AVATAR}
-                      alt="Arun V."
-                      className="w-8 h-8 rounded-full object-cover ring-1 ring-blue-300"
-                    />
-                    <div className="min-w-0">
-                      <div className="text-[11px] font-bold text-[#111827] truncate">
-                        Arun V.
-                      </div>
-                      <div className="text-[10px] text-emerald-600 font-medium flex items-center gap-1">
-                        <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
-                        <span>WhatsApp Ready</span>
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="p-2.5 rounded-xl bg-[#F9FAFB] border border-[#E5E7EB] flex items-center gap-2.5">
-                    <div className="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center text-blue-700 font-bold text-xs">
-                      RK
-                    </div>
-                    <div className="min-w-0">
-                      <div className="text-[11px] font-bold text-[#111827] truncate">
-                        Rajesh K.
-                      </div>
-                      <div className="text-[10px] text-blue-600 font-medium truncate">
-                        Innova KL-07-DG-4412
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Interactive Action button on preview */}
                 <button
-                  onClick={onExploreDemo}
-                  className="w-full py-2.5 rounded-full bg-[#F0F3FF] hover:bg-[#DBE1FF] text-[#004AC6] text-xs font-bold transition-colors flex items-center justify-center gap-1.5 cursor-pointer"
+                  type="button"
+                  onClick={() => {
+                    setMobileMenuOpen(false);
+                    onExploreDemo();
+                  }}
+                  className="px-4 py-2 rounded-full bg-white text-slate-900 text-xs font-bold"
                 >
-                  <span>Open Full Itinerary Dashboard</span>
-                  <span className="material-symbols-outlined text-sm">open_in_new</span>
+                  Register Now
                 </button>
               </div>
             </div>
+          )}
+        </header>
+
+        {/* MIDDLE: Left-Aligned Large Display Headline & Get Started Button */}
+        <div className="relative z-20 px-6 sm:px-12 lg:px-16 my-auto py-12 max-w-4xl text-left">
+          <h1 className="text-6xl sm:text-7xl lg:text-[5.5rem] font-bold text-white tracking-tight leading-[1.04] drop-shadow-[0_2px_12px_rgba(0,0,0,0.6)]">
+            Personalized<br />
+            Luxury<br />
+            Journeys.
+          </h1>
+
+          <p className="text-base sm:text-lg text-white/95 leading-relaxed max-w-xl mt-5 font-normal drop-shadow-[0_1px_8px_rgba(0,0,0,0.6)]">
+            Bespoke, hand-crafted private itineraries that automatically adapt
+            to flight delays, weather shifts, and chauffeur tracking in real time.
+          </p>
+
+          <div className="pt-6">
+            <button
+              onClick={onExploreDemo}
+              className="px-8 py-3.5 rounded-full bg-white text-slate-900 hover:bg-slate-100 text-sm sm:text-base font-semibold transition-all shadow-lg hover:shadow-2xl hover:scale-105 active:scale-95 inline-flex items-center gap-2 cursor-pointer"
+            >
+              <span>Get Started</span>
+            </button>
+          </div>
+        </div>
+
+        {/* BOTTOM: Social Proof Avatars & Category Pills */}
+        <div className="relative z-20 px-6 sm:px-12 lg:px-16 pb-10 pt-4 flex flex-col sm:flex-row items-start sm:items-end justify-between gap-6">
+          {/* Bottom Left: Avatar Stack */}
+          <div className="flex items-center gap-3 drop-shadow-[0_1px_8px_rgba(0,0,0,0.6)]">
+            <div className="flex -space-x-2.5 overflow-hidden">
+              <img
+                className="inline-block h-10 w-10 rounded-full ring-2 ring-white/90 object-cover shadow-sm"
+                src={USER_AVATAR}
+                alt="Sarah"
+              />
+              <img
+                className="inline-block h-10 w-10 rounded-full ring-2 ring-white/90 object-cover shadow-sm"
+                src={CONCIERGE_AVATAR}
+                alt="Arun"
+              />
+              <img
+                className="inline-block h-10 w-10 rounded-full ring-2 ring-white/90 object-cover shadow-sm"
+                src={ALEX_DISPATCH_AVATAR}
+                alt="Alex"
+              />
+            </div>
+            <div className="text-xs text-white/95 leading-tight">
+              <span className="block text-white/80 font-normal">Booked by over</span>
+              <span className="font-bold text-white">10K+ people</span>
+            </div>
+          </div>
+
+          {/* Bottom Right: Category Pills */}
+          <div className="flex items-center gap-2.5 flex-wrap drop-shadow-[0_1px_8px_rgba(0,0,0,0.6)]">
+            <span className="px-5 py-2 rounded-full bg-black/40 backdrop-blur-md border border-white/15 text-white/90 text-xs font-medium hover:bg-black/50 transition-colors cursor-default shadow-xs">
+              Curated Circuits
+            </span>
+            <span className="px-5 py-2 rounded-full bg-black/40 backdrop-blur-md border border-white/15 text-white/90 text-xs font-medium hover:bg-black/50 transition-colors cursor-default shadow-xs">
+              Live Telemetry
+            </span>
+            <span className="px-5 py-2 rounded-full bg-black/40 backdrop-blur-md border border-white/15 text-white/90 text-xs font-medium hover:bg-black/50 transition-colors cursor-default shadow-xs">
+              Chauffeur Mesh
+            </span>
           </div>
         </div>
       </section>
