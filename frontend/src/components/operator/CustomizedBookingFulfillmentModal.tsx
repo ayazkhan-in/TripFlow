@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { BookingItem, OperatorTab } from '../../types/travel';
+import { BookingItem, BookingCustomizationDetail, OperatorTab } from '../../types/travel';
 import { useOperator } from '../../context/OperatorContext';
 import { formatCurrency } from '../../utils/pricing';
 
@@ -33,7 +33,7 @@ export const CustomizedBookingFulfillmentModal: React.FC<
     guideAssigned: booking.status === 'Confirmed',
   };
 
-  const customization = {
+  const customization: BookingCustomizationDetail = {
     ...(booking.customization || {
       isCustomized: true,
       basePackageTitle: booking.tourTitle,
@@ -41,6 +41,8 @@ export const CustomizedBookingFulfillmentModal: React.FC<
       customPrice: booking.amount,
       deltaPrice: Math.round(booking.amount * 0.2),
       customRequests: 'Strict vegetarian gourmet meals. High floor quiet suite with mountain views. Dedicated English-speaking chauffeur.',
+      dietaryRestrictions: 'Strict Vegetarian / Gourmet Wellness',
+      transferPreference: 'Dedicated Executive Chauffeur (SUV / EV)',
     }),
     fulfillmentStatus,
   };
