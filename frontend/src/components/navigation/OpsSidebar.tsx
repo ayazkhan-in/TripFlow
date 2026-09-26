@@ -74,9 +74,10 @@ export const OpsSidebar: React.FC<OpsSidebarProps> = ({
       <div className="flex flex-col gap-3">
         {/* Brand & Hub Header */}
         <div className="flex items-center justify-between pb-3 border-b border-slate-100">
-          <button
-            type="button"
-            onClick={() => {
+          <a
+            href="/"
+            onClick={e => {
+              e.preventDefault();
               if (onGoToLanding) {
                 onGoToLanding();
               } else {
@@ -105,7 +106,7 @@ export const OpsSidebar: React.FC<OpsSidebarProps> = ({
                 {user?.agencyCode ? `${user.agencyCode} • Controller` : 'Dispatch Controller'}
               </p>
             </div>
-          </button>
+          </a>
         </div>
 
         {/* Primary Action Button */}
@@ -128,9 +129,12 @@ export const OpsSidebar: React.FC<OpsSidebarProps> = ({
         {/* Navigation Items */}
         <nav className="flex flex-col gap-0.5 pt-1 overflow-y-auto max-h-[calc(100vh-220px)] custom-scrollbar">
           {/* 1. Operator Hub */}
-          <button
-            type="button"
-            onClick={() => onTabChange('hub')}
+          <a
+            href="/operator"
+            onClick={e => {
+              e.preventDefault();
+              onTabChange('hub');
+            }}
             className={`w-full text-left transition-all duration-150 cursor-pointer px-3 py-2 rounded-xl text-xs font-medium flex items-center gap-2.5 ${
               currentTab === 'hub'
                 ? 'bg-slate-900 text-white font-semibold shadow-xs'
@@ -145,12 +149,15 @@ export const OpsSidebar: React.FC<OpsSidebarProps> = ({
               hub
             </span>
             <span className="truncate">Operator Hub</span>
-          </button>
+          </a>
 
           {/* 2. Tour Packages & Creator Studio */}
-          <button
-            type="button"
-            onClick={() => onTabChange('packages')}
+          <a
+            href="/operator/packages"
+            onClick={e => {
+              e.preventDefault();
+              onTabChange('packages');
+            }}
             className={`w-full text-left transition-all duration-150 cursor-pointer px-3 py-2 rounded-xl text-xs font-medium flex items-center justify-between ${
               currentTab === 'packages'
                 ? 'bg-slate-900 text-white font-semibold shadow-xs'
@@ -176,12 +183,15 @@ export const OpsSidebar: React.FC<OpsSidebarProps> = ({
             >
               Studio
             </span>
-          </button>
+          </a>
 
           {/* 3. Package Bookings (Separate page showing people who booked packages) */}
-          <button
-            type="button"
-            onClick={() => onTabChange('bookings')}
+          <a
+            href="/operator/bookings"
+            onClick={e => {
+              e.preventDefault();
+              onTabChange('bookings');
+            }}
             className={`w-full text-left transition-all duration-150 cursor-pointer px-3 py-2 rounded-xl text-xs font-medium flex items-center justify-between ${
               currentTab === 'bookings'
                 ? 'bg-slate-900 text-white font-semibold shadow-xs'
@@ -203,7 +213,7 @@ export const OpsSidebar: React.FC<OpsSidebarProps> = ({
                 {pendingCustomizedCount}
               </span>
             )}
-          </button>
+          </a>
 
           {/* 3. Expandable Tree Bookings Section (Component Bookings: Flights, Stays, Transfers, Activities) */}
           <div className="pt-0.5">
@@ -241,6 +251,14 @@ export const OpsSidebar: React.FC<OpsSidebarProps> = ({
                 {BOOKINGS_TREE_NAV.map((subItem, index) => {
                   const isSubActive = currentTab === subItem.id;
                   const isLast = index === BOOKINGS_TREE_NAV.length - 1;
+                  const subHref =
+                    subItem.id === 'flight_bookings'
+                      ? '/operator/bookings/flights'
+                      : subItem.id === 'stay_bookings'
+                      ? '/operator/bookings/stays'
+                      : subItem.id === 'transfer_bookings'
+                      ? '/operator/bookings/transfers'
+                      : '/operator/bookings/activities';
 
                   return (
                     <div key={subItem.id} className="relative flex items-center">
@@ -252,9 +270,12 @@ export const OpsSidebar: React.FC<OpsSidebarProps> = ({
                         <div className="absolute -left-[17px] top-1/2 bottom-0 border-l border-slate-200 pointer-events-none" />
                       )}
 
-                      <button
-                        type="button"
-                        onClick={() => onTabChange(subItem.id)}
+                      <a
+                        href={subHref}
+                        onClick={e => {
+                          e.preventDefault();
+                          onTabChange(subItem.id);
+                        }}
                         className={`w-full text-left transition-all duration-150 cursor-pointer px-2.5 py-1.5 rounded-lg text-xs font-medium flex items-center gap-2.5 ${
                           isSubActive
                             ? 'bg-slate-900 text-white font-semibold shadow-xs'
@@ -269,7 +290,7 @@ export const OpsSidebar: React.FC<OpsSidebarProps> = ({
                           {subItem.icon}
                         </span>
                         <span className="truncate">{subItem.label}</span>
-                      </button>
+                      </a>
                     </div>
                   );
                 })}
@@ -280,11 +301,16 @@ export const OpsSidebar: React.FC<OpsSidebarProps> = ({
           {/* 3. Other Operations Navigation Items */}
           {OTHER_OPERATIONS_NAV.map(item => {
             const isActive = currentTab === item.id;
+            const itemHref = `/operator/${item.id}`;
 
             return (
-              <button
+              <a
                 key={item.id}
-                onClick={() => onTabChange(item.id)}
+                href={itemHref}
+                onClick={e => {
+                  e.preventDefault();
+                  onTabChange(item.id);
+                }}
                 className={`w-full text-left transition-all duration-150 cursor-pointer px-3 py-2 rounded-xl text-xs font-medium flex items-center gap-2.5 ${
                   isActive
                     ? 'bg-slate-900 text-white font-semibold shadow-xs'
@@ -299,7 +325,7 @@ export const OpsSidebar: React.FC<OpsSidebarProps> = ({
                   {item.icon}
                 </span>
                 <span className="truncate">{item.label}</span>
-              </button>
+              </a>
             );
           })}
         </nav>
@@ -325,13 +351,17 @@ export const OpsSidebar: React.FC<OpsSidebarProps> = ({
           </div>
           <div className="flex items-center gap-1 shrink-0">
             {onGoToLanding && (
-              <button
-                onClick={onGoToLanding}
-                className="text-slate-400 hover:text-slate-700 transition-colors p-1 cursor-pointer"
+              <a
+                href="/"
+                onClick={e => {
+                  e.preventDefault();
+                  onGoToLanding();
+                }}
+                className="text-slate-400 hover:text-slate-700 transition-colors p-1 cursor-pointer flex items-center justify-center"
                 title="Bookit Landing Page"
               >
                 <span className="material-symbols-outlined text-sm">home</span>
-              </button>
+              </a>
             )}
             {onSwitchMode && (
               <button

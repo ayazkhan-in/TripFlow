@@ -78,13 +78,16 @@ export const LandingPage: React.FC<LandingPageProps> = ({
               Destinations
             </a>
             {onOpenBuilder && (
-              <button
-                type="button"
-                onClick={onOpenBuilder}
+              <a
+                href="/builder"
+                onClick={e => {
+                  e.preventDefault();
+                  onOpenBuilder();
+                }}
                 className="text-black hover:text-black/70 transition-colors cursor-pointer"
               >
                 Builder
-              </button>
+              </a>
             )}
             <a href="#dual-surface" className="text-black hover:text-black/70 transition-colors">
               Operations
@@ -99,20 +102,26 @@ export const LandingPage: React.FC<LandingPageProps> = ({
 
           {/* Right CTA Cluster */}
           <div className="flex items-center gap-3 shrink-0">
-            <button
-              type="button"
-              onClick={() => onOpenAuth('traveler')}
+            <a
+              href="/auth"
+              onClick={e => {
+                e.preventDefault();
+                onOpenAuth('traveler');
+              }}
               className="hidden sm:inline-block text-xs font-semibold text-black hover:text-black/70 transition-colors px-3 py-1.5 cursor-pointer"
             >
               Sign In
-            </button>
-            <button
-              type="button"
-              onClick={() => onOpenAuth('operator')}
-              className="px-6 py-2.5 rounded-full bg-black text-white hover:bg-slate-800 active:scale-95 text-xs sm:text-sm font-semibold transition-all shadow-md cursor-pointer"
+            </a>
+            <a
+              href="/auth/operator"
+              onClick={e => {
+                e.preventDefault();
+                onOpenAuth('operator');
+              }}
+              className="px-6 py-2.5 rounded-full bg-black text-white hover:bg-slate-800 active:scale-95 text-xs sm:text-sm font-semibold transition-all shadow-md cursor-pointer inline-flex items-center justify-center"
             >
               Register Now
-            </button>
+            </a>
 
             {/* Mobile Menu Toggle Button */}
             <button

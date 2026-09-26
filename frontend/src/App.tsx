@@ -55,15 +55,98 @@ import { OperatorProvider, useOperator } from './context/OperatorContext';
 import { CreateTourPackageModal } from './components/operator/CreateTourPackageModal';
 import { OperatorPackagesScreen } from './components/operator/OperatorPackagesScreen';
 import { ThemedToast } from './components/common/ThemedToast';
+import { parseUrlPath, formatUrlPath } from './utils/router';
 
 function BookitApp() {
-  // Navigation & Route State ('landing' is the default route on "/")
-  const [currentRoute, setCurrentRoute] = useState<'landing' | 'auth' | 'app'>('landing');
-  const [viewMode, setViewMode] = useState<ViewMode>('consumer');
-  const [consumerTab, setConsumerTab] = useState<ConsumerTab>('home');
-  const [operatorTab, setOperatorTab] = useState<OperatorTab>('overview');
-  const [operatorTourId, setOperatorTourId] = useState<string | null>(null);
+  // Navigation & Route State (initialized from current browser URL)
+  const initialRouteState = parseUrlPath(window.location.pathname);
+
+  const [currentRoute, setCurrentRoute] = useState<'landing' | 'auth' | 'app'>(initialRouteState.currentRoute);
+  const [viewMode, setViewMode] = useState<ViewMode>(initialRouteState.viewMode);
+  const [consumerTab, setConsumerTab] = useState<ConsumerTab>(initialRouteState.consumerTab);
+  const [operatorTab, setOperatorTab] = useState<OperatorTab>(initialRouteState.operatorTab);
+  const [operatorTourId, setOperatorTourId] = useState<string | null>(initialRouteState.operatorTourId);
   const [isCreatePackageOpen, setIsCreatePackageOpen] = useState<boolean>(false);
+
+  // Authentication State
+  const [authUser, setAuthUser] = useState<AuthUser | null>(null);
+  const [isAuthModalOpen, setIsAuthModalOpen] = useState<boolean>(false);
+  const [authModalRole, setAuthModalRole] = useState<'traveler' | 'operator'>(initialRouteState.authRole || 'traveler');
+
+  // Push URL changes to window history without page reload
+  const navigateTo = (options: {
+    route?: 'landing' | 'auth' | 'app';
+    mode?: ViewMode;
+    consumerTab?: ConsumerTab;
+    operatorTab?: OperatorTab;
+    tourId?: string | null;
+    authRole?: 'traveler' | 'operator';
+  }) => {
+    const nextRoute = options.route !== undefined ? options.route : currentRoute;
+    const nextMode = options.mode !== undefined ? options.mode : viewMode;
+    const nextConsumerTab = options.consumerTab !== undefined ? options.consumerTab : consumerTab;
+    const nextOperatorTab = options.operatorTab !== undefined ? options.operatorTab : operatorTab;
+    const nextTourId = options.tourId !== undefined ? options.tourId : (options.operatorTab !== undefined ? null : operatorTourId);
+    const nextAuthRole = options.authRole !== undefined ? options.authRole : authModalRole;
+
+    if (options.route !== undefined) setCurrentRoute(nextRoute);
+    if (options.mode !== undefined) setViewMode(nextMode);
+    if (options.consumerTab !== undefined) setConsumerTab(nextConsumerTab);
+    if (options.operatorTab !== undefined) {
+      setOperatorTab(nextOperatorTab);
+      setOperatorTourId(nextTourId);
+    }
+    if (options.tourId !== undefined) setOperatorTourId(nextTourId);
+    if (options.authRole !== undefined) setAuthModalRole(nextAuthRole);
+
+    const targetUrl = formatUrlPath({
+      currentRoute: nextRoute,
+      viewMode: nextMode,
+      consumerTab: nextConsumerTab,
+      operatorTab: nextOperatorTab,
+      operatorTourId: nextTourId,
+      authRole: nextAuthRole,
+    });
+
+    if (window.location.pathname !== targetUrl) {
+      window.history.pushState({}, '', targetUrl);
+    }
+  };
+
+  // Sync state when browser back/forward buttons are pressed
+  useEffect(() => {
+    const handlePopState = () => {
+      const parsed = parseUrlPath(window.location.pathname);
+      setCurrentRoute(parsed.currentRoute);
+      setViewMode(parsed.viewMode);
+      setConsumerTab(parsed.consumerTab);
+      setOperatorTab(parsed.operatorTab);
+      setOperatorTourId(parsed.operatorTourId);
+      if (parsed.authRole) {
+        setAuthModalRole(parsed.authRole);
+      }
+    };
+
+    window.addEventListener('popstate', handlePopState);
+    return () => window.removeEventListener('popstate', handlePopState);
+  }, []);
+
+  // Sync initial URL on mount if browser had an empty or redirect path
+  useEffect(() => {
+    const initialUrl = formatUrlPath({
+      currentRoute,
+      viewMode,
+      consumerTab,
+      operatorTab,
+      operatorTourId,
+      authRole: authModalRole,
+    });
+    if (window.location.pathname !== initialUrl && window.location.pathname === '/') {
+      // Keep '/' as root landing page
+    } else if (window.location.pathname !== initialUrl && window.location.pathname !== '/') {
+      window.history.replaceState({}, '', initialUrl);
+    }
+  }, []);
 
   const { addTravelerBooking, pendingCustomizedCount } = useOperator();
 
@@ -123,11 +206,6 @@ function BookitApp() {
     });
   }, []);
 
-  // Dummy Authentication State
-  const [authUser, setAuthUser] = useState<AuthUser | null>(null);
-  const [isAuthModalOpen, setIsAuthModalOpen] = useState<boolean>(false);
-  const [authModalRole, setAuthModalRole] = useState<'traveler' | 'operator'>('traveler');
-
   // Global Interactive Disruption State (Synchronized across Consumer & Operator)
   const [isDisruptionResolved, setIsDisruptionResolved] = useState<boolean>(false);
 
@@ -154,18 +232,15 @@ function BookitApp() {
 
   // Auth Handlers
   const handleOpenAuth = (role: 'traveler' | 'operator' = 'traveler') => {
-    setAuthModalRole(role);
-    setCurrentRoute('auth');
+    navigateTo({ route: 'auth', authRole: role });
   };
 
   const handleLogin = (user: AuthUser) => {
     setAuthUser(user);
     if (user.role === 'operator') {
-      setViewMode('operator');
-      setOperatorTab('overview');
+      navigateTo({ route: 'app', mode: 'operator', operatorTab: 'overview', tourId: null });
     } else {
-      setViewMode('consumer');
-      setConsumerTab('home');
+      navigateTo({ route: 'app', mode: 'consumer', consumerTab: 'home' });
 
       // Load their trips after login
       TripFlowApi.getMyTrips().then(trips => {
@@ -182,7 +257,6 @@ function BookitApp() {
         if (docs && docs.length > 0) setVaultDocuments(docs);
       });
     }
-    setCurrentRoute('app');
     showToast(`Welcome, ${user.name}!`);
   };
 
@@ -193,7 +267,7 @@ function BookitApp() {
     setBookedTrips([]);
     setActiveBookedTripId(null);
     setVaultDocuments([]);
-    setCurrentRoute('landing');
+    navigateTo({ route: 'landing' });
     showToast('Signed out of TripFlow.');
   };
 
@@ -227,9 +301,7 @@ function BookitApp() {
         membership: 'Concierge Elite Member',
       });
     }
-    setViewMode('consumer');
-    setConsumerTab('home');
-    setCurrentRoute('app');
+    navigateTo({ route: 'app', mode: 'consumer', consumerTab: 'home' });
     showToast('Welcome back, Sarah Mehta! Live telemetry active.');
   };
 
@@ -258,10 +330,7 @@ function BookitApp() {
         agencyCode: 'OP-ALPS-2026',
       });
     }
-    setViewMode('operator');
-    setOperatorTab('overview');
-    setOperatorTourId(null);
-    setCurrentRoute('app');
+    navigateTo({ route: 'app', mode: 'operator', operatorTab: 'overview', tourId: null });
     showToast('Alex Vance logged in to Alpine & Beyond Operations Hub.');
   };
 
@@ -274,11 +343,9 @@ function BookitApp() {
       avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=150&q=80',
       membership: 'Standard Concierge Member',
     });
-    setViewMode('consumer');
     setModifyingTripId(null);
     setCurrentItinerary(JAPAN_5DAY_ITINERARY);
-    setConsumerTab('builder');
-    setCurrentRoute('app');
+    navigateTo({ route: 'app', mode: 'consumer', consumerTab: 'builder' });
     showToast('✨ Opened TripFlow Itinerary Builder!');
   };
 
@@ -286,7 +353,7 @@ function BookitApp() {
   const handleSelectPremadeTrip = (itinerary: TripItinerary) => {
     setCurrentItinerary(itinerary);
     setModifyingTripId(null);
-    setConsumerTab('builder');
+    navigateTo({ route: 'app', mode: 'consumer', consumerTab: 'builder' });
     showToast(`Loaded "${itinerary.title}"! Customize activities, then proceed to booking.`);
   };
 
@@ -295,7 +362,7 @@ function BookitApp() {
     const generated = backendItinerary || generateAIItinerary(params);
     setCurrentItinerary(generated);
     setModifyingTripId(null);
-    setConsumerTab('builder');
+    navigateTo({ route: 'app', mode: 'consumer', consumerTab: 'builder' });
     showToast(`✨ Generated ${generated.days.length}-Day Itinerary for ${params.destination}! Ready to personalize.`);
   };
 
@@ -339,9 +406,7 @@ function BookitApp() {
     setVaultDocuments(prev => [...newDocs, ...prev]);
     setModifyingTripId(null);
 
-    setViewMode('consumer');
-    setConsumerTab('home'); // Return to home so user sees their new active itinerary
-    setCurrentRoute('app');
+    navigateTo({ route: 'app', mode: 'consumer', consumerTab: 'home' });
 
     addTravelerBooking(newTrip, customizationDetails);
     showToast(`🎉 Booking Confirmed! "${newTrip.title}" is now your active itinerary.`);
@@ -363,7 +428,7 @@ function BookitApp() {
   const handleModifyTrip = (trip: BookedTrip) => {
     setCurrentItinerary(trip.itinerary);
     setModifyingTripId(trip.id);
-    setConsumerTab('builder');
+    navigateTo({ route: 'app', mode: 'consumer', consumerTab: 'builder' });
     showToast(`Opened "${trip.title}" in Builder. Changes will dynamically adjust package price.`);
   };
 
@@ -405,7 +470,7 @@ function BookitApp() {
     }
     setModifyingTripId(null);
     setActiveBookedTripId(targetId);
-    setConsumerTab('trips');
+    navigateTo({ route: 'app', mode: 'consumer', consumerTab: 'trips' });
     showToast(`✅ Trip modifications saved! Package price updated to ₹${newTotal.toLocaleString('en-IN')}.`);
   };
 
@@ -413,7 +478,7 @@ function BookitApp() {
     if (tripId) {
       setVaultSelectedTripId(tripId);
     }
-    setConsumerTab('vault');
+    navigateTo({ route: 'app', mode: 'consumer', consumerTab: 'vault' });
     showToast('Filtered Travel Vault to your synchronized trip documents.');
   };
 
@@ -422,7 +487,7 @@ function BookitApp() {
       setIsProfileOpen(true);
       return;
     }
-    setConsumerTab(tab);
+    navigateTo({ route: 'app', mode: 'consumer', consumerTab: tab });
   };
 
   return (
@@ -455,7 +520,7 @@ function BookitApp() {
       {currentRoute === 'auth' && (
         <AuthScreen
           onLogin={handleLogin}
-          onBackToLanding={() => setCurrentRoute('landing')}
+          onBackToLanding={() => navigateTo({ route: 'landing' })}
           initialRole={authModalRole}
           initialMode={authModalRole === 'operator' ? 'signup' : 'signin'}
         />
@@ -483,7 +548,7 @@ function BookitApp() {
                   user={authUser}
                   onOpenProfile={() => setIsProfileOpen(true)}
                   onSignOut={handleSignOut}
-                  onGoToLanding={() => setCurrentRoute('landing')}
+                  onGoToLanding={() => navigateTo({ route: 'landing' })}
                   vaultCount={vaultDocuments.length}
                 />
               )}
@@ -551,7 +616,7 @@ function BookitApp() {
                     onGenerateAITrip={handleGenerateAITrip}
                     onOpenAssistantWithPrompt={(prompt) => {
                       setAssistantInitialPrompt(prompt);
-                      setConsumerTab('assistant');
+                      navigateTo({ route: 'app', mode: 'consumer', consumerTab: 'assistant' });
                     }}
                     onOpenPayment={handleOpenPayment}
                     userName={authUser?.name || 'Traveler'}
@@ -565,7 +630,7 @@ function BookitApp() {
                     onOpenItineraryInBuilder={(itinerary) => {
                       setCurrentItinerary(itinerary);
                       setModifyingTripId(null);
-                      setConsumerTab('builder');
+                      navigateTo({ route: 'app', mode: 'consumer', consumerTab: 'builder' });
                       showToast(`✨ Loaded "${itinerary.title}" in Itinerary Builder!`);
                     }}
                     initialPrompt={assistantInitialPrompt}
@@ -580,7 +645,7 @@ function BookitApp() {
                     onPlanTripFromStory={(itinerary) => {
                       setCurrentItinerary(itinerary);
                       setModifyingTripId(null);
-                      setConsumerTab('builder');
+                      navigateTo({ route: 'app', mode: 'consumer', consumerTab: 'builder' });
                       showToast(`✨ Loaded "${itinerary.title}" in Itinerary Builder!`);
                     }}
                     showToast={showToast}
@@ -621,23 +686,28 @@ function BookitApp() {
                 user={authUser}
                 activeTab={operatorTab}
                 onTabChange={tab => {
-                  setOperatorTab(tab);
-                  setOperatorTourId(null);
+                  navigateTo({ route: 'app', mode: 'operator', operatorTab: tab, tourId: null });
                 }}
                 onOpenNewDispatch={() => setIsCreatePackageOpen(true)}
                 onOpenCreatePackage={() => setIsCreatePackageOpen(true)}
-                onSwitchMode={mode => setViewMode(mode)}
+                onSwitchMode={mode => {
+                  navigateTo({ route: 'app', mode });
+                }}
                 openIssuesCount={isDisruptionResolved ? 2 : 3}
                 pendingCustomizedCount={pendingCustomizedCount}
-                onGoToLanding={() => setCurrentRoute('landing')}
+                onGoToLanding={() => navigateTo({ route: 'landing' })}
                 onSignOut={handleSignOut}
               />
 
               <div className="flex-1 ml-64 flex flex-col min-w-0">
                 {operatorTourId ? (
                   <TourDetailScreen
-                    onBackToOverview={() => setOperatorTourId(null)}
-                    onSwitchMode={mode => setViewMode(mode)}
+                    onBackToOverview={() => {
+                      navigateTo({ route: 'app', mode: 'operator', operatorTab: 'overview', tourId: null });
+                    }}
+                    onSwitchMode={mode => {
+                      navigateTo({ route: 'app', mode });
+                    }}
                     isDisruptionResolved={isDisruptionResolved}
                     onResolveDisruption={handleResolveDisruption}
                   />
@@ -645,10 +715,14 @@ function BookitApp() {
                   <>
                     {(operatorTab === 'hub' || operatorTab === 'overview' || operatorTab === 'operations') && (
                       <OpsCommandHub
-                        onInspectTour={tourId => setOperatorTourId(tourId)}
+                        onInspectTour={tourId => {
+                          navigateTo({ route: 'app', mode: 'operator', tourId });
+                        }}
                         onOpenNewTour={() => setIsCreatePackageOpen(true)}
                         onOpenCreatePackage={() => setIsCreatePackageOpen(true)}
-                        onNavigateToTab={tab => setOperatorTab(tab)}
+                        onNavigateToTab={tab => {
+                          navigateTo({ route: 'app', mode: 'operator', operatorTab: tab, tourId: null });
+                        }}
                         onOpenCommandPalette={() => setIsCommandPaletteOpen(true)}
                         isDisruptionResolved={isDisruptionResolved}
                         onResolveDisruption={handleResolveDisruption}
@@ -659,9 +733,7 @@ function BookitApp() {
                       <OperatorPackagesScreen
                         showToast={showToast}
                         onNavigateToDiscover={() => {
-                          setViewMode('consumer');
-                          setConsumerTab('discover');
-                          setCurrentRoute('app');
+                          navigateTo({ route: 'app', mode: 'consumer', consumerTab: 'discover' });
                         }}
                         onOpenCreatePackageModal={() => setIsCreatePackageOpen(true)}
                       />
@@ -673,7 +745,9 @@ function BookitApp() {
                       operatorTab === 'activity_bookings') && (
                       <TravelerBookingsManagerScreen
                         activeTab={operatorTab}
-                        onTabChange={tab => setOperatorTab(tab)}
+                        onTabChange={tab => {
+                          navigateTo({ route: 'app', mode: 'operator', operatorTab: tab, tourId: null });
+                        }}
                         showToast={showToast}
                       />
                     )}
@@ -681,8 +755,12 @@ function BookitApp() {
                     {(operatorTab === 'bookings' || operatorTab === 'customers') && (
                       <BookingsInventoryScreen
                         activeCategory="all"
-                        onInspectTour={tourId => setOperatorTourId(tourId)}
-                        onNavigateToTab={tab => setOperatorTab(tab)}
+                        onInspectTour={tourId => {
+                          navigateTo({ route: 'app', mode: 'operator', tourId });
+                        }}
+                        onNavigateToTab={tab => {
+                          navigateTo({ route: 'app', mode: 'operator', operatorTab: tab, tourId: null });
+                        }}
                         showToast={showToast}
                       />
                     )}
@@ -693,7 +771,9 @@ function BookitApp() {
 
                     {(operatorTab === 'cohorts' || operatorTab === 'tours') && (
                       <TourCohortsScreen
-                        onInspectTour={tourId => setOperatorTourId(tourId)}
+                        onInspectTour={tourId => {
+                          navigateTo({ route: 'app', mode: 'operator', tourId });
+                        }}
                         showToast={showToast}
                       />
                     )}
@@ -704,7 +784,9 @@ function BookitApp() {
 
                     {operatorTab === 'alerts' && (
                       <ItineraryAlertsScreen
-                        onInspectTour={tourId => setOperatorTourId(tourId)}
+                        onInspectTour={tourId => {
+                          navigateTo({ route: 'app', mode: 'operator', tourId });
+                        }}
                         showToast={showToast}
                         onResolveDisruption={handleResolveDisruption}
                       />
@@ -716,7 +798,9 @@ function BookitApp() {
 
                     {operatorTab === 'calendar' && (
                       <GlobalCalendarScreen
-                        onInspectTour={tourId => setOperatorTourId(tourId)}
+                        onInspectTour={tourId => {
+                          navigateTo({ route: 'app', mode: 'operator', tourId });
+                        }}
                         showToast={showToast}
                       />
                     )}
@@ -736,7 +820,7 @@ function BookitApp() {
         onClose={() => setIsProfileOpen(false)}
         user={authUser}
         onSwitchMode={mode => {
-          setViewMode(mode);
+          navigateTo({ route: 'app', mode });
           setIsProfileOpen(false);
         }}
         onOpenPreferences={() => {
@@ -745,7 +829,7 @@ function BookitApp() {
         }}
         onOpenVault={() => {
           setIsProfileOpen(false);
-          setConsumerTab('vault');
+          handleViewInVault();
         }}
         onOpenWhatsApp={() => {
           setIsProfileOpen(false);
@@ -771,19 +855,17 @@ function BookitApp() {
         isOpen={isCommandPaletteOpen}
         onClose={() => setIsCommandPaletteOpen(false)}
         onNavigateConsumer={tab => {
-          setViewMode('consumer');
-          handleConsumerTabChange(tab);
-          setCurrentRoute('app');
+          navigateTo({ route: 'app', mode: 'consumer', consumerTab: tab });
         }}
         onNavigateOperator={tourId => {
-          setViewMode('operator');
-          if (tourId) setOperatorTourId(tourId);
-          else setOperatorTourId(null);
-          setCurrentRoute('app');
+          if (tourId) {
+            navigateTo({ route: 'app', mode: 'operator', tourId });
+          } else {
+            navigateTo({ route: 'app', mode: 'operator', operatorTab: 'overview', tourId: null });
+          }
         }}
         onSwitchMode={mode => {
-          setViewMode(mode);
-          setCurrentRoute('app');
+          navigateTo({ route: 'app', mode });
         }}
       />
 
@@ -809,9 +891,7 @@ function BookitApp() {
         journey={selectedJourney}
         onClose={() => setSelectedJourney(null)}
         onBookNow={() => {
-          setViewMode('consumer');
-          setConsumerTab('trips');
-          setCurrentRoute('app');
+          navigateTo({ route: 'app', mode: 'consumer', consumerTab: 'trips' });
         }}
         onReserveTour={journey => {
           setSelectedJourney(null);

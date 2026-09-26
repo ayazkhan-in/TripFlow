@@ -14,8 +14,12 @@ export const MobileBottomNav: React.FC<MobileBottomNavProps> = ({
 
   return (
     <nav className="md:hidden fixed bottom-0 left-0 right-0 z-50 bg-white/95 backdrop-blur-md shadow-lg flex justify-around items-center px-4 py-2 border-t border-[#E5E7EB]">
-      <button
-        onClick={() => onTabChange('home')}
+      <a
+        href="/home"
+        onClick={e => {
+          e.preventDefault();
+          onTabChange('home');
+        }}
         className={`flex flex-col items-center gap-0.5 py-1 transition-colors cursor-pointer ${
           activeTab === 'home' ? 'text-[#004AC6]' : 'text-[#737686] hover:text-[#151c27]'
         }`}
@@ -27,10 +31,14 @@ export const MobileBottomNav: React.FC<MobileBottomNavProps> = ({
           home
         </span>
         <span className="text-[10px] font-semibold">Home</span>
-      </button>
+      </a>
 
-      <button
-        onClick={() => onTabChange('discover')}
+      <a
+        href="/discover"
+        onClick={e => {
+          e.preventDefault();
+          onTabChange('discover');
+        }}
         className={`flex flex-col items-center gap-0.5 py-1 transition-colors cursor-pointer ${
           activeTab === 'discover' ? 'text-[#004AC6]' : 'text-[#737686] hover:text-[#151c27]'
         }`}
@@ -42,10 +50,14 @@ export const MobileBottomNav: React.FC<MobileBottomNavProps> = ({
           explore
         </span>
         <span className="text-[10px] font-semibold">Discover</span>
-      </button>
+      </a>
 
-      <button
-        onClick={() => onTabChange('story')}
+      <a
+        href="/story"
+        onClick={e => {
+          e.preventDefault();
+          onTabChange('story');
+        }}
         className={`flex flex-col items-center gap-0.5 py-1 transition-colors cursor-pointer ${
           activeTab === 'story' ? 'text-[#004AC6]' : 'text-[#737686] hover:text-[#151c27]'
         }`}
@@ -57,10 +69,14 @@ export const MobileBottomNav: React.FC<MobileBottomNavProps> = ({
           play_circle
         </span>
         <span className="text-[10px] font-semibold">Story</span>
-      </button>
+      </a>
 
-      <button
-        onClick={() => onTabChange('assistant')}
+      <a
+        href="/assistant"
+        onClick={e => {
+          e.preventDefault();
+          onTabChange('assistant');
+        }}
         className={`flex flex-col items-center gap-0.5 py-1 transition-colors cursor-pointer ${
           activeTab === 'assistant' ? 'text-[#004AC6]' : 'text-[#737686] hover:text-[#151c27]'
         }`}
@@ -72,10 +88,14 @@ export const MobileBottomNav: React.FC<MobileBottomNavProps> = ({
           auto_awesome
         </span>
         <span className="text-[10px] font-semibold">Assistant</span>
-      </button>
+      </a>
 
-      <button
-        onClick={() => onTabChange('builder')}
+      <a
+        href="/builder"
+        onClick={e => {
+          e.preventDefault();
+          onTabChange('builder');
+        }}
         className={`flex flex-col items-center gap-0.5 py-1 transition-colors cursor-pointer ${
           activeTab === 'builder' ? 'text-[#004AC6]' : 'text-[#737686] hover:text-[#151c27]'
         }`}
@@ -87,10 +107,14 @@ export const MobileBottomNav: React.FC<MobileBottomNavProps> = ({
           dashboard_customize
         </span>
         <span className="text-[10px] font-semibold">Builder</span>
-      </button>
+      </a>
 
-      <button
-        onClick={() => onTabChange('trips')}
+      <a
+        href="/trips"
+        onClick={e => {
+          e.preventDefault();
+          onTabChange('trips');
+        }}
         className={`flex flex-col items-center gap-0.5 py-1 transition-colors cursor-pointer ${
           isTripsActive ? 'text-[#004AC6]' : 'text-[#737686] hover:text-[#151c27]'
         }`}
@@ -102,10 +126,14 @@ export const MobileBottomNav: React.FC<MobileBottomNavProps> = ({
           luggage
         </span>
         <span className="text-[10px] font-semibold">Trips</span>
-      </button>
+      </a>
 
-      <button
-        onClick={() => onTabChange('vault')}
+      <a
+        href="/vault"
+        onClick={e => {
+          e.preventDefault();
+          onTabChange('vault');
+        }}
         className={`flex flex-col items-center gap-0.5 py-1 transition-colors cursor-pointer ${
           activeTab === 'vault' ? 'text-[#004AC6]' : 'text-[#737686] hover:text-[#151c27]'
         }`}
@@ -117,7 +145,7 @@ export const MobileBottomNav: React.FC<MobileBottomNavProps> = ({
           lock
         </span>
         <span className="text-[10px] font-semibold">Vault</span>
-      </button>
+      </a>
     </nav>
   );
 };

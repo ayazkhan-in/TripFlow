@@ -56,8 +56,10 @@ export const TopNav: React.FC<TopNavProps> = ({
     <header className="relative bg-white border-b border-[#E5E7EB] shadow-xs flex justify-between items-center w-full px-4 sm:px-6 h-14 sticky top-0 z-40 max-w-full">
       {/* Brand Anchor on Left */}
       <div className="flex items-center shrink-0">
-        <button
-          onClick={() => {
+        <a
+          href="/"
+          onClick={e => {
+            e.preventDefault();
             if (onGoToLanding) {
               onGoToLanding();
             } else {
@@ -75,13 +77,17 @@ export const TopNav: React.FC<TopNavProps> = ({
           <span className="text-[18px] font-bold text-[#004AC6] tracking-tight">
             Bookit
           </span>
-        </button>
+        </a>
       </div>
 
       {/* Navigation Tabs Centered in Topbar (Flow: Home -> Discover -> Builder -> Trips & Bookings -> Vault) */}
       <nav className="hidden md:flex items-center gap-4 lg:gap-6 absolute left-1/2 -translate-x-1/2">
-        <button
-          onClick={() => onTabChange('home')}
+        <a
+          href="/home"
+          onClick={e => {
+            e.preventDefault();
+            onTabChange('home');
+          }}
           className={`font-medium text-xs py-2 transition-colors cursor-pointer flex items-center gap-1.5 focus:outline-none active:outline-none ${
             activeTab === 'home'
               ? 'text-[#004AC6] font-semibold'
@@ -90,10 +96,14 @@ export const TopNav: React.FC<TopNavProps> = ({
         >
           <span className="material-symbols-outlined text-sm">home</span>
           <span>Home</span>
-        </button>
+        </a>
 
-        <button
-          onClick={() => onTabChange('discover')}
+        <a
+          href="/discover"
+          onClick={e => {
+            e.preventDefault();
+            onTabChange('discover');
+          }}
           className={`font-medium text-xs py-2 transition-colors cursor-pointer flex items-center gap-1.5 focus:outline-none active:outline-none ${
             activeTab === 'discover'
               ? 'text-[#004AC6] font-semibold'
@@ -102,10 +112,14 @@ export const TopNav: React.FC<TopNavProps> = ({
         >
           <span className="material-symbols-outlined text-sm">explore</span>
           <span>Discover</span>
-        </button>
+        </a>
 
-        <button
-          onClick={() => onTabChange('story')}
+        <a
+          href="/story"
+          onClick={e => {
+            e.preventDefault();
+            onTabChange('story');
+          }}
           className={`font-medium text-xs py-2 transition-colors cursor-pointer flex items-center gap-1.5 focus:outline-none active:outline-none ${
             activeTab === 'story'
               ? 'text-[#004AC6] font-semibold'
@@ -114,10 +128,14 @@ export const TopNav: React.FC<TopNavProps> = ({
         >
           <span className="material-symbols-outlined text-sm">play_circle</span>
           <span>Story</span>
-        </button>
+        </a>
 
-        <button
-          onClick={() => onTabChange('assistant')}
+        <a
+          href="/assistant"
+          onClick={e => {
+            e.preventDefault();
+            onTabChange('assistant');
+          }}
           className={`font-medium text-xs py-2 transition-colors cursor-pointer flex items-center gap-1.5 focus:outline-none active:outline-none ${
             activeTab === 'assistant'
               ? 'text-[#004AC6] font-semibold'
@@ -126,10 +144,14 @@ export const TopNav: React.FC<TopNavProps> = ({
         >
           <span className="material-symbols-outlined text-sm text-indigo-600">auto_awesome</span>
           <span>AI Assistant</span>
-        </button>
+        </a>
 
-        <button
-          onClick={() => onTabChange('builder')}
+        <a
+          href="/builder"
+          onClick={e => {
+            e.preventDefault();
+            onTabChange('builder');
+          }}
           className={`font-medium text-xs py-2 transition-colors cursor-pointer flex items-center gap-1.5 focus:outline-none active:outline-none ${
             activeTab === 'builder'
               ? 'text-[#004AC6] font-semibold'
@@ -138,10 +160,14 @@ export const TopNav: React.FC<TopNavProps> = ({
         >
           <span className="material-symbols-outlined text-sm">dashboard_customize</span>
           <span>Itinerary Builder</span>
-        </button>
+        </a>
 
-        <button
-          onClick={() => onTabChange('trips')}
+        <a
+          href="/trips"
+          onClick={e => {
+            e.preventDefault();
+            onTabChange('trips');
+          }}
           className={`font-medium text-xs py-2 transition-colors cursor-pointer flex items-center gap-1.5 focus:outline-none active:outline-none ${
             activeTab === 'trips' || activeTab === 'bookings'
               ? 'text-[#004AC6] font-semibold'
@@ -150,10 +176,14 @@ export const TopNav: React.FC<TopNavProps> = ({
         >
           <span className="material-symbols-outlined text-sm">luggage</span>
           <span>Trips & Bookings</span>
-        </button>
+        </a>
 
-        <button
-          onClick={() => onTabChange('vault')}
+        <a
+          href="/vault"
+          onClick={e => {
+            e.preventDefault();
+            onTabChange('vault');
+          }}
           className={`font-medium text-xs py-2 transition-colors cursor-pointer flex items-center gap-1.5 focus:outline-none active:outline-none ${
             activeTab === 'vault'
               ? 'text-[#004AC6] font-semibold'
@@ -162,7 +192,7 @@ export const TopNav: React.FC<TopNavProps> = ({
         >
           <span className="material-symbols-outlined text-sm">lock</span>
           <span>Vault</span>
-        </button>
+        </a>
       </nav>
 
       {/* Trailing Cluster: Notifications + Profile Icon & Dropdown */}
@@ -236,8 +266,10 @@ export const TopNav: React.FC<TopNavProps> = ({
                   <span>Open Full Traveler Profile</span>
                 </button>
 
-                <button
-                  onClick={() => {
+                <a
+                  href="/trips"
+                  onClick={e => {
+                    e.preventDefault();
                     setIsProfileMenuOpen(false);
                     onTabChange('trips');
                   }}
@@ -245,10 +277,12 @@ export const TopNav: React.FC<TopNavProps> = ({
                 >
                   <span className="material-symbols-outlined text-base text-[#737686]">luggage</span>
                   <span>Active Circuit & Bookings</span>
-                </button>
+                </a>
 
-                <button
-                  onClick={() => {
+                <a
+                  href="/vault"
+                  onClick={e => {
+                    e.preventDefault();
                     setIsProfileMenuOpen(false);
                     onTabChange('vault');
                   }}
@@ -256,11 +290,13 @@ export const TopNav: React.FC<TopNavProps> = ({
                 >
                   <span className="material-symbols-outlined text-base text-[#737686]">lock</span>
                   <span>Travel Vault ({vaultCount} Document{vaultCount === 1 ? '' : 's'})</span>
-                </button>
+                </a>
 
                 {onGoToLanding && (
-                  <button
-                    onClick={() => {
+                  <a
+                    href="/"
+                    onClick={e => {
+                      e.preventDefault();
                       setIsProfileMenuOpen(false);
                       onGoToLanding();
                     }}
@@ -268,7 +304,7 @@ export const TopNav: React.FC<TopNavProps> = ({
                   >
                     <span className="material-symbols-outlined text-base text-[#737686]">home</span>
                     <span>Bookit Landing Page</span>
-                  </button>
+                  </a>
                 )}
               </div>
 
