@@ -2,7 +2,10 @@ import React, { useState } from 'react';
 import { OperatorTab, ViewMode } from '../../types/travel';
 import { ALEX_DISPATCH_AVATAR } from '../../data/mockData';
 
+import { AuthUser } from '../auth/AuthModal';
+
 interface OpsSidebarProps {
+  user?: AuthUser | null;
   activeTab: OperatorTab;
   onTabChange: (tab: OperatorTab) => void;
   onOpenNewDispatch: () => void;
@@ -38,6 +41,7 @@ const OTHER_OPERATIONS_NAV: NavItem[] = [
 ];
 
 export const OpsSidebar: React.FC<OpsSidebarProps> = ({
+  user,
   activeTab,
   onTabChange,
   onOpenNewDispatch,
@@ -69,22 +73,22 @@ export const OpsSidebar: React.FC<OpsSidebarProps> = ({
       <div className="flex flex-col gap-3">
         {/* Brand & Hub Header */}
         <div className="flex items-center justify-between pb-3 border-b border-slate-100">
-          <div className="flex items-center gap-2.5">
-            <div className="w-8 h-8 rounded-lg bg-blue-600 text-white flex items-center justify-center font-semibold text-sm shadow-xs">
+          <div className="flex items-center gap-2.5 min-w-0">
+            <div className="w-8 h-8 rounded-lg bg-blue-600 text-white flex items-center justify-center font-semibold text-sm shadow-xs shrink-0">
               <span className="material-symbols-outlined text-[18px]">hub</span>
             </div>
-            <div>
+            <div className="min-w-0">
               <div className="flex items-center gap-1.5">
-                <span className="text-sm font-bold text-slate-900 tracking-tight">
-                  TripFlow Ops
+                <span className="text-sm font-bold text-slate-900 tracking-tight truncate max-w-[130px]">
+                  {user?.agencyName || 'TripFlow Ops'}
                 </span>
                 <span
-                  className="inline-block w-1.5 h-1.5 rounded-full bg-emerald-500"
+                  className="inline-block w-1.5 h-1.5 rounded-full bg-emerald-500 shrink-0"
                   title="System Live"
                 />
               </div>
-              <p className="text-[11px] text-slate-400 leading-none mt-0.5 font-medium">
-                Dispatch Controller
+              <p className="text-[11px] text-slate-400 leading-none mt-0.5 font-medium truncate max-w-[140px]">
+                {user?.agencyCode ? `${user.agencyCode} • Controller` : 'Dispatch Controller'}
               </p>
             </div>
           </div>
@@ -292,16 +296,16 @@ export const OpsSidebar: React.FC<OpsSidebarProps> = ({
         <div className="flex items-center justify-between p-2 rounded-xl bg-slate-50 border border-slate-200/60">
           <div className="flex items-center gap-2.5 min-w-0">
             <img
-              alt="Alex Vance"
+              alt={user?.name || 'Alex Vance'}
               className="w-8 h-8 rounded-full object-cover border border-slate-200 shrink-0"
-              src={ALEX_DISPATCH_AVATAR}
+              src={user?.avatar || ALEX_DISPATCH_AVATAR}
             />
             <div className="flex flex-col min-w-0">
               <span className="text-xs font-semibold text-slate-900 leading-tight truncate">
-                Alex Vance
+                {user?.name || 'Alex Vance'}
               </span>
               <span className="text-[10px] text-slate-400 font-medium truncate">
-                Dispatch Controller
+                {user?.agencyName || user?.membership || 'Dispatch Controller'}
               </span>
             </div>
           </div>

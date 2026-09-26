@@ -32,6 +32,7 @@ import {
   OperatorCuratedPackage,
   createCuratedPackageFromOperator,
 } from '../data/operatorPackagesData';
+import { TripFlowApi } from '../services/api';
 
 interface OperatorContextType {
   // Packages (Created by operator, visible to travelers in Discover)
@@ -217,6 +218,135 @@ export const OperatorProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   });
 
   const [highlightedBookingId, setHighlightedBookingId] = useState<string | null>(null);
+
+  // Fetch operator-isolated data from backend
+  useEffect(() => {
+    TripFlowApi.getMe().then(user => {
+      const isOperator = user?.role?.toUpperCase() === 'OPERATOR';
+      const isAlexDemo = !user || user.id === 'user-alex-007';
+
+      // Load cohorts
+      TripFlowApi.getTourCohorts().then(backendCohorts => {
+        if (backendCohorts) {
+          if (backendCohorts.length > 0) {
+            setCohorts(backendCohorts.map((c: any) => ({
+              id: c.id,
+              name: c.name,
+              circuit: c.circuit || c.name,
+              dates: c.dates,
+              leadGuide: c.leadGuide?.name || 'Assigned Guide',
+              paxCount: c.paxCount,
+              maxPax: c.maxPax,
+              progressPercent: c.progressPercent || 0,
+              currentStop: c.currentStop,
+              nextMilestone: c.nextMilestone,
+              status: c.status,
+              vipCount: c.vipCount,
+              issuesCount: c.alerts?.filter((a: any) => !a.isResolved)?.length || 0,
+            })));
+          } else if (isOperator && !isAlexDemo) {
+            // Newly registered operator starts with their own clean empty state!
+            setCohorts([]);
+          }
+        }
+      });
+
+      // Load guides
+      TripFlowApi.getTourGuides().then(backendGuides => {
+        if (backendGuides) {
+          if (backendGuides.length > 0) {
+            setGuides(backendGuides.map((g: any) => ({
+              id: g.id,
+              name: g.name,
+              role: g.role,
+              languages: Array.isArray(g.languages) ? g.languages : [g.languages],
+              rating: Number(g.rating || 4.9),
+              totalTours: g.totalTours || 0,
+              status: g.status,
+              location: g.location,
+              phone: g.phone,
+              avatar: g.avatarUrl,
+              certifications: Array.isArray(g.certifications) ? g.certifications : [g.certifications],
+            })));
+          } else if (isOperator && !isAlexDemo) {
+            setGuides([]);
+          }
+        }
+      });
+
+      // Load vendors
+      TripFlowApi.getVendors().then(backendVendors => {
+        if (backendVendors) {
+          if (backendVendors.length > 0) {
+            setVendors(backendVendors.map((v: any) => ({
+              ...v,
+              rating: Number(v.rating || 4.9),
+              slaCompliance: Number(v.slaCompliance || 99),
+              contractRenewal: typeof v.contractRenewal === 'string' && v.contractRenewal.includes('T')
+                ? new Date(v.contractRenewal).toLocaleDateString('en-US', { month: 'short', year: 'numeric' })
+                : v.contractRenewal || 'Dec 2027',
+            })));
+          } else if (isOperator && !isAlexDemo) {
+            setVendors([]);
+          }
+        }
+      });
+
+      // Load payments ledger
+      TripFlowApi.getPaymentsLedger().then(backendTransactions => {
+        if (backendTransactions) {
+          if (backendTransactions.length > 0) {
+            setPayments(backendTransactions.map((t: any) => ({
+              id: t.id,
+              transactionRef: t.transactionRef,
+              tourId: t.bookedTripId || '#1024',
+              party: t.party,
+              type: (t.type === 'outbound' || t.type === 'escrow') ? t.type : 'inbound',
+              amount: Number(t.amount || 0),
+              currency: t.currency || 'USD',
+              status: t.status === 'SETTLED' ? 'Settled' : 'Processing',
+              date: new Date(t.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
+              paymentMethod: t.paymentMethod,
+              description: t.description,
+            })));
+          } else if (isOperator && !isAlexDemo) {
+            setPayments([]);
+          }
+        }
+      });
+
+      // Load calendar events
+      TripFlowApi.getCalendarEvents().then(backendEvents => {
+        if (backendEvents) {
+          if (backendEvents.length > 0) {
+            setCalendarEvents(backendEvents.map((e: any) => ({
+              id: e.id,
+              title: e.title,
+              tourId: e.cohortName || '#1024',
+              date: typeof e.eventDate === 'string' ? e.eventDate.split('T')[0] : '2026-10-14',
+              time: e.timeSlot || '10:00 AM',
+              type: e.eventType || 'experience',
+              location: e.location || 'Local Circuit',
+              cohort: e.cohortName || 'Active Cohort',
+              color: e.color || 'bg-blue-600 text-white',
+              pax: Number(e.pax || 2),
+            })));
+          } else if (isOperator && !isAlexDemo) {
+            setCalendarEvents([]);
+          }
+        }
+      });
+
+      // If a newly created operator (not Alex demo), clear bookings and tab tickets so they don't inherit demo data!
+      if (isOperator && !isAlexDemo) {
+        setPackageBookings([]);
+        setFlightTickets([]);
+        setStayBookings([]);
+        setTransferBookings([]);
+        setActivityBookings([]);
+      }
+    });
+  }, []);
 
   // Sync to local storage
   useEffect(() => {
@@ -646,6 +776,9 @@ export const OperatorProvider: React.FC<{ children: React.ReactNode }> = ({ chil
 
   const addVendor = (newVendor: VendorSupplyItem) => {
     setVendors(prev => [newVendor, ...prev]);
+    TripFlowApi.addVendor(newVendor).catch(err => {
+      console.warn('Could not persist vendor to backend:', err);
+    });
   };
 
   return (

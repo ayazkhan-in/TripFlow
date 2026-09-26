@@ -35,6 +35,8 @@ async function main() {
       name: 'Alex Vance',
       phone: '+91 98110 55210',
       membershipTier: 'Chief Dispatch Controller',
+      agencyName: 'Alpine & Beyond Expeditions',
+      agencyCode: 'OP-ALPS-2026',
     },
     create: {
       id: 'user-alex-007',
@@ -45,6 +47,8 @@ async function main() {
       phone: '+91 98110 55210',
       avatarUrl: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=400&q=80',
       membershipTier: 'Chief Dispatch Controller',
+      agencyName: 'Alpine & Beyond Expeditions',
+      agencyCode: 'OP-ALPS-2026',
     },
   });
 
@@ -107,10 +111,11 @@ async function main() {
   ];
 
   for (const g of guidesData) {
+    const dataWithOp = { ...g, operatorId: alex.id };
     await prisma.tourGuide.upsert({
       where: { id: g.id },
-      update: g,
-      create: g,
+      update: dataWithOp,
+      create: dataWithOp,
     });
   }
   console.log(`✅ Tour Guides seeded: ${guidesData.length} guides`);
@@ -210,10 +215,11 @@ async function main() {
   ];
 
   for (const v of vendorsData) {
+    const dataWithOp = { ...v, operatorId: alex.id };
     await prisma.vendor.upsert({
       where: { id: v.id },
-      update: v,
-      create: v,
+      update: dataWithOp,
+      create: dataWithOp,
     });
   }
   console.log(`✅ Vendors seeded: ${vendorsData.length} vendors`);
@@ -621,9 +627,11 @@ async function main() {
     update: {
       totalPrice: 2450.0,
       status: 'CONFIRMED',
+      operatorId: alex.id,
     },
     create: {
       id: 'trip-kerala-escape',
+      operatorId: alex.id,
       itineraryId: keralaItinerary.id,
       userId: sarah.id,
       bookingRef: 'TF-KL-88392',
@@ -785,9 +793,11 @@ async function main() {
     update: {
       paxCount: 14,
       status: 'In Progress',
+      operatorId: alex.id,
     },
     create: {
       id: 'cohort-kerala-1024',
+      operatorId: alex.id,
       name: 'Kerala Highlands Monsoon Tour',
       circuit: 'Kochi ➔ Munnar ➔ Alleppey',
       dates: 'Oct 14 – 19, 2025',
@@ -804,9 +814,12 @@ async function main() {
 
   const cohort2 = await prisma.tourCohort.upsert({
     where: { id: 'cohort-rajasthan-2048' },
-    update: {},
+    update: {
+      operatorId: alex.id,
+    },
     create: {
       id: 'cohort-rajasthan-2048',
+      operatorId: alex.id,
       name: 'Imperial Rajasthan Forts & Palaces',
       circuit: 'Jaipur ➔ Jodhpur ➔ Udaipur',
       dates: 'Nov 10 – 16, 2025',
@@ -824,6 +837,7 @@ async function main() {
   await prisma.disruptionAlert.deleteMany({});
   await prisma.disruptionAlert.create({
     data: {
+      operatorId: alex.id,
       cohortId: cohort1.id,
       tourTitle: 'Kerala Highlands Monsoon Tour',
       severity: 'moderate',
@@ -840,6 +854,7 @@ async function main() {
 
   await prisma.disruptionAlert.create({
     data: {
+      operatorId: alex.id,
       cohortId: cohort1.id,
       tourTitle: 'Kerala Highlands Monsoon Tour',
       severity: 'high',
@@ -854,6 +869,7 @@ async function main() {
 
   await prisma.disruptionAlert.create({
     data: {
+      operatorId: alex.id,
       cohortId: cohort2.id,
       tourTitle: 'Goa Coastal & Spice Trail',
       severity: 'moderate',
@@ -872,6 +888,7 @@ async function main() {
   await prisma.paymentTransaction.deleteMany({});
   const transactions = [
     {
+      operatorId: alex.id,
       transactionRef: 'TXN-998241',
       party: 'Sarah Mehta (Amex Concierge Checkout)',
       type: 'inbound',
@@ -882,6 +899,7 @@ async function main() {
       description: 'Full booking confirmation for Kerala Monsoon Whispers',
     },
     {
+      operatorId: alex.id,
       transactionRef: 'TXN-998242',
       party: 'Brunton Boatyard — CGH Earth',
       type: 'outbound',
@@ -892,6 +910,7 @@ async function main() {
       description: '3 Nights Sea Facing Heritage Suite settlement',
     },
     {
+      operatorId: alex.id,
       transactionRef: 'TXN-998243',
       party: 'Cochin Executive Fleet Services',
       type: 'outbound',
@@ -902,6 +921,7 @@ async function main() {
       description: 'Dedicated Innova Crysta Chauffeur retainer',
     },
     {
+      operatorId: alex.id,
       transactionRef: 'TXN-998244',
       party: 'Allianz Global Protection Escrow',
       type: 'escrow',
@@ -922,6 +942,7 @@ async function main() {
   await prisma.calendarTourEvent.deleteMany({});
   const calendarEvents = [
     {
+      operatorId: alex.id,
       title: 'Air India AI-682 Departure',
       cohortName: 'Kerala Highlands Monsoon Tour',
       eventDate: new Date('2025-10-14T06:00:00.000Z'),
@@ -932,6 +953,7 @@ async function main() {
       pax: 2,
     },
     {
+      operatorId: alex.id,
       title: 'Brunton Boatyard Suite Check-in',
       cohortName: 'Kerala Highlands Monsoon Tour',
       eventDate: new Date('2025-10-14T08:30:00.000Z'),
@@ -942,6 +964,7 @@ async function main() {
       pax: 2,
     },
     {
+      operatorId: alex.id,
       title: 'Gap Road Chauffeur Transfer to Munnar',
       cohortName: 'Kerala Highlands Monsoon Tour',
       eventDate: new Date('2025-10-15T03:30:00.000Z'),
@@ -952,6 +975,7 @@ async function main() {
       pax: 2,
     },
     {
+      operatorId: alex.id,
       title: 'Alleppey Teak Houseboat Private Boarding',
       cohortName: 'Kerala Highlands Monsoon Tour',
       eventDate: new Date('2025-10-16T07:30:00.000Z'),

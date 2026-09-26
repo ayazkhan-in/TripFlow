@@ -75,6 +75,23 @@ function TripFlowApp() {
 
   // Sync with live Neon PostgreSQL backend
   useEffect(() => {
+    // Restore session if user token exists
+    TripFlowApi.getMe().then(user => {
+      if (user) {
+        const isOp = user.role?.toUpperCase() === 'OPERATOR';
+        setAuthUser({
+          id: user.id,
+          name: user.name,
+          email: user.email,
+          role: isOp ? 'operator' : 'traveler',
+          avatar: user.avatarUrl || (isOp ? ALEX_DISPATCH_AVATAR : USER_AVATAR),
+          membership: user.membershipTier || (isOp ? 'Chief Dispatch Controller' : 'Concierge Member'),
+          agencyName: user.agencyName,
+          agencyCode: user.agencyCode,
+        });
+      }
+    });
+
     TripFlowApi.getMyTrips().then(trips => {
       if (trips && trips.length > 0) {
         setBookedTrips(trips);
@@ -140,41 +157,70 @@ function TripFlowApp() {
   };
 
   const handleSignOut = () => {
+    TripFlowApi.logout();
     setAuthUser(null);
     setCurrentRoute('landing');
     showToast('Signed out of TripFlow.');
   };
 
   // Quick Explorers from Landing Page
-  const handleExploreTravelerDemo = () => {
-    setAuthUser({
-      id: 'user-sarah-1024',
-      name: 'Sarah Mehta',
-      email: 'sarah.mehta@concierge.tripflow.io',
-      role: 'traveler',
-      avatar: USER_AVATAR,
-      membership: 'Concierge Elite Member',
-    });
+  const handleExploreTravelerDemo = async () => {
+    try {
+      const res = await TripFlowApi.login('sarah.mehta@concierge.tripflow.io', 'password123');
+      setAuthUser({
+        id: res.user.id || 'user-sarah-1024',
+        name: res.user.name || 'Sarah Mehta',
+        email: res.user.email || 'sarah.mehta@concierge.tripflow.io',
+        role: 'traveler',
+        avatar: res.user.avatarUrl || USER_AVATAR,
+        membership: res.user.membershipTier || 'Concierge Elite Member',
+      });
+    } catch {
+      setAuthUser({
+        id: 'user-sarah-1024',
+        name: 'Sarah Mehta',
+        email: 'sarah.mehta@concierge.tripflow.io',
+        role: 'traveler',
+        avatar: USER_AVATAR,
+        membership: 'Concierge Elite Member',
+      });
+    }
     setViewMode('consumer');
     setConsumerTab('home');
     setCurrentRoute('app');
     showToast('Welcome back, Sarah Mehta! Live telemetry active.');
   };
 
-  const handleExploreOpsDemo = () => {
-    setAuthUser({
-      id: 'user-alex-007',
-      name: 'Alex Vance',
-      email: 'alex.vance@ops.tripflow.io',
-      role: 'operator',
-      avatar: ALEX_DISPATCH_AVATAR,
-      membership: 'Chief Dispatch Controller',
-    });
+  const handleExploreOpsDemo = async () => {
+    try {
+      const res = await TripFlowApi.login('alex.vance@ops.tripflow.io', 'password123');
+      setAuthUser({
+        id: res.user.id || 'user-alex-007',
+        name: res.user.name || 'Alex Vance',
+        email: res.user.email || 'alex.vance@ops.tripflow.io',
+        role: 'operator',
+        avatar: res.user.avatarUrl || ALEX_DISPATCH_AVATAR,
+        membership: res.user.membershipTier || 'Chief Dispatch Controller',
+        agencyName: res.user.agencyName || 'Alpine & Beyond Expeditions',
+        agencyCode: res.user.agencyCode || 'OP-ALPS-2026',
+      });
+    } catch {
+      setAuthUser({
+        id: 'user-alex-007',
+        name: 'Alex Vance',
+        email: 'alex.vance@ops.tripflow.io',
+        role: 'operator',
+        avatar: ALEX_DISPATCH_AVATAR,
+        membership: 'Chief Dispatch Controller',
+        agencyName: 'Alpine & Beyond Expeditions',
+        agencyCode: 'OP-ALPS-2026',
+      });
+    }
     setViewMode('operator');
     setOperatorTab('overview');
     setOperatorTourId(null);
     setCurrentRoute('app');
-    showToast('Alex Vance logged in to Operations Command Hub.');
+    showToast('Alex Vance logged in to Alpine & Beyond Operations Hub.');
   };
 
   const handleOpenItineraryBuilder = () => {
@@ -437,6 +483,7 @@ function TripFlowApp() {
           {viewMode === 'operator' && (
             <div className="flex-1 flex min-h-screen">
               <OpsSidebar
+                user={authUser}
                 activeTab={operatorTab}
                 onTabChange={tab => {
                   setOperatorTab(tab);

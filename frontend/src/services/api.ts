@@ -32,13 +32,83 @@ export class TripFlowApi {
   private static getHeaders(contentType = 'application/json'): Record<string, string> {
     const headers: Record<string, string> = {
       'Content-Type': contentType,
-      'x-demo-user-id': 'user-sarah-1024',
     };
     const token = this.getAuthToken();
     if (token) {
       headers['Authorization'] = `Bearer ${token}`;
+    } else {
+      headers['x-demo-user-id'] = 'user-sarah-1024';
     }
     return headers;
+  }
+
+  // --------------------------------------------------------------------------
+  // AUTHENTICATION FLOW
+  // --------------------------------------------------------------------------
+
+  static async register(userData: {
+    name: string;
+    email: string;
+    password: string;
+    role?: 'TRAVELER' | 'OPERATOR';
+    phone?: string;
+    agencyName?: string;
+    agencyCode?: string;
+  }): Promise<{ user: any; token: string }> {
+    const res = await fetch(`${API_BASE}/auth/register`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(userData),
+    });
+    const data = await res.json();
+    if (!res.ok) {
+      throw new Error(data.error || 'Registration failed');
+    }
+    if (data.token) {
+      this.setAuthToken(data.token);
+    }
+    return data;
+  }
+
+  static async login(email: string, password: string): Promise<{ user: any; token: string }> {
+    const res = await fetch(`${API_BASE}/auth/login`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email, password }),
+    });
+    const data = await res.json();
+    if (!res.ok) {
+      throw new Error(data.error || 'Invalid credentials');
+    }
+    if (data.token) {
+      this.setAuthToken(data.token);
+    }
+    return data;
+  }
+
+  static async getMe(): Promise<any | null> {
+    const token = this.getAuthToken();
+    if (!token) return null;
+    try {
+      const res = await fetch(`${API_BASE}/auth/me`, {
+        headers: this.getHeaders(),
+      });
+      if (!res.ok) {
+        if (res.status === 401 || res.status === 403) {
+          this.setAuthToken(null);
+        }
+        return null;
+      }
+      const data = await res.json();
+      return data.user || null;
+    } catch (err) {
+      console.warn('API getMe error:', err);
+      return null;
+    }
+  }
+
+  static logout(): void {
+    this.setAuthToken(null);
   }
 
   // --------------------------------------------------------------------------
@@ -338,6 +408,10 @@ export class TripFlowApi {
     }
   }
 
+  static async getPaymentTransactions(): Promise<any[]> {
+    return this.getPaymentsLedger();
+  }
+
   static async getCalendarEvents(): Promise<any[]> {
     try {
       const res = await fetch(`${API_BASE}/operator/calendar`, {
@@ -394,6 +468,38 @@ export class TripFlowApi {
       return data.cohort || null;
     } catch (err) {
       console.warn('API addTourCohort fallback:', err);
+      return null;
+    }
+  }
+
+  static async addTourGuide(guideData: any): Promise<any | null> {
+    try {
+      const res = await fetch(`${API_BASE}/operator/guides`, {
+        method: 'POST',
+        headers: this.getHeaders(),
+        body: JSON.stringify(guideData),
+      });
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const data = await res.json();
+      return data.guide || null;
+    } catch (err) {
+      console.warn('API addTourGuide fallback:', err);
+      return null;
+    }
+  }
+
+  static async createDisruptionAlert(alertData: any): Promise<any | null> {
+    try {
+      const res = await fetch(`${API_BASE}/operator/alerts`, {
+        method: 'POST',
+        headers: this.getHeaders(),
+        body: JSON.stringify(alertData),
+      });
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const data = await res.json();
+      return data.alert || null;
+    } catch (err) {
+      console.warn('API createDisruptionAlert fallback:', err);
       return null;
     }
   }

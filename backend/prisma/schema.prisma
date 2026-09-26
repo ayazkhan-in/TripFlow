@@ -66,6 +66,8 @@ model User {
   avatarUrl       String?
   phone           String?
   membershipTier  String           @default("Concierge Elite Member")
+  agencyName      String?
+  agencyCode      String?
   createdAt       DateTime         @default(now())
   updatedAt       DateTime         @updatedAt
 
@@ -176,6 +178,7 @@ model BookedTrip {
   travelers       Int
   totalPrice      Decimal         @db.Decimal(12, 2)
   currency        String          @default("USD")
+  operatorId      String?
   status          TripStatus      @default(CONFIRMED)
   bookedAt        DateTime        @default(now())
   heroImageUrl    String
@@ -257,6 +260,7 @@ model SavedJourney {
 
 model TourCohort {
   id              String          @id @default(uuid())
+  operatorId      String?
   name            String
   circuit         String
   dates           String
@@ -276,6 +280,7 @@ model TourCohort {
 
 model TourGuide {
   id              String          @id @default(uuid())
+  operatorId      String?
   name            String
   role            String          // Master Guide | Private Concierge | Licensed Chauffeur | Cultural Specialist
   languages       String[]
@@ -292,6 +297,7 @@ model TourGuide {
 
 model Vendor {
   id               String         @id @default(uuid())
+  operatorId       String?
   name             String
   category         String         // hotel | flight | train | fleet | dining | experience
   region           String
@@ -310,6 +316,7 @@ model Vendor {
 
 model DisruptionAlert {
   id                 String       @id @default(uuid())
+  operatorId         String?
   cohortId           String?
   tourTitle          String
   severity           AlertSeverity
@@ -328,6 +335,7 @@ model DisruptionAlert {
 
 model PaymentTransaction {
   id              String          @id @default(uuid())
+  operatorId      String?
   transactionRef  String          @unique
   bookedTripId    String?
   vendorId        String?
@@ -348,6 +356,7 @@ model PaymentTransaction {
 
 model CalendarTourEvent {
   id              String          @id @default(uuid())
+  operatorId      String?
   title           String
   cohortName      String
   eventDate       DateTime
@@ -357,3 +366,4 @@ model CalendarTourEvent {
   color           String
   pax             Int
 }
+

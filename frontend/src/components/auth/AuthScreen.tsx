@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { USER_AVATAR, ALEX_DISPATCH_AVATAR } from '../../data/mockData';
 import { AuthUser } from './AuthModal';
+import { TripFlowApi } from '../../services/api';
 
 interface AuthScreenProps {
   onLogin: (user: AuthUser) => void;
@@ -11,64 +12,123 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({
   onLogin,
   onBackToLanding,
 }) => {
-  const [activeTab, setActiveTab] = useState<'quick' | 'custom'>('quick');
-  const [customRole, setCustomRole] = useState<'traveler' | 'operator'>('traveler');
-  const [customName, setCustomName] = useState('Sarah Mehta');
-  const [customEmail, setCustomEmail] = useState('sarah.mehta@concierge.tripflow.io');
-  const [customPassword, setCustomPassword] = useState('••••••••••••');
-  const [isLoading, setIsLoading] = useState(false);
+  const [authMode, setAuthMode] = useState<'signin' | 'signup' | 'quick'>('signin');
+  const [selectedRole, setSelectedRole] = useState<'traveler' | 'operator'>('operator');
 
-  const handleSelectPersona = (role: 'traveler' | 'operator') => {
+  // Form inputs
+  const [name, setName] = useState('');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [agencyName, setAgencyName] = useState('');
+  const [agencyCode, setAgencyCode] = useState('');
+  const [phone, setPhone] = useState('');
+
+  const [isLoading, setIsLoading] = useState(false);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+
+  const handleSelectPersona = async (role: 'traveler' | 'operator') => {
     setIsLoading(true);
-    setTimeout(() => {
-      setIsLoading(false);
+    setErrorMessage(null);
+    try {
       if (role === 'traveler') {
+        const res = await TripFlowApi.login('sarah.mehta@concierge.tripflow.io', 'password123');
         onLogin({
-          id: 'user-sarah-1024',
-          name: 'Sarah Mehta',
-          email: 'sarah.mehta@concierge.tripflow.io',
+          id: res.user.id || 'user-sarah-1024',
+          name: res.user.name || 'Sarah Mehta',
+          email: res.user.email || 'sarah.mehta@concierge.tripflow.io',
           role: 'traveler',
-          avatar: USER_AVATAR,
-          membership: 'Concierge Elite Member',
+          avatar: res.user.avatarUrl || USER_AVATAR,
+          membership: res.user.membershipTier || 'Concierge Elite Member',
         });
       } else {
+        const res = await TripFlowApi.login('alex.vance@ops.tripflow.io', 'password123');
         onLogin({
-          id: 'user-alex-007',
-          name: 'Alex Vance',
-          email: 'alex.vance@ops.tripflow.io',
+          id: res.user.id || 'user-alex-007',
+          name: res.user.name || 'Alex Vance',
+          email: res.user.email || 'alex.vance@ops.tripflow.io',
           role: 'operator',
-          avatar: ALEX_DISPATCH_AVATAR,
-          membership: 'Chief Dispatch Controller',
+          avatar: res.user.avatarUrl || ALEX_DISPATCH_AVATAR,
+          membership: res.user.membershipTier || 'Chief Dispatch Controller',
+          agencyName: res.user.agencyName || 'Alpine & Beyond Expeditions',
+          agencyCode: res.user.agencyCode || 'OP-ALPS-2026',
         });
       }
-    }, 350);
+    } catch (err: any) {
+      setErrorMessage(err.message || 'Demo login failed');
+    } finally {
+      setIsLoading(false);
+    }
   };
 
-  const handleCustomSubmit = (e: React.FormEvent) => {
+  const handleSignIn = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!email || !password) {
+      setErrorMessage('Please enter both email and password.');
+      return;
+    }
+
     setIsLoading(true);
-    setTimeout(() => {
+    setErrorMessage(null);
+    try {
+      const res = await TripFlowApi.login(email.trim(), password);
+      const isOp = res.user.role?.toUpperCase() === 'OPERATOR';
+      onLogin({
+        id: res.user.id,
+        name: res.user.name,
+        email: res.user.email,
+        role: isOp ? 'operator' : 'traveler',
+        avatar: res.user.avatarUrl || (isOp ? ALEX_DISPATCH_AVATAR : USER_AVATAR),
+        membership: res.user.membershipTier || (isOp ? 'Chief Dispatch Controller' : 'Concierge Member'),
+        agencyName: res.user.agencyName,
+        agencyCode: res.user.agencyCode,
+      });
+    } catch (err: any) {
+      setErrorMessage(err.message || 'Invalid credentials or account not found');
+    } finally {
       setIsLoading(false);
-      if (customRole === 'traveler') {
-        onLogin({
-          id: `user-${Date.now()}`,
-          name: customName || 'Sarah Mehta',
-          email: customEmail,
-          role: 'traveler',
-          avatar: USER_AVATAR,
-          membership: 'Concierge Member',
-        });
-      } else {
-        onLogin({
-          id: `user-${Date.now()}`,
-          name: customName || 'Alex Vance',
-          email: customEmail,
-          role: 'operator',
-          avatar: ALEX_DISPATCH_AVATAR,
-          membership: 'Operations Hub Controller',
-        });
-      }
-    }, 400);
+    }
+  };
+
+  const handleSignUp = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!name.trim() || !email.trim() || !password) {
+      setErrorMessage('Name, email, and password are required.');
+      return;
+    }
+    if (selectedRole === 'operator' && !agencyName.trim()) {
+      setErrorMessage('Please provide your Travel Agency Name.');
+      return;
+    }
+
+    setIsLoading(true);
+    setErrorMessage(null);
+    try {
+      const res = await TripFlowApi.register({
+        name: name.trim(),
+        email: email.trim().toLowerCase(),
+        password,
+        role: selectedRole === 'operator' ? 'OPERATOR' : 'TRAVELER',
+        phone: phone.trim() || undefined,
+        agencyName: selectedRole === 'operator' ? agencyName.trim() : undefined,
+        agencyCode: selectedRole === 'operator' ? (agencyCode.trim() || `OP-${name.slice(0, 3).toUpperCase()}-2026`) : undefined,
+      });
+
+      const isOp = res.user.role?.toUpperCase() === 'OPERATOR';
+      onLogin({
+        id: res.user.id,
+        name: res.user.name,
+        email: res.user.email,
+        role: isOp ? 'operator' : 'traveler',
+        avatar: res.user.avatarUrl || (isOp ? ALEX_DISPATCH_AVATAR : USER_AVATAR),
+        membership: res.user.membershipTier || (isOp ? 'Chief Dispatch Controller' : 'Concierge Member'),
+        agencyName: res.user.agencyName,
+        agencyCode: res.user.agencyCode,
+      });
+    } catch (err: any) {
+      setErrorMessage(err.message || 'Registration failed. Try a different email address.');
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -102,333 +162,179 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({
       </header>
 
       {/* Main Container */}
-      <main className="flex-1 flex items-center justify-center px-4 py-12">
-        <div className="w-full max-w-4xl space-y-8 animate-in fade-in zoom-in-95 duration-200">
-          {/* Headline */}
-          <div className="text-center space-y-2 max-w-xl mx-auto">
-            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-blue-50 border border-blue-200 text-[#004AC6] text-xs font-semibold">
-              <span className="material-symbols-outlined text-sm">lock</span>
-              <span>Encrypted Workspace Sign In</span>
-            </div>
-            <h1 className="text-3xl sm:text-4xl font-extrabold text-[#111827] tracking-tight">
-              Sign In to TripFlow
-            </h1>
-            <p className="text-xs sm:text-sm text-[#4B5563]">
-              Select whether you want to log in as a <strong className="text-[#111827]">Traveller</strong> to access
-              your living itinerary and Travel Vault, or as an <strong className="text-[#111827]">Operator</strong> to
-              command the fleet dispatch radar.
-            </p>
-          </div>
-
-          {/* Tab Selector: Quick Persona vs Custom Login */}
-          <div className="flex justify-center">
-            <div className="bg-gray-100 p-1 rounded-full flex items-center gap-1 max-w-xs w-full">
-              <button
-                type="button"
-                onClick={() => setActiveTab('quick')}
-                className={`flex-1 py-1.5 text-xs font-bold rounded-full transition-all cursor-pointer ${
-                  activeTab === 'quick'
-                    ? 'bg-white text-[#004AC6] shadow-xs'
-                    : 'text-[#6B7280] hover:text-[#111827]'
-                }`}
-              >
-                1-Click Role Login
-              </button>
-              <button
-                type="button"
-                onClick={() => setActiveTab('custom')}
-                className={`flex-1 py-1.5 text-xs font-bold rounded-full transition-all cursor-pointer ${
-                  activeTab === 'custom'
-                    ? 'bg-white text-[#004AC6] shadow-xs'
-                    : 'text-[#6B7280] hover:text-[#111827]'
-                }`}
-              >
-                Custom Credentials
-              </button>
+      <main className="flex-1 flex items-center justify-center p-4 sm:p-6 md:p-8">
+        <div className="w-full max-w-xl bg-white rounded-3xl shadow-xl border border-slate-200/80 overflow-hidden">
+          {/* Card Top Banner */}
+          <div className="bg-gradient-to-r from-blue-900 via-indigo-900 to-slate-900 p-8 text-white">
+            <div className="flex items-center gap-3 mb-2">
+              <span className="w-10 h-10 rounded-xl bg-white/10 flex items-center justify-center text-white border border-white/20 backdrop-blur-xs">
+                <span className="material-symbols-outlined text-2xl">
+                  {selectedRole === 'operator' ? 'hub' : 'flight_takeoff'}
+                </span>
+              </span>
+              <div>
+                <h1 className="text-xl font-bold tracking-tight">
+                  {authMode === 'signup' ? 'Create New Account' : authMode === 'signin' ? 'Sign In to TripFlow' : 'Explore Demo Personas'}
+                </h1>
+                <p className="text-xs text-blue-200/80">
+                  {selectedRole === 'operator'
+                    ? 'Strict agency isolation • Live cohort dispatches • Dedicated vendor mesh'
+                    : 'Personalized live itineraries • Concierge vault • Real-time telemetry'}
+                </p>
+              </div>
             </div>
           </div>
 
-          {/* Option Cards for Quick Role Login */}
-          {activeTab === 'quick' ? (
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-stretch">
-              {/* Option 1: Traveller Persona */}
-              <div
-                onClick={() => !isLoading && handleSelectPersona('traveler')}
-                className="group relative bg-white rounded-3xl p-7 border-2 border-[#E5E7EB] hover:border-[#2563EB] shadow-xs hover:shadow-xl transition-all cursor-pointer flex flex-col justify-between space-y-6"
-              >
-                <div className="space-y-4">
-                  <div className="flex items-center justify-between">
-                    <span className="px-3 py-1 rounded-full bg-blue-50 text-[#004AC6] text-xs font-bold border border-blue-200">
-                      Option 1 · Consumer Experience
-                    </span>
-                    <span className="text-[11px] font-semibold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200">
-                      Active Tour Loaded
-                    </span>
-                  </div>
+          {/* Tab Selector */}
+          <div className="flex border-b border-slate-200 bg-slate-50 p-2 gap-1.5">
+            <button
+              type="button"
+              onClick={() => {
+                setAuthMode('signin');
+                setErrorMessage(null);
+              }}
+              className={`flex-1 py-2.5 text-xs font-bold rounded-xl transition-all cursor-pointer ${
+                authMode === 'signin'
+                  ? 'bg-white text-blue-600 shadow-xs'
+                  : 'text-slate-500 hover:text-slate-900'
+              }`}
+            >
+              Sign In
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                setAuthMode('signup');
+                setErrorMessage(null);
+              }}
+              className={`flex-1 py-2.5 text-xs font-bold rounded-xl transition-all cursor-pointer ${
+                authMode === 'signup'
+                  ? 'bg-white text-blue-600 shadow-xs'
+                  : 'text-slate-500 hover:text-slate-900'
+              }`}
+            >
+              Create Account
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                setAuthMode('quick');
+                setErrorMessage(null);
+              }}
+              className={`flex-1 py-2.5 text-xs font-bold rounded-xl transition-all cursor-pointer ${
+                authMode === 'quick'
+                  ? 'bg-white text-blue-600 shadow-xs'
+                  : 'text-slate-500 hover:text-slate-900'
+              }`}
+            >
+              ⚡ 1-Click Demo
+            </button>
+          </div>
 
-                  {/* Profile Header */}
-                  <div className="flex items-center gap-4">
-                    <img
-                      src={USER_AVATAR}
-                      alt="Sarah Mehta"
-                      className="w-16 h-16 rounded-2xl object-cover ring-2 ring-blue-100 shadow-xs shrink-0"
-                    />
-                    <div>
-                      <h2 className="text-xl font-bold text-[#111827] group-hover:text-[#004AC6] transition-colors">
-                        Sarah Mehta
-                      </h2>
-                      <div className="text-xs text-[#6B7280]">
-                        sarah.mehta@concierge.tripflow.io
-                      </div>
-                      <div className="text-[11px] font-semibold text-[#004AC6] mt-0.5">
-                        Concierge Elite Member
-                      </div>
-                    </div>
-                  </div>
+          {/* Error Message */}
+          {errorMessage && (
+            <div className="mx-8 mt-5 p-3.5 rounded-xl bg-rose-50 border border-rose-200 text-rose-700 text-xs flex items-center gap-2">
+              <span className="material-symbols-outlined text-base shrink-0">error</span>
+              <span>{errorMessage}</span>
+            </div>
+          )}
 
-                  {/* Feature bullet list */}
-                  <div className="space-y-2 pt-2 border-t border-gray-100 text-xs text-[#374151]">
-                    <div className="flex items-start gap-2">
-                      <span className="material-symbols-outlined text-blue-600 text-base shrink-0 mt-0.5">
-                        luggage
-                      </span>
-                      <span>
-                        <strong>Living Itinerary:</strong> Kerala 6-Day Luxury Circuit (Kochi, Munnar, Alleppey)
-                      </span>
-                    </div>
-
-                    <div className="flex items-start gap-2">
-                      <span className="material-symbols-outlined text-emerald-600 text-base shrink-0 mt-0.5">
-                        lock
-                      </span>
-                      <span>
-                        <strong>Travel Vault:</strong> 12 offline encrypted passes (Passports, Visas, Flight AI-682, Hotel Vouchers)
-                      </span>
-                    </div>
-
-                    <div className="flex items-start gap-2">
-                      <span className="material-symbols-outlined text-amber-600 text-base shrink-0 mt-0.5">
-                        airline_stops
-                      </span>
-                      <span>
-                        <strong>Live Telemetry:</strong> Autonomous flight delay cascade with Chauffeur Rajesh K.
-                      </span>
-                    </div>
-
-                    <div className="flex items-start gap-2">
-                      <span className="material-symbols-outlined text-purple-600 text-base shrink-0 mt-0.5">
-                        support_agent
-                      </span>
-                      <span>
-                        <strong>24/7 Concierge:</strong> Instant WhatsApp access to regional master Arun V.
-                      </span>
-                    </div>
-                  </div>
-                </div>
+          <div className="p-8">
+            {/* 1. QUICK DEMO TAB */}
+            {authMode === 'quick' && (
+              <div className="space-y-4">
+                <p className="text-xs text-slate-500 mb-2">
+                  Select a verified account to test the system immediately:
+                </p>
 
                 <button
                   type="button"
                   disabled={isLoading}
-                  className="w-full py-3.5 rounded-full bg-[#2563EB] hover:bg-[#1D4ED8] text-white text-xs font-bold transition-all shadow-md group-hover:shadow-lg flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
+                  onClick={() => handleSelectPersona('operator')}
+                  className="w-full text-left p-5 rounded-2xl border border-slate-200 hover:border-blue-600 bg-slate-50 hover:bg-blue-50/40 transition-all flex items-center gap-4 group cursor-pointer"
                 >
-                  {isLoading ? (
-                    <>
-                      <span className="w-3.5 h-3.5 border-2 border-white/30 border-t-white rounded-full animate-spin"></span>
-                      <span>Opening Portal...</span>
-                    </>
-                  ) : (
-                    <>
-                      <span>Log In as Traveller</span>
-                      <span className="material-symbols-outlined text-base group-hover:translate-x-1 transition-transform">
-                        arrow_forward
-                      </span>
-                    </>
-                  )}
-                </button>
-              </div>
-
-              {/* Option 2: Operator Persona */}
-              <div
-                onClick={() => !isLoading && handleSelectPersona('operator')}
-                className="group relative bg-white rounded-3xl p-7 border-2 border-[#E5E7EB] hover:border-emerald-600 shadow-xs hover:shadow-xl transition-all cursor-pointer flex flex-col justify-between space-y-6"
-              >
-                <div className="space-y-4">
-                  <div className="flex items-center justify-between">
-                    <span className="px-3 py-1 rounded-full bg-emerald-50 text-emerald-800 text-xs font-bold border border-emerald-200">
-                      Option 2 · Operations Command
-                    </span>
-                    <span className="text-[11px] font-semibold text-blue-700 bg-blue-50 px-2 py-0.5 rounded-full border border-blue-200">
-                      Radar Controller
-                    </span>
-                  </div>
-
-                  {/* Profile Header */}
-                  <div className="flex items-center gap-4">
-                    <img
-                      src={ALEX_DISPATCH_AVATAR}
-                      alt="Alex Vance"
-                      className="w-16 h-16 rounded-2xl object-cover ring-2 ring-emerald-100 shadow-xs shrink-0"
-                    />
-                    <div>
-                      <h2 className="text-xl font-bold text-[#111827] group-hover:text-emerald-700 transition-colors">
-                        Alex Vance
-                      </h2>
-                      <div className="text-xs text-[#6B7280]">
-                        alex.vance@ops.tripflow.io
-                      </div>
-                      <div className="text-[11px] font-semibold text-emerald-700 mt-0.5">
-                        Chief Dispatch Controller
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Feature bullet list */}
-                  <div className="space-y-2 pt-2 border-t border-gray-100 text-xs text-[#374151]">
-                    <div className="flex items-start gap-2">
-                      <span className="material-symbols-outlined text-emerald-600 text-base shrink-0 mt-0.5">
-                        radar
-                      </span>
-                      <span>
-                        <strong>Fleet Radar:</strong> 7 active vehicles tracked live in Kerala, Rajasthan & Delhi
-                      </span>
-                    </div>
-
-                    <div className="flex items-start gap-2">
-                      <span className="material-symbols-outlined text-rose-600 text-base shrink-0 mt-0.5">
-                        bolt
-                      </span>
-                      <span>
-                        <strong>Cascade Solver:</strong> AI-assisted ripple effect solver for flight & weather delays
-                      </span>
-                    </div>
-
-                    <div className="flex items-start gap-2">
-                      <span className="material-symbols-outlined text-blue-600 text-base shrink-0 mt-0.5">
-                        verified
-                      </span>
-                      <span>
-                        <strong>Traveler Manifest:</strong> Guest vault compliance & document verification audit
-                      </span>
-                    </div>
-
-                    <div className="flex items-start gap-2">
-                      <span className="material-symbols-outlined text-amber-600 text-base shrink-0 mt-0.5">
-                        hub
-                      </span>
-                      <span>
-                        <strong>Live Dispatch:</strong> 1-click chauffeur re-routing and hotel arrival re-sequencing
-                      </span>
-                    </div>
-                  </div>
-                </div>
-
-                <button
-                  type="button"
-                  disabled={isLoading}
-                  className="w-full py-3.5 rounded-full bg-[#111827] hover:bg-[#1F2937] text-white text-xs font-bold transition-all shadow-md group-hover:shadow-lg flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
-                >
-                  {isLoading ? (
-                    <>
-                      <span className="w-3.5 h-3.5 border-2 border-white/30 border-t-white rounded-full animate-spin"></span>
-                      <span>Launching Ops Hub...</span>
-                    </>
-                  ) : (
-                    <>
-                      <span className="material-symbols-outlined text-sm text-emerald-400">
-                        hub
-                      </span>
-                      <span>Log In as Operator</span>
-                      <span className="material-symbols-outlined text-base group-hover:translate-x-1 transition-transform">
-                        arrow_forward
-                      </span>
-                    </>
-                  )}
-                </button>
-              </div>
-            </div>
-          ) : (
-            /* Custom Credentials Form */
-            <div className="max-w-md mx-auto bg-white rounded-3xl p-8 border border-[#E5E7EB] shadow-xl">
-              <form onSubmit={handleCustomSubmit} className="space-y-4">
-                <div>
-                  <label className="block text-xs font-bold text-[#111827] mb-1.5">
-                    Select Role Option
-                  </label>
-                  <div className="grid grid-cols-2 gap-3">
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setCustomRole('traveler');
-                        setCustomName('Sarah Mehta');
-                        setCustomEmail('sarah.mehta@concierge.tripflow.io');
-                      }}
-                      className={`p-3 rounded-full border text-center transition-all cursor-pointer flex flex-col items-center gap-1 ${
-                        customRole === 'traveler'
-                          ? 'border-[#2563EB] bg-[#F0F3FF] text-[#004AC6]'
-                          : 'border-[#E5E7EB] text-[#6B7280] hover:bg-gray-50'
-                      }`}
-                    >
-                      <span className="material-symbols-outlined text-xl">person</span>
-                      <span className="text-xs font-bold">Traveller</span>
-                      <span className="text-[10px] text-[#6B7280]">Guest Portal</span>
-                    </button>
-
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setCustomRole('operator');
-                        setCustomName('Alex Vance');
-                        setCustomEmail('alex.vance@ops.tripflow.io');
-                      }}
-                      className={`p-3 rounded-full border text-center transition-all cursor-pointer flex flex-col items-center gap-1 ${
-                        customRole === 'operator'
-                          ? 'border-emerald-600 bg-emerald-50 text-emerald-800'
-                          : 'border-[#E5E7EB] text-[#6B7280] hover:bg-gray-50'
-                      }`}
-                    >
-                      <span className="material-symbols-outlined text-xl">hub</span>
-                      <span className="text-xs font-bold">Operator</span>
-                      <span className="text-[10px] text-[#6B7280]">Dispatch Hub</span>
-                    </button>
-                  </div>
-                </div>
-
-                <div>
-                  <label className="block text-xs font-bold text-[#111827] mb-1">
-                    Full Name
-                  </label>
-                  <input
-                    type="text"
-                    required
-                    value={customName}
-                    onChange={e => setCustomName(e.target.value)}
-                    className="w-full px-3 py-2 text-xs rounded-xl border border-[#D1D5DB] focus:outline-none focus:ring-2 focus:ring-[#2563EB] bg-[#F9FAFB] text-[#111827]"
+                  <img
+                    src={ALEX_DISPATCH_AVATAR}
+                    alt="Alex Vance"
+                    className="w-14 h-14 rounded-full object-cover ring-2 ring-blue-500/20 shrink-0"
                   />
-                </div>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm font-bold text-slate-900 group-hover:text-blue-600 transition-colors">
+                        Alex Vance
+                      </span>
+                      <span className="text-[10px] font-bold px-2.5 py-0.5 rounded-full bg-blue-100 text-blue-800">
+                        Tour Operator
+                      </span>
+                    </div>
+                    <p className="text-xs text-slate-700 font-semibold mt-0.5 truncate">
+                      Alpine & Beyond Expeditions (OP-ALPS-2026)
+                    </p>
+                    <p className="text-[11px] text-slate-500 mt-1">
+                      Chief Dispatcher • Full access to pre-seeded cohorts, supply vendors & disruption cards
+                    </p>
+                  </div>
+                </button>
 
+                <button
+                  type="button"
+                  disabled={isLoading}
+                  onClick={() => handleSelectPersona('traveler')}
+                  className="w-full text-left p-5 rounded-2xl border border-slate-200 hover:border-blue-600 bg-slate-50 hover:bg-blue-50/40 transition-all flex items-center gap-4 group cursor-pointer"
+                >
+                  <img
+                    src={USER_AVATAR}
+                    alt="Sarah Mehta"
+                    className="w-14 h-14 rounded-full object-cover ring-2 ring-emerald-500/20 shrink-0"
+                  />
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm font-bold text-slate-900 group-hover:text-blue-600 transition-colors">
+                        Sarah Mehta
+                      </span>
+                      <span className="text-[10px] font-bold px-2.5 py-0.5 rounded-full bg-emerald-100 text-emerald-800">
+                        Elite Traveler
+                      </span>
+                    </div>
+                    <p className="text-xs text-slate-700 font-semibold mt-0.5 truncate">
+                      Concierge Elite Member • sarah.mehta@concierge.tripflow.io
+                    </p>
+                    <p className="text-[11px] text-slate-500 mt-1">
+                      Active Kerala booking • Complete travel vault vouchers • Chauffeur Arun GPS telemetry
+                    </p>
+                  </div>
+                </button>
+              </div>
+            )}
+
+            {/* 2. SIGN IN TAB */}
+            {authMode === 'signin' && (
+              <form onSubmit={handleSignIn} className="space-y-4">
                 <div>
-                  <label className="block text-xs font-bold text-[#111827] mb-1">
+                  <label className="block text-xs font-semibold text-slate-700 mb-1.5">
                     Email Address
                   </label>
                   <input
                     type="email"
                     required
-                    value={customEmail}
-                    onChange={e => setCustomEmail(e.target.value)}
-                    className="w-full px-3 py-2 text-xs rounded-xl border border-[#D1D5DB] focus:outline-none focus:ring-2 focus:ring-[#2563EB] bg-[#F9FAFB] text-[#111827]"
+                    placeholder="e.g. operator@agency.com"
+                    value={email}
+                    onChange={e => setEmail(e.target.value)}
+                    className="w-full px-4 py-3 rounded-xl border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-xs font-bold text-[#111827] mb-1">
+                  <label className="block text-xs font-semibold text-slate-700 mb-1.5">
                     Password
                   </label>
                   <input
                     type="password"
                     required
-                    value={customPassword}
-                    onChange={e => setCustomPassword(e.target.value)}
-                    className="w-full px-3 py-2 text-xs rounded-xl border border-[#D1D5DB] focus:outline-none focus:ring-2 focus:ring-[#2563EB] bg-[#F9FAFB] text-[#111827]"
+                    placeholder="••••••••••••"
+                    value={password}
+                    onChange={e => setPassword(e.target.value)}
+                    className="w-full px-4 py-3 rounded-xl border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all"
                   />
                 </div>
 
@@ -436,28 +342,202 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({
                   <button
                     type="submit"
                     disabled={isLoading}
-                    className="w-full py-3.5 rounded-full bg-[#2563EB] hover:bg-[#1D4ED8] text-white text-xs font-bold transition-all shadow-xs cursor-pointer flex items-center justify-center gap-2 disabled:opacity-50"
+                    className="w-full py-3.5 px-4 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold text-sm shadow-lg shadow-blue-500/25 transition-all flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
                   >
                     {isLoading ? (
                       <>
-                        <span className="w-3.5 h-3.5 border-2 border-white/30 border-t-white rounded-full animate-spin"></span>
-                        <span>Authenticating...</span>
+                        <span className="material-symbols-outlined text-lg animate-spin">
+                          progress_activity
+                        </span>
+                        Verifying Credentials...
                       </>
                     ) : (
                       <>
-                        <span>Continue as {customRole === 'traveler' ? 'Traveller' : 'Operator'}</span>
-                        <span className="material-symbols-outlined text-sm">login</span>
+                        <span className="material-symbols-outlined text-lg">login</span>
+                        Sign In to TripFlow
                       </>
                     )}
                   </button>
                 </div>
-              </form>
-            </div>
-          )}
 
-          {/* Secure Guarantee Note */}
-          <div className="text-center text-xs text-[#6B7280]">
-            🔒 All dummy credentials are pre-configured. No real authentication credentials needed.
+                <p className="text-center text-xs text-slate-500 pt-3">
+                  Need a new account?{' '}
+                  <button
+                    type="button"
+                    onClick={() => setAuthMode('signup')}
+                    className="text-blue-600 hover:underline font-bold cursor-pointer"
+                  >
+                    Register New Account
+                  </button>
+                </p>
+              </form>
+            )}
+
+            {/* 3. SIGN UP TAB */}
+            {authMode === 'signup' && (
+              <form onSubmit={handleSignUp} className="space-y-4">
+                <div>
+                  <label className="block text-xs font-semibold text-slate-700 mb-1.5">
+                    Choose Account Type
+                  </label>
+                  <div className="grid grid-cols-2 gap-3">
+                    <button
+                      type="button"
+                      onClick={() => setSelectedRole('traveler')}
+                      className={`py-2.5 px-3 rounded-xl border text-xs font-bold flex items-center justify-center gap-2 transition-all cursor-pointer ${
+                        selectedRole === 'traveler'
+                          ? 'border-blue-600 bg-blue-50 text-blue-700 ring-2 ring-blue-500/20'
+                          : 'border-slate-200 text-slate-600 hover:bg-slate-50'
+                      }`}
+                    >
+                      <span className="material-symbols-outlined text-base">person</span>
+                      Traveler
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setSelectedRole('operator')}
+                      className={`py-2.5 px-3 rounded-xl border text-xs font-bold flex items-center justify-center gap-2 transition-all cursor-pointer ${
+                        selectedRole === 'operator'
+                          ? 'border-indigo-600 bg-indigo-50 text-indigo-700 ring-2 ring-indigo-500/20'
+                          : 'border-slate-200 text-slate-600 hover:bg-slate-50'
+                      }`}
+                    >
+                      <span className="material-symbols-outlined text-base">hub</span>
+                      Tour Operator
+                    </button>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-xs font-semibold text-slate-700 mb-1">
+                      {selectedRole === 'operator' ? 'Lead Dispatcher Name' : 'Full Name'}
+                    </label>
+                    <input
+                      type="text"
+                      required
+                      placeholder={selectedRole === 'operator' ? 'e.g. Vikram Singhania' : 'e.g. Sarah Mehta'}
+                      value={name}
+                      onChange={e => setName(e.target.value)}
+                      className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-semibold text-slate-700 mb-1">
+                      Phone Number
+                    </label>
+                    <input
+                      type="tel"
+                      placeholder="+91 98000 00000"
+                      value={phone}
+                      onChange={e => setPhone(e.target.value)}
+                      className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-semibold text-slate-700 mb-1">
+                    Email Address
+                  </label>
+                  <input
+                    type="email"
+                    required
+                    placeholder="e.g. dispatch@agency.com"
+                    value={email}
+                    onChange={e => setEmail(e.target.value)}
+                    className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-semibold text-slate-700 mb-1">
+                    Password
+                  </label>
+                  <input
+                    type="password"
+                    required
+                    placeholder="At least 6 characters"
+                    value={password}
+                    onChange={e => setPassword(e.target.value)}
+                    className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  />
+                </div>
+
+                {/* OPERATOR AGENCY DETAILS */}
+                {selectedRole === 'operator' && (
+                  <div className="p-4 rounded-2xl bg-indigo-50/70 border border-indigo-100 space-y-3">
+                    <div className="flex items-center gap-2 text-xs font-bold text-indigo-950">
+                      <span className="material-symbols-outlined text-base text-indigo-600">domain</span>
+                      <span>Agency Data Isolation Profile</span>
+                    </div>
+
+                    <div>
+                      <label className="block text-[11px] font-semibold text-indigo-950 mb-1">
+                        Agency Name *
+                      </label>
+                      <input
+                        type="text"
+                        required
+                        placeholder="e.g. Himalayan Skyways & Luxury Expeditions"
+                        value={agencyName}
+                        onChange={e => setAgencyName(e.target.value)}
+                        className="w-full px-3 py-2 bg-white rounded-xl border border-indigo-200 text-xs text-slate-900 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-[11px] font-semibold text-indigo-950 mb-1">
+                        Agency License / Operator Code (Optional)
+                      </label>
+                      <input
+                        type="text"
+                        placeholder="e.g. OP-HIM-2026"
+                        value={agencyCode}
+                        onChange={e => setAgencyCode(e.target.value)}
+                        className="w-full px-3 py-2 bg-white rounded-xl border border-indigo-200 text-xs text-slate-900 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                      />
+                      <p className="text-[10px] text-indigo-600/80 mt-1">
+                        Your operational data (cohorts, vendors, ledger, disruptions) will be strictly isolated to this agency.
+                      </p>
+                    </div>
+                  </div>
+                )}
+
+                <div className="pt-2">
+                  <button
+                    type="submit"
+                    disabled={isLoading}
+                    className="w-full py-3.5 px-4 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold text-sm shadow-lg shadow-blue-500/25 transition-all flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
+                  >
+                    {isLoading ? (
+                      <>
+                        <span className="material-symbols-outlined text-lg animate-spin">
+                          progress_activity
+                        </span>
+                        Configuring Agency Portal...
+                      </>
+                    ) : (
+                      <>
+                        <span className="material-symbols-outlined text-lg">how_to_reg</span>
+                        {selectedRole === 'operator' ? 'Register Agency & Open Hub' : 'Register Traveler Account'}
+                      </>
+                    )}
+                  </button>
+                </div>
+
+                <p className="text-center text-xs text-slate-500 pt-2">
+                  Already registered?{' '}
+                  <button
+                    type="button"
+                    onClick={() => setAuthMode('signin')}
+                    className="text-blue-600 hover:underline font-bold cursor-pointer"
+                  >
+                    Sign In
+                  </button>
+                </p>
+              </form>
+            )}
           </div>
         </div>
       </main>

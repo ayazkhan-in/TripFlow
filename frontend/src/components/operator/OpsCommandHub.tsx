@@ -42,29 +42,39 @@ export const OpsCommandHub: React.FC<OpsCommandHubProps> = ({
   const [liveToast, setLiveToast] = useState<string | null>(null);
 
   useEffect(() => {
-    TripFlowApi.getDisruptionAlerts().then(backendAlerts => {
-      if (backendAlerts && backendAlerts.length > 0) {
-        setDisruptions(prev => {
-          const next = [...prev];
-          backendAlerts.forEach((a: any, idx: number) => {
-            const fallback = INITIAL_DISRUPTIONS[idx] || INITIAL_DISRUPTIONS[0];
-            next[idx] = {
-              ...fallback,
-              id: a.id,
-              tourId: a.cohortId || fallback.tourId,
-              tourName: a.tourTitle || fallback.tourName,
-              severity: (a.severity === 'critical' || a.severity === 'high') ? a.severity : 'moderate',
-              severityLabel: a.severity === 'critical' ? 'Critical Disruption' : a.severity === 'high' ? 'High Impact' : 'Moderate Advisory',
-              rootCauseTitle: a.title || fallback.rootCauseTitle,
-              rootCauseDetail: a.description || fallback.rootCauseDetail,
-              aiRecommendation: a.actionSuggested || fallback.aiRecommendation,
-              actionText: a.isResolved ? 'Resolved' : fallback.actionText,
-              status: (a.isResolved ? 'resolved' : 'open') as 'open' | 'resolved',
-            };
-          });
-          return next;
-        });
-      }
+    TripFlowApi.getMe().then(user => {
+      const isOperator = user?.role?.toUpperCase() === 'OPERATOR';
+      const isAlexDemo = !user || user.id === 'user-alex-007';
+
+      TripFlowApi.getDisruptionAlerts().then(backendAlerts => {
+        if (backendAlerts && backendAlerts.length > 0) {
+          setDisruptions(
+            backendAlerts.map((a: any, idx: number) => {
+              const fallback = INITIAL_DISRUPTIONS[idx] || INITIAL_DISRUPTIONS[0];
+              return {
+                ...fallback,
+                id: a.id,
+                tourId: a.cohortId || fallback.tourId,
+                tourName: a.tourTitle || fallback.tourName,
+                severity: (a.severity === 'critical' || a.severity === 'high') ? a.severity : 'moderate',
+                severityLabel:
+                  a.severity === 'critical'
+                    ? 'Critical Disruption'
+                    : a.severity === 'high'
+                    ? 'High Impact'
+                    : 'Moderate Advisory',
+                rootCauseTitle: a.title || fallback.rootCauseTitle,
+                rootCauseDetail: a.description || fallback.rootCauseDetail,
+                aiRecommendation: a.actionSuggested || fallback.aiRecommendation,
+                actionText: a.isResolved ? 'Resolved' : fallback.actionText,
+                status: (a.isResolved ? 'resolved' : 'open') as 'open' | 'resolved',
+              };
+            })
+          );
+        } else if (isOperator && !isAlexDemo) {
+          setDisruptions([]);
+        }
+      });
     });
   }, []);
 
@@ -416,15 +426,27 @@ export const OpsCommandHub: React.FC<OpsCommandHubProps> = ({
               </div>
             </div>
 
-            {/* Card 1: Critical Flight Delay (Tour #1024) */}
-            {disruptions[0] && (
-            <article
-              className={`bg-white border rounded-xl p-4 shadow-xs relative overflow-hidden transition-all ${
-                disruptions[0].status === 'resolved'
-                  ? 'border-emerald-300 opacity-80'
-                  : 'border-red-300 hover:border-red-400'
-              }`}
-            >
+            {disruptions.length === 0 ? (
+              <div className="bg-white border border-emerald-200/80 rounded-2xl p-8 text-center shadow-xs">
+                <div className="w-12 h-12 rounded-2xl bg-emerald-50 text-emerald-600 flex items-center justify-center mx-auto mb-3">
+                  <span className="material-symbols-outlined text-2xl">check_circle</span>
+                </div>
+                <h4 className="text-sm font-bold text-slate-900">All Operations Clear</h4>
+                <p className="text-xs text-slate-500 max-w-sm mx-auto mt-1">
+                  Zero active disruption alerts for your agency fleet. All flights, hotel check-ins, and chauffeur transfers are running on schedule.
+                </p>
+              </div>
+            ) : (
+              <>
+                {/* Card 1: Critical Flight Delay (Tour #1024) */}
+                {disruptions[0] && (
+                <article
+                  className={`bg-white border rounded-xl p-4 shadow-xs relative overflow-hidden transition-all ${
+                    disruptions[0].status === 'resolved'
+                      ? 'border-emerald-300 opacity-80'
+                      : 'border-red-300 hover:border-red-400'
+                  }`}
+                >
               <div
                 className={`absolute left-0 top-0 bottom-0 w-1.5 ${
                   disruptions[0].status === 'resolved'
@@ -794,6 +816,8 @@ export const OpsCommandHub: React.FC<OpsCommandHubProps> = ({
                 </div>
               </div>
             </article>
+            )}
+              </>
             )}
           </section>
 

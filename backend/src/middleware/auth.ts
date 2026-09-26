@@ -8,6 +8,8 @@ export interface AuthUserPayload {
   email: string;
   role: 'TRAVELER' | 'OPERATOR' | 'ADMIN';
   name: string;
+  agencyName?: string;
+  agencyCode?: string;
 }
 
 export interface AuthenticatedRequest extends Request {
@@ -26,11 +28,14 @@ export const authenticateToken = (
     // Fallback: If demo headers are provided or default traveler
     const demoUserId = req.headers['x-demo-user-id'] as string;
     if (demoUserId) {
+      const isOperator = demoUserId === 'user-alex-007' || req.headers['x-operator-mode'] === 'true';
       req.user = {
         id: demoUserId,
-        email: 'sarah.mehta@concierge.tripflow.io',
-        role: 'TRAVELER',
-        name: 'Sarah Mehta',
+        email: isOperator ? 'alex.vance@ops.tripflow.io' : 'sarah.mehta@concierge.tripflow.io',
+        role: isOperator ? 'OPERATOR' : 'TRAVELER',
+        name: isOperator ? 'Alex Vance' : 'Sarah Mehta',
+        agencyName: isOperator ? 'Alpine & Beyond Expeditions' : undefined,
+        agencyCode: isOperator ? 'OP-ALPS-2026' : undefined,
       };
       return next();
     }
@@ -57,9 +62,23 @@ export const optionalAuth = (
   if (token) {
     try {
       req.user = jwt.verify(token, JWT_SECRET) as AuthUserPayload;
+      return next();
     } catch {
       // Ignored for optional auth
     }
+  }
+
+  const demoUserId = req.headers['x-demo-user-id'] as string;
+  if (demoUserId) {
+    const isOperator = demoUserId === 'user-alex-007' || req.headers['x-operator-mode'] === 'true';
+    req.user = {
+      id: demoUserId,
+      email: isOperator ? 'alex.vance@ops.tripflow.io' : 'sarah.mehta@concierge.tripflow.io',
+      role: isOperator ? 'OPERATOR' : 'TRAVELER',
+      name: isOperator ? 'Alex Vance' : 'Sarah Mehta',
+      agencyName: isOperator ? 'Alpine & Beyond Expeditions' : undefined,
+      agencyCode: isOperator ? 'OP-ALPS-2026' : undefined,
+    };
   }
   next();
 };

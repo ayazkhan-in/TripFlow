@@ -10,7 +10,7 @@ const JWT_SECRET = process.env.JWT_SECRET || 'tripflow_super_secure_jwt_secret_t
 // POST /api/v1/auth/register
 router.post('/register', async (req, res) => {
   try {
-    const { email, password, name, role = 'TRAVELER', phone } = req.body;
+    const { email, password, name, role = 'TRAVELER', phone, agencyName, agencyCode } = req.body;
 
     if (!email || !password || !name) {
       return res.status(400).json({ error: 'Name, email, and password are required' });
@@ -21,23 +21,33 @@ router.post('/register', async (req, res) => {
       return res.status(409).json({ error: 'User with this email already exists' });
     }
 
+    const isOperator = role.toUpperCase() === 'OPERATOR';
     const passwordHash = await bcrypt.hash(password, 10);
     const user = await prisma.user.create({
       data: {
         email,
         passwordHash,
         name,
-        role: role.toUpperCase() === 'OPERATOR' ? 'OPERATOR' : 'TRAVELER',
+        role: isOperator ? 'OPERATOR' : 'TRAVELER',
         phone,
-        avatarUrl:
-          role.toUpperCase() === 'OPERATOR'
-            ? 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=400&q=80'
-            : 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&w=400&q=80',
+        agencyName: isOperator ? (agencyName || `${name}'s Travel Agency`) : undefined,
+        agencyCode: isOperator ? (agencyCode || `OP-${Math.random().toString(36).substring(2, 6).toUpperCase()}-2026`) : undefined,
+        avatarUrl: isOperator
+          ? 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=400&q=80'
+          : 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&w=400&q=80',
+        membershipTier: isOperator ? 'Chief Dispatch Controller' : 'Standard Concierge Member',
       },
     });
 
     const token = jwt.sign(
-      { id: user.id, email: user.email, role: user.role, name: user.name },
+      {
+        id: user.id,
+        email: user.email,
+        role: user.role,
+        name: user.name,
+        agencyName: user.agencyName || undefined,
+        agencyCode: user.agencyCode || undefined,
+      },
       JWT_SECRET,
       { expiresIn: '7d' }
     );
@@ -52,6 +62,8 @@ router.post('/register', async (req, res) => {
         role: user.role,
         avatarUrl: user.avatarUrl,
         membershipTier: user.membershipTier,
+        agencyName: user.agencyName,
+        agencyCode: user.agencyCode,
       },
     });
   } catch (err: any) {
@@ -72,7 +84,36 @@ router.post('/login', async (req, res) => {
     const user = await prisma.user.findUnique({ where: { email } });
     if (!user) {
       // Demo fallback: if demo login is attempted, return demo user
-      if (email.includes('sarah')) {
+      if (email.toLowerCase().includes('alex')) {
+        const token = jwt.sign(
+          {
+            id: 'user-alex-007',
+            email: 'alex.vance@ops.tripflow.io',
+            role: 'OPERATOR',
+            name: 'Alex Vance',
+            agencyName: 'Alpine & Beyond Expeditions',
+            agencyCode: 'OP-ALPS-2026',
+          },
+          JWT_SECRET,
+          { expiresIn: '7d' }
+        );
+        return res.json({
+          success: true,
+          token,
+          user: {
+            id: 'user-alex-007',
+            name: 'Alex Vance',
+            email: 'alex.vance@ops.tripflow.io',
+            role: 'OPERATOR',
+            avatarUrl: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=400&q=80',
+            membershipTier: 'Chief Dispatch Controller',
+            agencyName: 'Alpine & Beyond Expeditions',
+            agencyCode: 'OP-ALPS-2026',
+          },
+        });
+      }
+
+      if (email.toLowerCase().includes('sarah')) {
         const token = jwt.sign(
           { id: 'user-sarah-1024', email, role: 'TRAVELER', name: 'Sarah Mehta' },
           JWT_SECRET,
@@ -100,7 +141,14 @@ router.post('/login', async (req, res) => {
     }
 
     const token = jwt.sign(
-      { id: user.id, email: user.email, role: user.role, name: user.name },
+      {
+        id: user.id,
+        email: user.email,
+        role: user.role,
+        name: user.name,
+        agencyName: user.agencyName || undefined,
+        agencyCode: user.agencyCode || undefined,
+      },
       JWT_SECRET,
       { expiresIn: '7d' }
     );
@@ -115,6 +163,8 @@ router.post('/login', async (req, res) => {
         role: user.role,
         avatarUrl: user.avatarUrl,
         membershipTier: user.membershipTier,
+        agencyName: user.agencyName,
+        agencyCode: user.agencyCode,
       },
     });
   } catch (err: any) {
@@ -136,12 +186,27 @@ router.get('/me', authenticateToken, async (req: AuthenticatedRequest, res: Resp
         avatarUrl: true,
         phone: true,
         membershipTier: true,
+        agencyName: true,
+        agencyCode: true,
         createdAt: true,
       },
     });
 
     if (!user) {
-      // Fallback for demo token
+      if (req.user?.role === 'OPERATOR') {
+        return res.json({
+          user: {
+            id: req.user.id,
+            name: req.user.name || 'Alex Vance',
+            email: req.user.email || 'alex.vance@ops.tripflow.io',
+            role: 'OPERATOR',
+            avatarUrl: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=400&q=80',
+            membershipTier: 'Chief Dispatch Controller',
+            agencyName: req.user.agencyName || 'Alpine & Beyond Expeditions',
+            agencyCode: req.user.agencyCode || 'OP-ALPS-2026',
+          },
+        });
+      }
       return res.json({
         user: {
           id: req.user?.id,
