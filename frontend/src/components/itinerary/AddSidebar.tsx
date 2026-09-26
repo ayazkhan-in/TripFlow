@@ -13,6 +13,7 @@ interface AddSidebarProps {
   onSelectItemForDetail?: (item: CatalogItem) => void;
   isCollapsed?: boolean;
   onToggleCollapse?: () => void;
+  aiSuggestions?: CatalogItem[];
 }
 
 const CATEGORY_TABS: Array<{ id: ItineraryCategory | 'all' | 'ai_picks'; label: string; icon: string }> = [
@@ -33,6 +34,7 @@ export const AddSidebar: React.FC<AddSidebarProps> = ({
   onSelectItemForDetail,
   isCollapsed = false,
   onToggleCollapse,
+  aiSuggestions = [],
 }) => {
   const [catalogItems, setCatalogItems] = useState<CatalogItem[]>(CATALOG_ITEMS);
   const [selectedCategory, setSelectedCategory] = useState<ItineraryCategory | 'all' | 'ai_picks'>('all');
@@ -63,6 +65,7 @@ export const AddSidebar: React.FC<AddSidebarProps> = ({
       if (selectedCategory === 'all') {
         matchesCategory = true;
       } else if (selectedCategory === 'ai_picks') {
+        // Merge AI suggestions in this view
         matchesCategory = Boolean(item.tags?.some(t => t.includes('AI') || t.includes('Recommendation')));
       } else {
         matchesCategory = item.category === selectedCategory;
@@ -76,6 +79,19 @@ export const AddSidebar: React.FC<AddSidebarProps> = ({
       return matchesCategory && matchesSearch;
     });
   }, [catalogItems, selectedCategory, searchQuery]);
+
+  // Merge AI suggestions into the displayed list for ai_picks category
+  const displayedItems = useMemo(() => {
+    if (selectedCategory === 'ai_picks' && aiSuggestions.length > 0) {
+      // Prioritize AI suggestions first
+      const existingIds = new Set(filteredItems.map(i => i.id));
+      const newSuggestions = aiSuggestions.filter(s => !existingIds.has(s.id));
+      return [...newSuggestions, ...filteredItems];
+    }
+    return filteredItems;
+  }, [filteredItems, aiSuggestions, selectedCategory]);
+
+  const hasNewAISuggestions = aiSuggestions.length > 0;
 
   const handleDragStart = (e: React.DragEvent, item: CatalogItem) => {
     const payload = { type: 'catalog-item' as const, item };
@@ -169,18 +185,22 @@ export const AddSidebar: React.FC<AddSidebarProps> = ({
       <div className="px-2 py-1.5 border-b border-neutral-200/60 flex items-center gap-1 overflow-x-auto no-scrollbar shrink-0">
         {CATEGORY_TABS.map(tab => {
           const isSelected = selectedCategory === tab.id;
+          const isAIPicks = tab.id === 'ai_picks';
           return (
             <button
               key={tab.id}
               type="button"
               onClick={() => setSelectedCategory(tab.id)}
-              className={`px-2 py-0.5 rounded text-[11px] font-medium shrink-0 cursor-pointer transition-colors ${
+              className={`px-2 py-0.5 rounded text-[11px] font-medium shrink-0 cursor-pointer transition-colors relative ${
                 isSelected
                   ? 'bg-neutral-800 text-white'
                   : 'text-neutral-500 hover:text-neutral-800 hover:bg-neutral-200/50'
               }`}
             >
               {tab.label}
+              {isAIPicks && hasNewAISuggestions && !isSelected && (
+                <span className="absolute -top-0.5 -right-0.5 w-1.5 h-1.5 rounded-full bg-blue-500 animate-pulse" />
+              )}
             </button>
           );
         })}
@@ -188,17 +208,33 @@ export const AddSidebar: React.FC<AddSidebarProps> = ({
 
       {/* Scrollable Items Container */}
       <div className="flex-1 min-h-0 overflow-y-auto p-2 space-y-1.5 custom-scrollbar">
-        {filteredItems.length === 0 ? (
+        {/* AI Suggestions Banner */}
+        {selectedCategory === 'ai_picks' && aiSuggestions.length > 0 && (
+          <div className="mb-2 bg-gradient-to-r from-indigo-50 to-blue-50 border border-indigo-200/60 rounded-xl p-2.5">
+            <div className="flex items-center gap-1.5 mb-1.5">
+              <span className="material-symbols-outlined text-indigo-600 text-xs">auto_awesome</span>
+              <span className="text-[11px] font-bold text-indigo-700 uppercase tracking-wider">AI Suggested for Your Trip</span>
+            </div>
+            <p className="text-[10px] text-indigo-600 leading-relaxed">
+              Based on your itinerary, the AI recommends these additions. Click + to add instantly.
+            </p>
+          </div>
+        )}
+        {displayedItems.length === 0 ? (
           <div className="py-8 text-center text-xs text-neutral-400">No matching items</div>
         ) : (
-          filteredItems.map(item => (
+          displayedItems.map(item => (
             <div
               key={item.id}
               draggable
               onDragStart={e => handleDragStart(e, item)}
               onDragEnd={handleDragEnd}
               onClick={() => onSelectItemForDetail && onSelectItemForDetail(item)}
-              className="group bg-white border border-neutral-200/70 hover:border-neutral-300 hover:bg-neutral-50/60 rounded-lg p-2.5 transition-all cursor-grab active:cursor-grabbing flex flex-col gap-1.5 select-none"
+              className={`group bg-white border rounded-lg p-2.5 transition-all cursor-grab active:cursor-grabbing flex flex-col gap-1.5 select-none ${
+                aiSuggestions.some(s => s.id === item.id)
+                  ? 'border-indigo-200/70 hover:border-indigo-400 bg-indigo-50/30'
+                  : 'border-neutral-200/70 hover:border-neutral-300 hover:bg-neutral-50/60'
+              }`}
             >
               {/* Top Row: Title + Add Button */}
               <div className="flex items-start justify-between gap-1.5">
@@ -222,8 +258,8 @@ export const AddSidebar: React.FC<AddSidebarProps> = ({
               {/* Bottom Row: Category & Duration on Left, Price in the BOTTOM-RIGHT Corner */}
               <div className="flex items-center justify-between text-[11px] pt-1 border-t border-neutral-100">
                 <div className="flex items-center gap-1.5 text-neutral-400 text-[10px]">
-                  {item.tags?.some(t => t.includes('AI')) && (
-                    <span className="text-[9px] font-bold text-emerald-700 bg-emerald-50 px-1 py-0.2 rounded border border-emerald-200/60">
+                  {(item.tags?.some(t => t.includes('AI')) || aiSuggestions.some(s => s.id === item.id)) && (
+                    <span className="text-[9px] font-bold text-indigo-700 bg-indigo-50 px-1 py-0.2 rounded border border-indigo-200/60">
                       ✨ AI Pick
                     </span>
                   )}

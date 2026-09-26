@@ -1,5 +1,5 @@
 import React, { useState, useRef } from 'react';
-import { ConsumerTab, SavedJourney } from '../../types/travel';
+import { ConsumerTab, SavedJourney, BookedTrip } from '../../types/travel';
 import { TripItinerary } from '../../types/itinerary';
 import { KERALA_HERO_IMAGE } from '../../data/mockData';
 import {
@@ -18,6 +18,9 @@ interface HomeScreenProps {
   onSelectJourneyDetails: (journey: SavedJourney) => void;
   onSelectPremadeTrip?: (itinerary: TripItinerary) => void;
   onOpenPayment?: (itinerary: TripItinerary, totalPrice: number) => void;
+  bookedTrips?: BookedTrip[];
+  activeBookedTripId?: string | null;
+  userName?: string;
 }
 
 export const HomeScreen: React.FC<HomeScreenProps> = ({
@@ -28,6 +31,9 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
   onSelectJourneyDetails,
   onSelectPremadeTrip,
   onOpenPayment,
+  bookedTrips = [],
+  activeBookedTripId,
+  userName = 'Traveler',
 }) => {
   const [filter, setFilter] = useState<'all' | 'domestic' | 'international'>('all');
   const { packages: operatorPackages } = useOperator();
@@ -80,6 +86,201 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
     }
   };
 
+  // Determine if user has any active itinerary
+  const hasActiveItinerary = bookedTrips.length > 0;
+  const activeTrip = hasActiveItinerary
+    ? (bookedTrips.find(t => t.id === activeBookedTripId) || bookedTrips[0])
+    : null;
+
+  // Get first name for greeting
+  const firstName = userName.split(' ')[0];
+
+  // =========================================================
+  // EMPTY / ONBOARDING STATE (no active itinerary)
+  // =========================================================
+  if (!hasActiveItinerary) {
+    return (
+      <div className="w-full max-w-[1280px] mx-auto px-4 sm:px-6 lg:px-8 py-8 md:py-10 pb-24 md:pb-12 text-left space-y-10 font-sans">
+        {/* Welcome Header */}
+        <section className="flex flex-col md:flex-row md:items-end justify-between gap-6 pb-6 border-b border-slate-200">
+          <div>
+            <div className="flex items-center gap-2 mb-2">
+              <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-blue-50 border border-blue-200 text-blue-700 text-xs font-bold uppercase tracking-wider">
+                <span className="w-2 h-2 rounded-full bg-blue-500 animate-pulse"></span>
+                TripFlow Concierge
+              </span>
+            </div>
+            <h1 className="text-3xl md:text-4xl text-slate-900 font-extrabold tracking-tight">
+              Welcome, {firstName} 👋
+            </h1>
+            <p className="text-slate-500 text-sm md:text-base mt-1 max-w-xl">
+              You don't have any active itineraries yet. Start by exploring curated packages below or build your own with AI.
+            </p>
+          </div>
+          <div className="flex items-center gap-2.5 shrink-0 flex-wrap">
+            <button
+              type="button"
+              onClick={() => onNavigateTab('discover')}
+              className="px-5 py-2.5 rounded-full bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold flex items-center gap-2 transition-all shadow-sm active:scale-98 cursor-pointer ring-2 ring-blue-300/40"
+            >
+              <span className="material-symbols-outlined text-base">explore</span>
+              <span>Explore Circuits</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => onNavigateTab('assistant')}
+              className="px-4 py-2.5 rounded-full border border-slate-200 bg-white hover:bg-slate-50 text-slate-800 text-xs font-bold flex items-center gap-2 transition-all shadow-2xs active:scale-98 cursor-pointer"
+            >
+              <span className="material-symbols-outlined text-base text-indigo-600">auto_awesome</span>
+              <span>AI Trip Planner</span>
+            </button>
+          </div>
+        </section>
+
+        {/* Hero CTA Banner */}
+        <section className="relative rounded-3xl overflow-hidden min-h-[280px] flex items-end bg-slate-900 shadow-xl">
+          <img
+            src={KERALA_HERO_IMAGE}
+            alt="Explore curated circuits"
+            className="absolute inset-0 w-full h-full object-cover opacity-60"
+          />
+          <div className="absolute inset-0 bg-gradient-to-t from-slate-950/90 via-slate-900/40 to-transparent" />
+          <div className="relative z-10 p-6 sm:p-8 w-full">
+            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/10 border border-white/20 text-white text-[11px] font-bold mb-3 backdrop-blur-sm">
+              <span className="material-symbols-outlined text-sm text-yellow-400">auto_awesome</span>
+              AI-Powered Trip Planning
+            </div>
+            <h2 className="text-2xl sm:text-3xl font-extrabold text-white tracking-tight mb-2">
+              Plan your perfect journey
+            </h2>
+            <p className="text-sm text-slate-300 mb-5 max-w-lg">
+              Describe your dream trip and our AI will build a full itinerary with flights, hotels, transfers, and curated experiences — all in seconds.
+            </p>
+            <div className="flex flex-wrap gap-3">
+              <button
+                type="button"
+                onClick={() => onNavigateTab('assistant')}
+                className="px-5 py-2.5 bg-blue-600 hover:bg-blue-500 text-white rounded-full font-bold text-sm flex items-center gap-2 transition-all cursor-pointer shadow-md active:scale-98"
+              >
+                <span className="material-symbols-outlined text-base">auto_awesome</span>
+                Start with AI Assistant
+              </button>
+              <button
+                type="button"
+                onClick={() => onNavigateTab('builder')}
+                className="px-5 py-2.5 bg-white/10 hover:bg-white/20 border border-white/30 text-white rounded-full font-bold text-sm flex items-center gap-2 transition-all cursor-pointer backdrop-blur-sm active:scale-98"
+              >
+                <span className="material-symbols-outlined text-base">edit_note</span>
+                Build Manually
+              </button>
+            </div>
+          </div>
+        </section>
+
+        {/* Quick Action Tiles */}
+        <section className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+          {[
+            { icon: 'explore', label: 'Discover', sub: 'Browse curated packages', tab: 'discover' as ConsumerTab, color: 'blue' },
+            { icon: 'auto_awesome', label: 'AI Planner', sub: 'Describe your dream trip', tab: 'assistant' as ConsumerTab, color: 'indigo' },
+            { icon: 'edit_note', label: 'Trip Builder', sub: 'Build a custom itinerary', tab: 'builder' as ConsumerTab, color: 'emerald' },
+            { icon: 'lock', label: 'Travel Vault', sub: 'Store your documents', tab: 'vault' as ConsumerTab, color: 'amber' },
+          ].map(({ icon, label, sub, tab, color }) => (
+            <div
+              key={tab}
+              onClick={() => onNavigateTab(tab)}
+              className="group bg-white p-4 rounded-3xl border border-slate-200 hover:border-blue-400/60 shadow-2xs hover:shadow-md transition-all cursor-pointer space-y-2.5"
+            >
+              <span className={`w-10 h-10 rounded-2xl bg-${color}-50 text-${color}-600 flex items-center justify-center border border-${color}-100 group-hover:scale-105 transition-transform`}>
+                <span className="material-symbols-outlined text-xl">{icon}</span>
+              </span>
+              <div>
+                <h3 className="text-sm font-bold text-slate-900 group-hover:text-blue-600 transition-colors">{label}</h3>
+                <p className="text-xs text-slate-500 mt-0.5 leading-relaxed">{sub}</p>
+              </div>
+            </div>
+          ))}
+        </section>
+
+        {/* Curated Packages Section */}
+        <section className="space-y-4">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <div>
+              <h2 className="text-xl sm:text-2xl text-slate-900 font-extrabold tracking-tight">
+                Curated Packages
+              </h2>
+              <p className="text-slate-500 text-xs mt-0.5">
+                Handcrafted circuits, boutique accommodations & private transit — book instantly
+              </p>
+            </div>
+            <div className="flex items-center gap-2">
+              <div className="flex bg-slate-100 p-1 rounded-full border border-slate-200">
+                {(['all', 'domestic', 'international'] as const).map(f => (
+                  <button
+                    key={f}
+                    type="button"
+                    onClick={() => setFilter(f)}
+                    className={`px-3.5 py-1 rounded-full text-xs font-bold transition-all cursor-pointer capitalize ${
+                      filter === f ? 'bg-white text-slate-900 shadow-2xs' : 'text-slate-500 hover:text-slate-900'
+                    }`}
+                  >
+                    {f === 'all' ? `All (${sourcePackages.length})` : f.charAt(0).toUpperCase() + f.slice(1)}
+                  </button>
+                ))}
+              </div>
+              <div className="hidden sm:flex items-center gap-1.5 ml-1">
+                <button type="button" onClick={scrollLeft} className="w-8 h-8 rounded-full border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 flex items-center justify-center transition-all shadow-2xs active:scale-95 cursor-pointer">
+                  <span className="material-symbols-outlined text-base">chevron_left</span>
+                </button>
+                <button type="button" onClick={scrollRight} className="w-8 h-8 rounded-full border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 flex items-center justify-center transition-all shadow-2xs active:scale-95 cursor-pointer">
+                  <span className="material-symbols-outlined text-base">chevron_right</span>
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <div className="relative">
+            <div
+              ref={scrollContainerRef}
+              className="flex gap-6 overflow-x-auto pb-6 pt-3 px-1 custom-scrollbar snap-x snap-mandatory scroll-smooth items-stretch"
+            >
+              {filteredPackages.map(pkg => (
+                <LuxuryCard
+                  key={pkg.id}
+                  id={pkg.id}
+                  title={pkg.title}
+                  description={`${pkg.days} Days · ${pkg.destination} · Curated by ${pkg.operator.name}`}
+                  image={pkg.heroImage}
+                  rating={`${pkg.operator.rating}/5`}
+                  kicker={`${pkg.operator.name} · ${pkg.destination}`}
+                  badge={pkg.isNewlyCreated ? 'Operator Published' : pkg.badgeText}
+                  badgeColor={pkg.isDomestic ? 'emerald' : 'dark'}
+                  amenities={getPackageAmenities(pkg)}
+                  price={`₹${pkg.totalPriceINR.toLocaleString('en-IN')}`}
+                  pricePeriod="/package"
+                  actionVariant="button"
+                  actionLabel="Reserve Tour"
+                  theme="light"
+                  className="w-[320px] sm:w-[340px] shrink-0"
+                  onActionClick={() => {
+                    if (onOpenPayment) {
+                      onOpenPayment(pkg.itineraryTemplate, pkg.totalPriceINR);
+                    } else {
+                      handleSelectPackage(pkg);
+                    }
+                  }}
+                  onClick={() => handleSelectPackage(pkg)}
+                />
+              ))}
+            </div>
+          </div>
+        </section>
+      </div>
+    );
+  }
+
+  // =========================================================
+  // ACTIVE ITINERARY STATE (user has bookings)
+  // =========================================================
   return (
     <div className="w-full max-w-[1280px] mx-auto px-4 sm:px-6 lg:px-8 py-8 md:py-10 pb-24 md:pb-12 text-left space-y-8 font-sans">
       {/* ------------------------------------------------------------- */}
@@ -102,11 +303,14 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
           </div>
 
           <h1 className="text-3xl md:text-4xl text-slate-900 font-extrabold tracking-tight">
-            Good morning, Sarah
+            Good morning, {firstName}
           </h1>
           <p className="text-slate-600 text-sm md:text-base mt-1 max-w-xl">
-            You are currently on <span className="font-semibold text-slate-900">Day 2 of your Kerala Escape</span>.
-            Your tea sommelier walk starts at 10:30 AM in Munnar Highlands.
+            {activeTrip ? (
+              <>You are currently on <span className="font-semibold text-slate-900">Day 2 of your {activeTrip.title}</span>. Your next activity starts soon.</>
+            ) : (
+              'Your trip is confirmed. Live telemetry is active.'
+            )}
           </p>
         </div>
 
@@ -153,7 +357,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
           </span>
           <div className="min-w-0">
             <div className="text-[11px] uppercase font-bold text-slate-400 tracking-wider">Flight Telemetry</div>
-            <div className="text-xs font-bold text-slate-900 truncate">IndiGo 6E-204 · Landed</div>
+            <div className="text-xs font-bold text-slate-900 truncate">{activeTrip?.flightDetails?.airline || 'IndiGo'} · {activeTrip?.flightDetails?.status || 'Confirmed'}</div>
             <div className="text-[11px] text-emerald-600 font-semibold">Priority Baggage Belt 02</div>
           </div>
         </div>
@@ -164,8 +368,8 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
           </span>
           <div className="min-w-0">
             <div className="text-[11px] uppercase font-bold text-slate-400 tracking-wider">Assigned Chauffeur</div>
-            <div className="text-xs font-bold text-slate-900 truncate">Arun V. · On Standby</div>
-            <div className="text-[11px] text-slate-500 font-mono">Toyota Innova (KL-07-CD)</div>
+            <div className="text-xs font-bold text-slate-900 truncate">{activeTrip?.carDetails?.chauffeurName || 'Arun V.'} · On Standby</div>
+            <div className="text-[11px] text-slate-500 font-mono">{activeTrip?.carDetails?.vehicleModel || 'Toyota Innova'}</div>
           </div>
         </div>
 
@@ -174,8 +378,8 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
             <span className="material-symbols-outlined text-xl">partly_cloudy_day</span>
           </span>
           <div className="min-w-0">
-            <div className="text-[11px] uppercase font-bold text-slate-400 tracking-wider">Highland Climate</div>
-            <div className="text-xs font-bold text-slate-900">24°C Munnar Hills</div>
+            <div className="text-[11px] uppercase font-bold text-slate-400 tracking-wider">Destination Climate</div>
+            <div className="text-xs font-bold text-slate-900">24°C · {activeTrip?.destination || 'Munnar'}</div>
             <div className="text-[11px] text-slate-500">Light mist · Scenic visibility</div>
           </div>
         </div>
@@ -204,7 +408,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
             <span className="material-symbols-outlined text-blue-600 text-xl">
               near_me
             </span>
-            <h2 className="text-lg font-bold text-slate-900 tracking-tight">Active Itinerary</h2>
+            <h2 className="text-lg font-bold text-slate-900 tracking-tight">My Active Itinerary</h2>
           </div>
           <button
             type="button"
@@ -221,9 +425,9 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
           {/* Media Visual Block (Compact Widescreen Accent) */}
           <div className="w-full lg:w-[320px] xl:w-[340px] shrink-0 relative min-h-[160px] sm:min-h-[180px] lg:min-h-full aspect-video lg:aspect-auto bg-slate-900 overflow-hidden group">
             <img
-              alt="Kerala Escape backwaters and Munnar tea hills"
+              alt={activeTrip?.title || 'Active trip'}
               className="w-full h-full object-cover transition-transform duration-700 ease-out group-hover:scale-105"
-              src={KERALA_HERO_IMAGE}
+              src={activeTrip?.heroImage || KERALA_HERO_IMAGE}
             />
             <div className="absolute inset-0 bg-gradient-to-t from-slate-950/85 via-slate-950/25 to-transparent pointer-events-none"></div>
 
@@ -231,29 +435,32 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
             <div className="absolute top-3 left-3 right-3 flex items-center justify-between gap-1.5 flex-wrap">
               <span className="backdrop-blur-md bg-white/95 px-2.5 py-0.5 rounded-full text-slate-900 text-[11px] font-bold shadow-xs flex items-center gap-1.5 border border-white/60">
                 <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
-                Day 2 of 6 · Live
+                Day 2 of {activeTrip?.itinerary?.days?.length || 6} · Live
               </span>
               <span className="backdrop-blur-md bg-white/95 px-2 py-0.5 rounded-full text-slate-800 text-[11px] font-semibold shadow-xs flex items-center gap-1 border border-white/60">
                 <span className="material-symbols-outlined text-[13px] text-amber-500">
                   partly_cloudy_day
                 </span>
-                24°C Munnar
+                24°C
               </span>
             </div>
 
             {/* Bottom Overlay on Media */}
             <div className="absolute bottom-3 left-3 right-3 text-white">
               <span className="text-[10px] font-mono uppercase tracking-wider text-blue-300 font-bold block">
-                Luxury Circuit
+                {activeTrip?.itinerary?.travelStyle || 'Luxury Circuit'}
               </span>
-              <h3 className="text-xl sm:text-2xl font-extrabold text-white drop-shadow-sm leading-tight">Kerala Escape</h3>
-              <div className="flex items-center gap-1.5 text-[11px] text-white/90 mt-0.5 font-medium">
-                <span>Kochi</span>
-                <span className="text-blue-300">→</span>
-                <span>Munnar</span>
-                <span className="text-blue-300">→</span>
-                <span>Alleppey</span>
-              </div>
+              <h3 className="text-xl sm:text-2xl font-extrabold text-white drop-shadow-sm leading-tight">{activeTrip?.title || 'Active Trip'}</h3>
+              {activeTrip?.itinerary?.routeStops && (
+                <div className="flex items-center gap-1.5 text-[11px] text-white/90 mt-0.5 font-medium flex-wrap">
+                  {activeTrip.itinerary.routeStops.map((stop, i, arr) => (
+                    <span key={stop.city} className="flex items-center gap-1.5">
+                      <span>{stop.city}</span>
+                      {i < arr.length - 1 && <span className="text-blue-300">→</span>}
+                    </span>
+                  ))}
+                </div>
+              )}
             </div>
           </div>
 
@@ -264,10 +471,10 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
               <div className="flex items-center gap-2">
                 <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-emerald-50 border border-emerald-200 text-emerald-800 text-[11px] font-bold">
                   <span className="w-1.5 h-1.5 rounded-full bg-emerald-600 animate-pulse"></span>
-                  Confirmed Booking
+                  {activeTrip?.status || 'Confirmed'}
                 </span>
                 <span className="text-[11px] font-mono text-slate-500 font-bold tracking-tight">
-                  REF #KL-9402
+                  {activeTrip?.bookingRef || 'REF #TF-0001'}
                 </span>
               </div>
 
@@ -275,15 +482,17 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
               <div className="flex items-center gap-3.5 text-xs">
                 <div className="flex items-center gap-1">
                   <span className="text-slate-400 text-[11px] uppercase font-bold">Dates:</span>
-                  <span className="text-slate-900 font-bold text-[11px]">June 14–19</span>
+                  <span className="text-slate-900 font-bold text-[11px]">{activeTrip?.dates || 'Upcoming'}</span>
                 </div>
                 <div className="hidden sm:flex items-center gap-1">
                   <span className="text-slate-400 text-[11px] uppercase font-bold">Party:</span>
-                  <span className="text-slate-900 font-bold text-[11px]">2 Guests</span>
+                  <span className="text-slate-900 font-bold text-[11px]">{activeTrip?.travelers || 2} Guests</span>
                 </div>
                 <div className="flex items-center gap-1">
                   <span className="text-slate-400 text-[11px] uppercase font-bold">Total:</span>
-                  <span className="text-blue-600 font-mono font-extrabold text-[11px]">₹42,800</span>
+                  <span className="text-blue-600 font-mono font-extrabold text-[11px]">
+                    ₹{activeTrip?.totalPrice?.toLocaleString('en-IN') || '—'}
+                  </span>
                 </div>
               </div>
             </div>
@@ -304,16 +513,16 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
 
                 <div className="flex items-center gap-1.5 text-[11px] text-slate-600 font-medium">
                   <span className="material-symbols-outlined text-sm text-sky-600">directions_car</span>
-                  <span>Chauffeur Arun V. (Toyota Innova)</span>
+                  <span>Chauffeur {activeTrip?.carDetails?.chauffeurName || 'Arun V.'}</span>
                 </div>
               </div>
 
               <div className="space-y-0.5">
                 <h4 className="text-sm font-bold text-slate-900 leading-snug">
-                  Munnar Tea Estate Guided Walk & Sommelier Tasting
+                  {activeTrip?.itinerary?.days?.[1]?.items?.[0]?.title || 'Next Activity Scheduled'}
                 </h4>
                 <p className="text-slate-600 text-xs leading-relaxed line-clamp-1">
-                  Private hand-plucking session with estate botanist. Innova waiting at resort lobby.
+                  {activeTrip?.itinerary?.days?.[1]?.items?.[0]?.description || 'Check your timeline for full details.'}
                 </p>
               </div>
 
@@ -341,7 +550,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
                   className="px-3 py-1.5 rounded-full bg-white hover:bg-slate-100 text-slate-800 text-xs font-semibold border border-slate-200 flex items-center gap-1.5 transition-colors cursor-pointer shadow-2xs active:scale-98 ml-auto sm:ml-0"
                 >
                   <span className="material-symbols-outlined text-sm text-emerald-600">call</span>
-                  <span>Call Arun</span>
+                  <span>Call Driver</span>
                 </button>
               </div>
             </div>
@@ -354,7 +563,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
               </span>
               <span className="font-mono text-slate-600 flex items-center gap-1.5">
                 <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
-                Innova Mesh GPS: 12m away · KL-07-CD
+                {activeTrip?.carDetails?.licensePlate ? `GPS: ${activeTrip.carDetails.licensePlate}` : 'Chauffeur GPS Active'}
               </span>
             </div>
           </div>
@@ -375,7 +584,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
               <span className="material-symbols-outlined text-2xl">lock</span>
             </span>
             <span className="text-[10px] font-bold text-emerald-800 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200">
-              12 Offline Docs
+              Offline Docs
             </span>
           </div>
           <div>
@@ -402,7 +611,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
               <span className="material-symbols-outlined text-2xl">timeline</span>
             </span>
             <span className="text-[10px] font-bold text-blue-800 bg-blue-50 px-2 py-0.5 rounded-full border border-blue-200">
-              Day 2 of 6
+              Day 2 of {activeTrip?.itinerary?.days?.length || '?'}
             </span>
           </div>
           <div>
@@ -429,7 +638,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
               <span className="material-symbols-outlined text-2xl">confirmation_number</span>
             </span>
             <span className="text-[10px] font-bold text-purple-800 bg-purple-50 px-2 py-0.5 rounded-full border border-purple-200">
-              4 Passes
+              {bookedTrips.length} Trip{bookedTrips.length !== 1 ? 's' : ''}
             </span>
           </div>
           <div>
@@ -437,7 +646,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
               Passes & Vouchers
             </h3>
             <p className="text-xs text-slate-500 mt-1 leading-relaxed">
-              IndiGo boarding tickets, Brunton Boatyard suite confirmations, and luxury houseboat passes.
+              Boarding tickets, hotel confirmations, and luxury transfer passes.
             </p>
           </div>
           <div className="pt-2 border-t border-slate-100 flex items-center text-xs text-blue-600 font-bold gap-1">
@@ -475,118 +684,6 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
       </section>
 
       {/* ------------------------------------------------------------- */}
-      {/* CURATED OPERATOR PACKAGES SECTION                             */}
-      {/* ------------------------------------------------------------- */}
-      <section className="mt-8 mb-6 space-y-4">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-          <div>
-            <h2 className="text-xl sm:text-2xl text-slate-900 font-extrabold tracking-tight">
-              Curated Operator Packages
-            </h2>
-            <p className="text-slate-500 text-xs mt-0.5">
-              Handcrafted turnkey circuits, boutique accommodations & private transit
-            </p>
-          </div>
-
-          {/* Segmented Filter Control & Carousel Scroll Controls */}
-          <div className="flex items-center gap-2">
-            <div className="flex bg-slate-100 p-1 rounded-full border border-slate-200">
-              <button
-                type="button"
-                onClick={() => setFilter('all')}
-                className={`px-3.5 py-1 rounded-full text-xs font-bold transition-all cursor-pointer ${
-                  filter === 'all'
-                    ? 'bg-white text-slate-900 shadow-2xs'
-                    : 'text-slate-500 hover:text-slate-900'
-                }`}
-              >
-                All ({sourcePackages.length})
-              </button>
-              <button
-                type="button"
-                onClick={() => setFilter('domestic')}
-                className={`px-3.5 py-1 rounded-full text-xs font-semibold transition-all cursor-pointer ${
-                  filter === 'domestic'
-                    ? 'bg-white text-slate-900 shadow-2xs font-bold'
-                    : 'text-slate-500 hover:text-slate-900'
-                }`}
-              >
-                Domestic
-              </button>
-              <button
-                type="button"
-                onClick={() => setFilter('international')}
-                className={`px-3.5 py-1 rounded-full text-xs font-semibold transition-all cursor-pointer ${
-                  filter === 'international'
-                    ? 'bg-white text-slate-900 shadow-2xs font-bold'
-                    : 'text-slate-500 hover:text-slate-900'
-                }`}
-              >
-                International
-              </button>
-            </div>
-
-            {/* Scroll navigation arrows */}
-            <div className="hidden sm:flex items-center gap-1.5 ml-1">
-              <button
-                type="button"
-                onClick={scrollLeft}
-                className="w-8 h-8 rounded-full border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 flex items-center justify-center transition-all shadow-2xs active:scale-95 cursor-pointer"
-                title="Scroll left"
-              >
-                <span className="material-symbols-outlined text-base">chevron_left</span>
-              </button>
-              <button
-                type="button"
-                onClick={scrollRight}
-                className="w-8 h-8 rounded-full border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 flex items-center justify-center transition-all shadow-2xs active:scale-95 cursor-pointer"
-                title="Scroll right"
-              >
-                <span className="material-symbols-outlined text-base">chevron_right</span>
-              </button>
-            </div>
-          </div>
-        </div>
-
-        {/* Horizontally Scrollable Cards Container */}
-        <div className="relative">
-          <div
-            ref={scrollContainerRef}
-            className="flex gap-6 overflow-x-auto pb-6 pt-3 px-1 custom-scrollbar snap-x snap-mandatory scroll-smooth items-stretch"
-          >
-            {filteredPackages.map(pkg => (
-              <LuxuryCard
-                key={pkg.id}
-                id={pkg.id}
-                title={pkg.title}
-                description={`${pkg.days} Days · ${pkg.destination} · Curated by ${pkg.operator.name}`}
-                image={pkg.heroImage}
-                rating={`${pkg.operator.rating}/5`}
-                kicker={`${pkg.operator.name} · ${pkg.destination}`}
-                badge={pkg.isNewlyCreated ? 'Operator Published' : pkg.badgeText}
-                badgeColor={pkg.isDomestic ? 'emerald' : 'dark'}
-                amenities={getPackageAmenities(pkg)}
-                price={`₹${pkg.totalPriceINR.toLocaleString('en-IN')}`}
-                pricePeriod="/package"
-                actionVariant="button"
-                actionLabel="Reserve Tour"
-                theme="light"
-                className="w-[320px] sm:w-[340px] shrink-0"
-                onActionClick={() => {
-                  if (onOpenPayment) {
-                    onOpenPayment(pkg.itineraryTemplate, pkg.totalPriceINR);
-                  } else {
-                    handleSelectPackage(pkg);
-                  }
-                }}
-                onClick={() => handleSelectPackage(pkg)}
-              />
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* ------------------------------------------------------------- */}
       {/* 24/7 TRAVEL MESH GUARANTEE BANNER                             */}
       {/* ------------------------------------------------------------- */}
       <section className="bg-slate-900 text-white rounded-3xl p-6 sm:p-7 shadow-lg flex flex-col md:flex-row items-start md:items-center justify-between gap-5 relative overflow-hidden">
@@ -596,7 +693,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
             <span>Intelligent Autonomous Dispatch Mesh Active</span>
           </div>
           <h3 className="text-lg sm:text-xl font-extrabold tracking-tight">
-            Rest easy. Your entire Kerala journey is monitored in real-time.
+            Rest easy. Your entire journey is monitored in real-time.
           </h3>
           <p className="text-xs text-slate-300 leading-relaxed">
             If a flight delay occurs or a weather warning is issued, your chauffeur timing, hotel check-in window, and restaurant reservations adjust automatically without you having to make a single call.
@@ -655,7 +752,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
               Emergency Assist
             </button>
             <span className="text-slate-400 font-mono text-[11px]">
-              v2.4.0-stable
+              v2.5.0-stable
             </span>
           </div>
         </div>

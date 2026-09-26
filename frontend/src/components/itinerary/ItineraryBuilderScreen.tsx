@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
-import { INITIAL_TRIP_ITINERARY } from '../../data/itineraryData';
+import { INITIAL_TRIP_ITINERARY, CATALOG_ITEMS } from '../../data/itineraryData';
 import { CatalogItem, ItineraryDay, ItineraryItem, TripItinerary } from '../../types/itinerary';
 import { processNaturalLanguageChange } from '../../utils/itineraryAI';
 import { calculateTripPricing } from '../../utils/pricing';
@@ -88,6 +88,7 @@ export const ItineraryBuilderScreen: React.FC<ItineraryBuilderScreenProps> = ({
   const [isAILoading, setIsAILoading] = useState(false);
   const [lastAIFeedback, setLastAIFeedback] = useState<string | null>(null);
   const [priceDelta, setPriceDelta] = useState<number | null>(null);
+  const [aiQuickAddSuggestions, setAiQuickAddSuggestions] = useState<CatalogItem[]>([]);
 
   // Window resize listener
   useEffect(() => {
@@ -377,6 +378,23 @@ export const ItineraryBuilderScreen: React.FC<ItineraryBuilderScreenProps> = ({
           setActiveDayNumber(result.highlightDayNumber);
         }
         showToast(result.explanation);
+
+        // Generate AI quick-add suggestions based on current itinerary context
+        const allItemIds = new Set(
+          result.updatedDays.flatMap(d => d.items.map(it => it.catalogId)).filter(Boolean)
+        );
+        const dest = itinerary.destination?.toLowerCase() || '';
+        const suggestions = CATALOG_ITEMS.filter(ci => {
+          // Don't suggest already-added items
+          if (allItemIds.has(ci.id)) return false;
+          // Prefer items with AI tag or matching destination keywords
+          const hasAITag = ci.tags?.some(t => t.toLowerCase().includes('ai') || t.toLowerCase().includes('recommend'));
+          const matchesDest = ci.location.toLowerCase().includes(dest.split(',')[0] || '') ||
+            ci.tags?.some(t => t.toLowerCase().includes(dest.split(',')[0] || ''));
+          return hasAITag || matchesDest;
+        }).slice(0, 6);
+        setAiQuickAddSuggestions(suggestions);
+
       } else {
         showToast(result.explanation || 'Could not understand that request.');
       }
@@ -437,11 +455,191 @@ export const ItineraryBuilderScreen: React.FC<ItineraryBuilderScreenProps> = ({
     showToast('Exported CSV guide successfully!');
   };
 
-  // Export PDF Guide
+  // Export PDF Guide — proper linear journey document
   const handleExportPDF = () => {
-    window.print();
-    showToast('Opening print dialog to save or print as PDF...');
+    const categoryIcons: Record<string, string> = {
+      transport: '✈',
+      hotel: '🏨',
+      meal: '🍽',
+      activity: '⭐',
+      experience: '✨',
+    };
+
+    const categoryColors: Record<string, string> = {
+      transport: '#3b82f6',
+      hotel: '#8b5cf6',
+      meal: '#f59e0b',
+      activity: '#10b981',
+      experience: '#ec4899',
+    };
+
+    const totalItems = itinerary.days.reduce((acc, d) => acc + d.items.length, 0);
+    const today = new Date().toLocaleDateString('en-IN', { year: 'numeric', month: 'long', day: 'numeric' });
+
+    const daysHTML = itinerary.days.map(day => {
+      const dayTotal = day.items.reduce((s, it) => s + it.price, 0);
+      const itemsHTML = day.items.length === 0
+        ? `<p style="color:#94a3b8;font-style:italic;font-size:13px;margin:8px 0 0 0">No activities scheduled for this day</p>`
+        : day.items.map((item, idx) => `
+          <div style="display:flex;gap:12px;align-items:flex-start;padding:12px 0;${idx < day.items.length - 1 ? 'border-bottom:1px solid #f1f5f9' : ''}">
+            <div style="width:36px;height:36px;border-radius:10px;background:${categoryColors[item.category] || '#64748b'}20;color:${categoryColors[item.category] || '#64748b'};display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0;border:1px solid ${categoryColors[item.category] || '#64748b'}30">
+              ${categoryIcons[item.category] || '📌'}
+            </div>
+            <div style="flex:1;min-width:0">
+              <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap">
+                <div>
+                  ${item.time ? `<span style="font-size:11px;font-weight:700;color:#94a3b8;letter-spacing:0.05em;text-transform:uppercase">${item.time}</span>` : ''}
+                  <h4 style="margin:2px 0 0 0;font-size:14px;font-weight:700;color:#0f172a">${item.title}</h4>
+                </div>
+                ${item.price > 0 ? `<span style="font-size:13px;font-weight:800;color:#2563eb;white-space:nowrap;font-family:monospace">₹${item.price.toLocaleString('en-IN')}</span>` : '<span style="font-size:12px;color:#10b981;font-weight:600">Included</span>'}
+              </div>
+              ${item.location ? `<p style="margin:3px 0 0 0;font-size:12px;color:#64748b;display:flex;align-items:center;gap:4px"><span style="font-size:14px">📍</span> ${item.location}</p>` : ''}
+              ${item.description ? `<p style="margin:5px 0 0 0;font-size:12px;color:#475569;line-height:1.6">${item.description}</p>` : ''}
+              ${item.duration ? `<p style="margin:4px 0 0 0;font-size:11px;color:#94a3b8"><span style="font-weight:600">Duration:</span> ${item.duration}</p>` : ''}
+            </div>
+          </div>
+        `).join('');
+
+      return `
+        <div style="page-break-inside:avoid;margin-bottom:24px;background:#fff;border-radius:16px;border:1px solid #e2e8f0;overflow:hidden;box-shadow:0 1px 3px rgba(0,0,0,0.04)">
+          <div style="background:linear-gradient(135deg,#0f172a,#1e293b);color:#fff;padding:14px 18px;display:flex;align-items:center;justify-content:space-between">
+            <div>
+              <div style="font-size:11px;font-weight:700;color:#94a3b8;letter-spacing:0.1em;text-transform:uppercase;margin-bottom:2px">Day ${day.dayNumber} · ${day.date || ''}</div>
+              <h3 style="margin:0;font-size:16px;font-weight:800">${day.title}</h3>
+              ${day.subtitle ? `<p style="margin:2px 0 0 0;font-size:12px;color:#94a3b8">${day.subtitle}</p>` : ''}
+            </div>
+            ${dayTotal > 0 ? `<div style="text-align:right"><div style="font-size:10px;color:#94a3b8;font-weight:600">Day Total</div><div style="font-size:18px;font-weight:800;font-family:monospace;color:#60a5fa">₹${dayTotal.toLocaleString('en-IN')}</div></div>` : ''}
+          </div>
+          <div style="padding:4px 18px 14px 18px">
+            ${itemsHTML}
+          </div>
+        </div>
+      `;
+    }).join('');
+
+    const html = `<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1"/>
+  <title>${itinerary.title} — TripFlow Itinerary</title>
+  <style>
+    *{margin:0;padding:0;box-sizing:border-box}
+    body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:#f8fafc;color:#0f172a;padding:24px}
+    @media print{
+      body{padding:0;background:#fff}
+      .no-print{display:none!important}
+      @page{margin:18mm 15mm;size:A4}
+    }
+    .btn{display:inline-flex;align-items:center;gap:8px;padding:10px 20px;border-radius:10px;font-size:13px;font-weight:700;cursor:pointer;border:none;transition:all .2s}
+    .btn-primary{background:#2563eb;color:#fff}
+    .btn-primary:hover{background:#1d4ed8}
+    .btn-outline{background:#fff;color:#374151;border:1px solid #d1d5db}
+    .btn-outline:hover{background:#f9fafb}
+  </style>
+</head>
+<body>
+  <!-- Print Actions Bar -->
+  <div class="no-print" style="display:flex;align-items:center;justify-content:space-between;margin-bottom:24px;padding:14px 20px;background:#fff;border-radius:14px;border:1px solid #e2e8f0;box-shadow:0 1px 4px rgba(0,0,0,0.06)">
+    <div style="display:flex;align-items:center;gap:10px">
+      <div style="width:36px;height:36px;border-radius:10px;background:#2563eb;display:flex;align-items:center;justify-content:center">
+        <span style="color:#fff;font-size:20px">✈</span>
+      </div>
+      <div>
+        <div style="font-weight:800;font-size:15px;color:#0f172a">TripFlow Itinerary Export</div>
+        <div style="font-size:12px;color:#94a3b8">${itinerary.title}</div>
+      </div>
+    </div>
+    <div style="display:flex;gap:8px">
+      <button class="btn btn-outline" onclick="window.close()">← Back</button>
+      <button class="btn btn-primary" onclick="window.print()">⬇ Download / Print PDF</button>
+    </div>
+  </div>
+
+  <!-- Document -->
+  <div style="max-width:800px;margin:0 auto">
+    <!-- Header -->
+    <div style="background:linear-gradient(135deg,#1e3a5f,#2563eb);color:#fff;border-radius:20px;padding:28px 32px;margin-bottom:24px;position:relative;overflow:hidden">
+      <div style="position:absolute;right:-30px;top:-30px;width:160px;height:160px;border-radius:50%;background:rgba(255,255,255,0.05)"></div>
+      <div style="position:absolute;right:30px;bottom:-20px;width:100px;height:100px;border-radius:50%;background:rgba(255,255,255,0.04)"></div>
+      <div style="position:relative;z-index:1">
+        <div style="display:flex;align-items:flex-start;justify-content:space-between;flex-wrap:wrap;gap:12px">
+          <div>
+            <div style="font-size:11px;font-weight:700;color:#93c5fd;letter-spacing:0.12em;text-transform:uppercase;margin-bottom:6px">
+              TripFlow · Official Itinerary Document
+            </div>
+            <h1 style="font-size:28px;font-weight:900;line-height:1.2;margin-bottom:6px">${itinerary.title}</h1>
+            ${itinerary.destination ? `<p style="font-size:14px;color:#bfdbfe;margin-bottom:3px">📍 ${itinerary.destination}</p>` : ''}
+            ${itinerary.travelStyle ? `<span style="display:inline-block;font-size:11px;font-weight:700;color:#93c5fd;border:1px solid rgba(147,197,253,0.3);padding:2px 10px;border-radius:20px;margin-top:4px">${itinerary.travelStyle}</span>` : ''}
+          </div>
+          <div style="background:rgba(255,255,255,0.1);border:1px solid rgba(255,255,255,0.15);border-radius:14px;padding:14px 18px;text-align:right;min-width:140px">
+            <div style="font-size:11px;color:#93c5fd;font-weight:700;text-transform:uppercase;letter-spacing:0.08em">Total Budget</div>
+            <div style="font-size:26px;font-weight:900;font-family:monospace;color:#fff;line-height:1.1">₹${pricing.total.toLocaleString('en-IN')}</div>
+            <div style="font-size:11px;color:#bfdbfe;margin-top:2px">₹${pricing.perPerson.toLocaleString('en-IN')}/person</div>
+          </div>
+        </div>
+
+        <!-- Trip Stats Row -->
+        <div style="display:flex;flex-wrap:wrap;gap:16px;margin-top:20px;padding-top:16px;border-top:1px solid rgba(255,255,255,0.15)">
+          <div><span style="font-size:11px;color:#93c5fd;font-weight:600;text-transform:uppercase;letter-spacing:0.08em">Duration</span><div style="font-size:15px;font-weight:800;color:#fff;margin-top:2px">${itinerary.days.length} Days</div></div>
+          <div><span style="font-size:11px;color:#93c5fd;font-weight:600;text-transform:uppercase;letter-spacing:0.08em">Experiences</span><div style="font-size:15px;font-weight:800;color:#fff;margin-top:2px">${totalItems} Activities</div></div>
+          ${itinerary.travelers ? `<div><span style="font-size:11px;color:#93c5fd;font-weight:600;text-transform:uppercase;letter-spacing:0.08em">Travelers</span><div style="font-size:15px;font-weight:800;color:#fff;margin-top:2px">${itinerary.travelers} Guests</div></div>` : ''}
+          <div><span style="font-size:11px;color:#93c5fd;font-weight:600;text-transform:uppercase;letter-spacing:0.08em">Generated</span><div style="font-size:13px;font-weight:600;color:#bfdbfe;margin-top:2px">${today}</div></div>
+        </div>
+
+        ${itinerary.routeStops && itinerary.routeStops.length > 0 ? `
+        <div style="margin-top:14px;display:flex;align-items:center;flex-wrap:wrap;gap:4px">
+          <span style="font-size:11px;color:#93c5fd;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;margin-right:6px">Route:</span>
+          ${itinerary.routeStops.map((s, i) => `<span style="font-size:12px;font-weight:600;color:#fff">${s.city}${i < itinerary.routeStops!.length - 1 ? '</span><span style="color:#60a5fa;margin:0 4px">→</span>' : '</span>'}`).join('')}
+        </div>
+        ` : ''}
+      </div>
+    </div>
+
+    <!-- Days -->
+    ${daysHTML}
+
+    <!-- Budget Summary -->
+    <div style="background:#fff;border-radius:16px;border:1px solid #e2e8f0;padding:20px 24px;margin-bottom:24px">
+      <h3 style="font-size:16px;font-weight:800;color:#0f172a;margin-bottom:16px;display:flex;align-items:center;gap:8px">
+        <span style="font-size:20px">💰</span> Budget Summary
+      </h3>
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px">
+        ${Object.entries(pricing.byCategory).filter(([, v]) => v > 0).map(([cat, val]) => `
+          <div style="background:#f8fafc;border:1px solid #f1f5f9;border-radius:12px;padding:12px">
+            <div style="font-size:11px;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:0.08em;margin-bottom:3px">${cat.charAt(0).toUpperCase() + cat.slice(1)}</div>
+            <div style="font-size:16px;font-weight:800;font-family:monospace;color:#1e293b">₹${val.toLocaleString('en-IN')}</div>
+          </div>
+        `).join('')}
+        <div style="background:#eff6ff;border:2px solid #bfdbfe;border-radius:12px;padding:12px">
+          <div style="font-size:11px;font-weight:700;color:#3b82f6;text-transform:uppercase;letter-spacing:0.08em;margin-bottom:3px">Total</div>
+          <div style="font-size:20px;font-weight:900;font-family:monospace;color:#2563eb">₹${pricing.total.toLocaleString('en-IN')}</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Footer -->
+    <div style="text-align:center;padding:16px;border-top:1px solid #e2e8f0;margin-top:8px">
+      <p style="font-size:12px;color:#94a3b8">Generated by <strong style="color:#2563eb">TripFlow</strong> · Discerning travel orchestration · ${today}</p>
+      <p style="font-size:11px;color:#cbd5e1;margin-top:4px">This document contains your complete itinerary. Present at hotel check-ins, transport pickups, and activity venues.</p>
+    </div>
+  </div>
+
+  <script>
+    // Auto-trigger print dialog for convenience
+    // window.addEventListener('load', () => setTimeout(() => window.print(), 800));
+  </script>
+</body>
+</html>`;
+
+    const blob = new Blob([html], { type: 'text/html;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const win = window.open(url, '_blank');
+    if (win) win.focus();
+    setTimeout(() => URL.revokeObjectURL(url), 30000);
+    showToast('✅ Itinerary PDF opened! Click "Download / Print PDF" to save.');
   };
+
 
   return (
     <div className="flex-1 min-h-0 flex flex-col h-full max-h-full bg-[#FBFBFA] relative overflow-hidden select-none">
@@ -510,6 +708,7 @@ export const ItineraryBuilderScreen: React.FC<ItineraryBuilderScreenProps> = ({
             }
             isCollapsed={sidebarCollapsed}
             onToggleCollapse={() => setSidebarCollapsed(!sidebarCollapsed)}
+            aiSuggestions={aiQuickAddSuggestions}
           />
         )}
 

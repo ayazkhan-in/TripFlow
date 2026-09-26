@@ -66,13 +66,12 @@ function BookitApp() {
   const { addTravelerBooking, pendingCustomizedCount } = useOperator();
 
   // Unified End-to-End Traveler Trip & Itinerary State
-  const initialBookedTrip = convertItineraryToBookedTrip(PREMADE_KERALA_ITINERARY, 2450);
-  const [bookedTrips, setBookedTrips] = useState<BookedTrip[]>([initialBookedTrip]);
-  const [activeBookedTripId, setActiveBookedTripId] = useState<string>(initialBookedTrip.id);
+  // Start with empty trips — populated from backend after login or after booking
+  const [bookedTrips, setBookedTrips] = useState<BookedTrip[]>([]);
+  const [activeBookedTripId, setActiveBookedTripId] = useState<string | null>(null);
   const [currentItinerary, setCurrentItinerary] = useState<TripItinerary>(PREMADE_KERALA_ITINERARY);
   const [modifyingTripId, setModifyingTripId] = useState<string | null>(null);
   const [vaultDocuments, setVaultDocuments] = useState<VaultDocument[]>(() => [
-    ...generateVaultDocsForTrip(initialBookedTrip),
     ...INITIAL_VAULT_DOCUMENTS,
   ]);
   const [vaultSelectedTripId, setVaultSelectedTripId] = useState<string>('all');
@@ -108,6 +107,10 @@ function BookitApp() {
         if (trips[0].itinerary) {
           setCurrentItinerary(trips[0].itinerary);
         }
+      } else {
+        // No trips from backend — keep empty state for fresh users
+        setBookedTrips([]);
+        setActiveBookedTripId(null);
       }
     });
     TripFlowApi.getVaultDocuments().then(docs => {
@@ -307,11 +310,11 @@ function BookitApp() {
     setModifyingTripId(null);
 
     setViewMode('consumer');
-    setConsumerTab('trips');
+    setConsumerTab('home'); // Return to home so user sees their new active itinerary
     setCurrentRoute('app');
 
     addTravelerBooking(newTrip, customizationDetails);
-    showToast(`🎉 Payment Confirmed! "${newTrip.title}" is now active in Trips & Bookings.`);
+    showToast(`🎉 Booking Confirmed! "${newTrip.title}" is now your active itinerary.`);
   };
 
   const handleProceedToBooking = async (
@@ -373,7 +376,7 @@ function BookitApp() {
     setModifyingTripId(null);
     setActiveBookedTripId(targetId);
     setConsumerTab('trips');
-    showToast(`✅ Trip modifications saved! Package price updated to $${newTotal.toLocaleString()}.`);
+    showToast(`✅ Trip modifications saved! Package price updated to ₹${newTotal.toLocaleString('en-IN')}.`);
   };
 
   const handleViewInVault = (tripId?: string) => {
@@ -462,6 +465,9 @@ function BookitApp() {
                     onSelectJourneyDetails={journey => setSelectedJourney(journey)}
                     onSelectPremadeTrip={handleSelectPremadeTrip}
                     onOpenPayment={handleOpenPayment}
+                    bookedTrips={bookedTrips}
+                    activeBookedTripId={activeBookedTripId}
+                    userName={authUser?.name || 'Traveler'}
                   />
                 )}
 
@@ -470,7 +476,7 @@ function BookitApp() {
                   <TripsAndBookingsScreen
                     initialView={consumerTab === 'bookings' ? 'bookings' : 'timeline'}
                     bookedTrips={bookedTrips}
-                    activeTripId={activeBookedTripId}
+                    activeTripId={activeBookedTripId ?? undefined}
                     onSelectTrip={id => setActiveBookedTripId(id)}
                     onModifyTrip={handleModifyTrip}
                     onViewInVault={handleViewInVault}
