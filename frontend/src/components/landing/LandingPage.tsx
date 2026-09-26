@@ -49,7 +49,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({
       {/* CINEMATIC HERO SECTION WITH FLOATING HEADER (REFERENCE LAYOUT)*/}
       {/* ------------------------------------------------------------- */}
       <section className="relative min-h-screen flex flex-col justify-between text-white overflow-hidden isolate font-sans">
-        {/* Background Media with Hero Video (No dark overlay) */}
+        {/* Background Media with Hero Video */}
         <div className="absolute inset-0 pointer-events-none overflow-hidden select-none z-0">
           <video
             ref={videoRef}
@@ -59,38 +59,39 @@ export const LandingPage: React.FC<LandingPageProps> = ({
             playsInline
             className="w-full h-full object-cover object-center"
           >
-            <source src="/hero.mp4" type="video/mp4" />
+            <source src="/hero2.webm" type="video/webm" />
           </video>
         </div>
 
         {/* TOP: Floating Transparent Navigation Header */}
         <header className="relative z-30 w-full px-6 sm:px-12 lg:px-16 py-8 flex items-center justify-between select-none">
           {/* Brand Anchor on Left (Matching DOLANAN style) */}
-          <div className="text-xl sm:text-2xl font-bold tracking-wider text-white uppercase select-none drop-shadow-[0_1px_4px_rgba(0,0,0,0.4)]">
-            TripFlow
+          <div className="flex items-center gap-2.5 text-xl sm:text-2xl font-black tracking-wider text-black uppercase select-none">
+            <img src="/bookit-white.png" alt="Bookit" className="w-8 h-8 sm:w-9 sm:h-9 object-contain" />
+            <span>Bookit</span>
           </div>
 
           {/* Center Navigation Links */}
-          <nav className="hidden md:flex items-center gap-8 lg:gap-10 text-sm font-medium text-white/90 absolute left-1/2 -translate-x-1/2 drop-shadow-[0_1px_4px_rgba(0,0,0,0.4)]">
-            <a href="#destinations" className="hover:text-white transition-colors">
+          <nav className="hidden md:flex items-center gap-8 lg:gap-10 text-sm font-semibold text-black absolute left-1/2 -translate-x-1/2">
+            <a href="#destinations" className="text-black hover:text-black/70 transition-colors">
               Destinations
             </a>
             {onOpenBuilder && (
               <button
                 type="button"
                 onClick={onOpenBuilder}
-                className="hover:text-white transition-colors cursor-pointer"
+                className="text-black hover:text-black/70 transition-colors cursor-pointer"
               >
                 Builder
               </button>
             )}
-            <a href="#dual-surface" className="hover:text-white transition-colors">
+            <a href="#dual-surface" className="text-black hover:text-black/70 transition-colors">
               Operations
             </a>
-            <a href="#vault" className="hover:text-white transition-colors">
+            <a href="#vault" className="text-black hover:text-black/70 transition-colors">
               Vault
             </a>
-            <a href="#features" className="hover:text-white transition-colors">
+            <a href="#features" className="text-black hover:text-black/70 transition-colors">
               Features
             </a>
           </nav>
@@ -100,14 +101,14 @@ export const LandingPage: React.FC<LandingPageProps> = ({
             <button
               type="button"
               onClick={() => onOpenAuth('traveler')}
-              className="hidden sm:inline-block text-xs font-semibold text-white/90 hover:text-white transition-colors px-3 py-1.5 cursor-pointer drop-shadow-sm"
+              className="hidden sm:inline-block text-xs font-semibold text-black hover:text-black/70 transition-colors px-3 py-1.5 cursor-pointer"
             >
               Sign In
             </button>
             <button
               type="button"
               onClick={onExploreDemo}
-              className="px-6 py-2.5 rounded-full bg-white text-slate-900 hover:bg-slate-100 active:scale-95 text-xs sm:text-sm font-semibold transition-all shadow-md cursor-pointer"
+              className="px-6 py-2.5 rounded-full bg-black text-white hover:bg-slate-800 active:scale-95 text-xs sm:text-sm font-semibold transition-all shadow-md cursor-pointer"
             >
               Register Now
             </button>
@@ -116,10 +117,10 @@ export const LandingPage: React.FC<LandingPageProps> = ({
             <button
               type="button"
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-              className="md:hidden w-9 h-9 rounded-full flex items-center justify-center text-white bg-black/30 backdrop-blur-md cursor-pointer"
+              className="md:hidden w-9 h-9 rounded-full flex items-center justify-center text-black bg-white/80 hover:bg-white backdrop-blur-md border border-black/10 cursor-pointer shadow-sm"
               aria-label="Toggle Menu"
             >
-              <span className="material-symbols-outlined text-xl">
+              <span className="material-symbols-outlined text-xl text-black">
                 {mobileMenuOpen ? 'close' : 'menu'}
               </span>
             </button>
@@ -127,11 +128,11 @@ export const LandingPage: React.FC<LandingPageProps> = ({
 
           {/* Mobile Dropdown Menu */}
           {mobileMenuOpen && (
-            <div className="md:hidden absolute top-20 left-6 right-6 bg-slate-900/95 backdrop-blur-xl border border-white/15 rounded-2xl p-6 shadow-2xl flex flex-col gap-4 text-sm font-semibold text-white z-50 animate-in fade-in duration-200">
+            <div className="md:hidden absolute top-20 left-6 right-6 bg-white/95 backdrop-blur-xl border border-black/10 rounded-2xl p-6 shadow-2xl flex flex-col gap-4 text-sm font-semibold text-black z-50 animate-in fade-in duration-200">
               <a
                 href="#destinations"
                 onClick={() => setMobileMenuOpen(false)}
-                className="py-1 hover:text-blue-400"
+                className="py-1 hover:text-blue-600 text-black"
               >
                 Destinations
               </a>
@@ -142,7 +143,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({
                     setMobileMenuOpen(false);
                     onOpenBuilder();
                   }}
-                  className="py-1 text-left hover:text-blue-400"
+                  className="py-1 text-left hover:text-blue-600 text-black cursor-pointer"
                 >
                   Itinerary Builder
                 </button>
@@ -150,32 +151,32 @@ export const LandingPage: React.FC<LandingPageProps> = ({
               <a
                 href="#dual-surface"
                 onClick={() => setMobileMenuOpen(false)}
-                className="py-1 hover:text-blue-400"
+                className="py-1 hover:text-blue-600 text-black"
               >
                 Operations
               </a>
               <a
                 href="#vault"
                 onClick={() => setMobileMenuOpen(false)}
-                className="py-1 hover:text-blue-400"
+                className="py-1 hover:text-blue-600 text-black"
               >
                 Vault
               </a>
               <a
                 href="#features"
                 onClick={() => setMobileMenuOpen(false)}
-                className="py-1 hover:text-blue-400"
+                className="py-1 hover:text-blue-600 text-black"
               >
                 Features
               </a>
-              <div className="pt-3 border-t border-white/15 flex items-center justify-between">
+              <div className="pt-3 border-t border-black/10 flex items-center justify-between">
                 <button
                   type="button"
                   onClick={() => {
                     setMobileMenuOpen(false);
                     onOpenAuth('traveler');
                   }}
-                  className="text-xs text-white/80 hover:text-white"
+                  className="text-xs text-black/80 hover:text-black font-semibold"
                 >
                   Sign In
                 </button>
@@ -185,7 +186,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({
                     setMobileMenuOpen(false);
                     onExploreDemo();
                   }}
-                  className="px-4 py-2 rounded-full bg-white text-slate-900 text-xs font-bold"
+                  className="px-4 py-2 rounded-full bg-black text-white text-xs font-bold"
                 >
                   Register Now
                 </button>
@@ -305,7 +306,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({
             Why traditional travel agencies leave you stranded.
           </h2>
           <p className="text-sm sm:text-base text-[#4B5563]">
-            TripFlow replaces rigid static PDFs with living digital itineraries connected to
+            Bookit replaces rigid static PDFs with living digital itineraries connected to
             live flight radars, chauffeurs, and local concierges.
           </p>
         </div>
@@ -387,7 +388,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({
               A travel timeline that breathes with your trip.
             </h2>
             <p className="text-sm sm:text-base text-[#4B5563] leading-relaxed">
-              Your vacation is not a rigid spreadsheet. TripFlow organizes each day into
+              Your vacation is not a rigid spreadsheet. Bookit organizes each day into
               fluid, context-aware segments: flight check-in telemetry, private road transfers,
               hotel vouchers, sunset strolls, and private houseboat sailings.
             </p>
@@ -805,7 +806,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({
               </div>
               <p className="text-xs text-[#374151] leading-relaxed">
                 &quot;Our flight into Kochi had a 2-hour delay. Before we even touched down,
-                TripFlow had rebooked our driver Rajesh, notified the hotel, and saved our sunset
+                Bookit had rebooked our driver Rajesh, notified the hotel, and saved our sunset
                 boat cruise. That peace of mind is priceless.&quot;
               </p>
               <div className="flex items-center gap-3 pt-2">
@@ -887,7 +888,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({
             Frequently Asked Questions
           </div>
           <h2 className="text-2xl sm:text-3xl font-extrabold text-[#111827] tracking-tight">
-            Everything you need to know about TripFlow
+            Everything you need to know about Bookit
           </h2>
         </div>
 
@@ -902,7 +903,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({
               a: 'Yes! Every active itinerary is linked to a regional concierge team member (like Arun V. in South India). You can click the WhatsApp icon in the app or text them directly for customized requests, restaurant reservations, or on-the-ground support.',
             },
             {
-              q: 'Does TripFlow work offline during remote journeys?',
+              q: 'Does Bookit work offline during remote journeys?',
               a: 'Yes. All itinerary vouchers, hotel contacts, flight numbers, and offline GPS maps are cached locally on your device. When you regain connectivity, the app syncs live telemetry automatically.',
             },
             {
@@ -981,11 +982,9 @@ export const LandingPage: React.FC<LandingPageProps> = ({
       <footer className="bg-white border-t border-[#E5E7EB] py-12 px-4 sm:px-8 text-xs text-[#6B7280]">
         <div className="max-w-6xl mx-auto grid grid-cols-1 sm:grid-cols-2 md:grid-cols-5 gap-8 mb-8">
           <div className="md:col-span-2 space-y-3">
-            <div className="flex items-center gap-2">
-              <span className="w-7 h-7 rounded-lg bg-[#2563EB] flex items-center justify-center text-white">
-                <span className="material-symbols-outlined text-base">flight_takeoff</span>
-              </span>
-              <span className="text-base font-bold text-[#004AC6]">TripFlow</span>
+            <div className="flex items-center gap-2.5">
+              <img src="/bookit.png" alt="Bookit" className="w-7 h-7 object-contain" />
+              <span className="text-base font-bold text-[#004AC6]">Bookit</span>
             </div>
             <p className="text-xs text-[#6B7280] max-w-sm">
               The dual-surface travel ecosystem pairing personalized living itineraries with
@@ -1086,7 +1085,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({
 
         <div className="max-w-6xl mx-auto pt-6 border-t border-[#E5E7EB] flex flex-col sm:flex-row items-center justify-between gap-4 text-[11px] text-[#9CA3AF]">
           <div>
-            © {new Date().getFullYear()} TripFlow Inc. All rights reserved. Built with precision.
+            © {new Date().getFullYear()} Bookit Inc. All rights reserved. Built with precision.
           </div>
           <div className="flex items-center gap-4">
             <span className="hover:text-[#111827] cursor-pointer">Terms of Service</span>

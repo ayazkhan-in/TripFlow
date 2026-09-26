@@ -11,7 +11,7 @@ import {
 export const OPERATOR_BOOKINGS: BookingItem[] = [
   {
     id: 'bkg-101',
-    ref: 'TF-JP-8421',
+    ref: 'BK-JP-8421',
     guestName: 'Sarah & David Mehta',
     guestEmail: 'sarah.mehta@concierge.tripflow.io',
     tourTitle: '7-Day Tokyo & Kyoto Cultural Immersion',
@@ -28,7 +28,7 @@ export const OPERATOR_BOOKINGS: BookingItem[] = [
   },
   {
     id: 'bkg-102',
-    ref: 'TF-IN-4902',
+    ref: 'BK-IN-4902',
     guestName: 'Julian & Claire Sterling',
     guestEmail: 'j.sterling@sterling-holdings.co.uk',
     tourTitle: 'Kerala Backwaters & Spice Circuit',
@@ -45,7 +45,7 @@ export const OPERATOR_BOOKINGS: BookingItem[] = [
   },
   {
     id: 'bkg-103',
-    ref: 'TF-EU-7731',
+    ref: 'BK-EU-7731',
     guestName: 'Elena Rostova',
     guestEmail: 'elena.rostova@genevacapital.ch',
     tourTitle: 'European Grand Odyssey',
@@ -62,7 +62,7 @@ export const OPERATOR_BOOKINGS: BookingItem[] = [
   },
   {
     id: 'bkg-104',
-    ref: 'TF-JP-9920',
+    ref: 'BK-JP-9920',
     guestName: 'Marcus Vance & Family',
     guestEmail: 'marcus.v@arch-ventures.com',
     tourTitle: 'Autumn Hokkaido & Tokyo Gourmet Tour',
@@ -79,7 +79,7 @@ export const OPERATOR_BOOKINGS: BookingItem[] = [
   },
   {
     id: 'bkg-105',
-    ref: 'TF-IN-5104',
+    ref: 'BK-IN-5104',
     guestName: 'Arjun & Priya Singhania',
     guestEmail: 'arjun@singhaniacorp.in',
     tourTitle: 'Royal Rajasthan Palace Trail',
@@ -331,7 +331,7 @@ export const OPERATOR_PAYMENTS: PaymentLedgerItem[] = [
   {
     id: 'pay-901',
     transactionRef: 'TXN-88192-JPY',
-    tourId: 'TF-JP-8421',
+    tourId: 'BK-JP-8421',
     party: 'Sarah & David Mehta',
     type: 'inbound',
     amount: 470000,
@@ -344,7 +344,7 @@ export const OPERATOR_PAYMENTS: PaymentLedgerItem[] = [
   {
     id: 'pay-902',
     transactionRef: 'TXN-88193-HOT',
-    tourId: 'TF-JP-8421',
+    tourId: 'BK-JP-8421',
     party: 'Aman Tokyo (Luxury Vendor)',
     type: 'outbound',
     amount: 203000,
@@ -357,7 +357,7 @@ export const OPERATOR_PAYMENTS: PaymentLedgerItem[] = [
   {
     id: 'pay-903',
     transactionRef: 'TXN-88194-INB',
-    tourId: 'TF-IN-4902',
+    tourId: 'BK-IN-4902',
     party: 'Julian Sterling',
     type: 'inbound',
     amount: 742000,
@@ -370,7 +370,7 @@ export const OPERATOR_PAYMENTS: PaymentLedgerItem[] = [
   {
     id: 'pay-904',
     transactionRef: 'TXN-88195-ESC',
-    tourId: 'TF-EU-7731',
+    tourId: 'BK-EU-7731',
     party: 'Hôtel Plaza Athénée & Art Concierge',
     type: 'escrow',
     amount: 348000,
@@ -383,7 +383,7 @@ export const OPERATOR_PAYMENTS: PaymentLedgerItem[] = [
   {
     id: 'pay-905',
     transactionRef: 'TXN-88196-OUT',
-    tourId: 'TF-JP-9920',
+    tourId: 'BK-JP-9920',
     party: 'Tokyo VIP Fleets Ltd',
     type: 'outbound',
     amount: 68000,
@@ -399,7 +399,7 @@ export const OPERATOR_CALENDAR_EVENTS: CalendarTourEvent[] = [
   {
     id: 'cal-1',
     title: 'Tour #1024: Landing at Cochin Airport',
-    tourId: 'TF-IN-4902',
+    tourId: 'BK-IN-4902',
     date: '2026-10-14',
     time: '02:30 PM',
     type: 'departure',
@@ -411,7 +411,7 @@ export const OPERATOR_CALENDAR_EVENTS: CalendarTourEvent[] = [
   {
     id: 'cal-2',
     title: 'Tokyo Arrival & Aman Tokyo Check-In',
-    tourId: 'TF-JP-8421',
+    tourId: 'BK-JP-8421',
     date: '2026-10-14',
     time: '04:00 PM',
     type: 'checkin',
@@ -423,7 +423,7 @@ export const OPERATOR_CALENDAR_EVENTS: CalendarTourEvent[] = [
   {
     id: 'cal-3',
     title: 'Shinkansen Gran Class to Kyoto Departure',
-    tourId: 'TF-JP-8421',
+    tourId: 'BK-JP-8421',
     date: '2026-10-16',
     time: '09:30 AM',
     type: 'transfer',
@@ -435,7 +435,7 @@ export const OPERATOR_CALENDAR_EVENTS: CalendarTourEvent[] = [
   {
     id: 'cal-4',
     title: 'Exclusive Uji Matcha Ceremony with 15th-Gen Master',
-    tourId: 'TF-JP-8421',
+    tourId: 'BK-JP-8421',
     date: '2026-10-17',
     time: '11:00 AM',
     type: 'experience',
@@ -447,7 +447,7 @@ export const OPERATOR_CALENDAR_EVENTS: CalendarTourEvent[] = [
   {
     id: 'cal-5',
     title: 'Private Kettuvallam Houseboat Embarkation',
-    tourId: 'TF-IN-4902',
+    tourId: 'BK-IN-4902',
     date: '2026-10-18',
     time: '12:30 PM',
     type: 'experience',

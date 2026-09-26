@@ -16,7 +16,7 @@ export const INITIAL_VAULT_DOCUMENTS: VaultDocument[] = [
     fileType: 'pdf',
     fileSize: '2.4 MB',
     uploadedAt: 'Oct 02, 2025',
-    verifiedBy: 'TripFlow Concierge Arun V.',
+    verifiedBy: 'Bookit Concierge Arun V.',
     offlineReady: true,
     fields: {
       'Nationality': 'Indian',
@@ -40,7 +40,7 @@ export const INITIAL_VAULT_DOCUMENTS: VaultDocument[] = [
     fileType: 'pdf',
     fileSize: '2.1 MB',
     uploadedAt: 'Oct 02, 2025',
-    verifiedBy: 'TripFlow Concierge Arun V.',
+    verifiedBy: 'Bookit Concierge Arun V.',
     offlineReady: true,
     fields: {
       'Nationality': 'Indian',
@@ -353,14 +353,14 @@ export const INITIAL_VAULT_DOCUMENTS: VaultDocument[] = [
     category: 'transit',
     title: 'Private Chauffeur Fleet Authorization & Passenger Manifest Voucher',
     travelerName: 'Sarah Mehta & Rohan Mehta',
-    documentNumber: 'TF-DISP-4412',
+    documentNumber: 'BK-DISP-4412',
     issueDate: 'Oct 10, 2025',
     expiryDate: 'Oct 19, 2025',
     status: 'verified',
     fileType: 'pdf',
     fileSize: '1.5 MB',
     uploadedAt: 'Oct 10, 2025',
-    verifiedBy: 'TripFlow Fleet Command (Alex Vance)',
+    verifiedBy: 'Bookit Fleet Command (Alex Vance)',
     offlineReady: true,
     fields: {
       'Chauffeur': 'Rajesh K. (Badge #KL-CH-882)',
@@ -375,7 +375,7 @@ export const INITIAL_VAULT_DOCUMENTS: VaultDocument[] = [
 export const EMERGENCY_CONTACTS: EmergencyContact[] = [
   {
     id: 'em-concierge',
-    role: '24/7 Dedicated TripFlow Concierge',
+    role: '24/7 Dedicated Bookit Concierge',
     name: 'Arun V.',
     phone: '+91 98470 12890',
     available: '24/7 Priority WhatsApp & Voice',

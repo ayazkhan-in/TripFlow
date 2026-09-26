@@ -919,7 +919,7 @@ export const DiscoverScreen: React.FC<DiscoverScreenProps> = ({
                     </div>
                     <div>
                       <div className="flex items-center gap-2">
-                        <h3 className="text-base font-bold text-slate-900">TripFlow AI Concierge</h3>
+                        <h3 className="text-base font-bold text-slate-900">Bookit AI Concierge</h3>
                         <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full bg-indigo-50 text-indigo-700 border border-indigo-100">
                           Step 1: Clarifying Trip Details
                         </span>

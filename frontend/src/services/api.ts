@@ -690,3 +690,5 @@ export class TripFlowApi {
   }
 }
 
+export const BookitApi = TripFlowApi;
+

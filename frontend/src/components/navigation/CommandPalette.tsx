@@ -231,7 +231,7 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({
             <span>↑↓ Navigate</span>
             <span>↵ Select</span>
           </div>
-          <span>TripFlow Linear Command Engine v2.4</span>
+          <span>Bookit Linear Command Engine v2.4</span>
         </div>
       </div>
     </div>

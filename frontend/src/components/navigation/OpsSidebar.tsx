@@ -48,6 +48,7 @@ export const OpsSidebar: React.FC<OpsSidebarProps> = ({
   onOpenCreatePackage,
   onSwitchMode,
   pendingCustomizedCount,
+  onGoToLanding,
   onSignOut,
 }) => {
   const [isBookingsExpanded, setIsBookingsExpanded] = useState<boolean>(true);
@@ -73,14 +74,27 @@ export const OpsSidebar: React.FC<OpsSidebarProps> = ({
       <div className="flex flex-col gap-3">
         {/* Brand & Hub Header */}
         <div className="flex items-center justify-between pb-3 border-b border-slate-100">
-          <div className="flex items-center gap-2.5 min-w-0">
-            <div className="w-8 h-8 rounded-lg bg-blue-600 text-white flex items-center justify-center font-semibold text-sm shadow-xs shrink-0">
-              <span className="material-symbols-outlined text-[18px]">hub</span>
-            </div>
+          <button
+            type="button"
+            onClick={() => {
+              if (onGoToLanding) {
+                onGoToLanding();
+              } else {
+                onTabChange('hub');
+              }
+            }}
+            className="flex items-center gap-2.5 min-w-0 text-left cursor-pointer group focus:outline-none"
+            title="Bookit Ops Hub — Click to view Landing"
+          >
+            <img
+              src="/bookit.png"
+              alt="Bookit Ops"
+              className="w-8 h-8 rounded-lg object-contain shadow-xs shrink-0 group-hover:scale-105 transition-transform"
+            />
             <div className="min-w-0">
               <div className="flex items-center gap-1.5">
                 <span className="text-sm font-bold text-slate-900 tracking-tight truncate max-w-[130px]">
-                  {user?.agencyName || 'TripFlow Ops'}
+                  {user?.agencyName || 'Bookit Ops'}
                 </span>
                 <span
                   className="inline-block w-1.5 h-1.5 rounded-full bg-emerald-500 shrink-0"
@@ -91,7 +105,7 @@ export const OpsSidebar: React.FC<OpsSidebarProps> = ({
                 {user?.agencyCode ? `${user.agencyCode} • Controller` : 'Dispatch Controller'}
               </p>
             </div>
-          </div>
+          </button>
         </div>
 
         {/* Primary Action Button */}
@@ -310,6 +324,15 @@ export const OpsSidebar: React.FC<OpsSidebarProps> = ({
             </div>
           </div>
           <div className="flex items-center gap-1 shrink-0">
+            {onGoToLanding && (
+              <button
+                onClick={onGoToLanding}
+                className="text-slate-400 hover:text-slate-700 transition-colors p-1 cursor-pointer"
+                title="Bookit Landing Page"
+              >
+                <span className="material-symbols-outlined text-sm">home</span>
+              </button>
+            )}
             {onSwitchMode && (
               <button
                 onClick={() => onSwitchMode('consumer')}

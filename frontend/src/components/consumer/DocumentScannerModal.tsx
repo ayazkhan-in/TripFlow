@@ -292,7 +292,7 @@ export const DocumentScannerModal: React.FC<DocumentScannerModalProps> = ({
           documentNumber: data.documentNumber || `DOC-${Math.floor(100000 + Math.random() * 900000)}`,
           issueDate: data.issueDate || 'Oct 2025',
           expiryDate: data.expiryDate || 'Valid for Journey',
-          notes: data.notes || 'Verified through TripFlow AI Optical Scanner.',
+          notes: data.notes || 'Verified through Bookit AI Optical Scanner.',
           fields: data.fields || { 'Verification Engine': 'Gemini 3.8 Flash Vision' },
         });
         setSelectedCategory(data.category as VaultCategory);

@@ -70,7 +70,7 @@ const DEFAULT_WELCOME_SESSION: ChatSession = {
       id: 'msg-welcome',
       sender: 'assistant',
       timestamp: 'Just now',
-      text: `Hello! I am your **TripFlow AI Travel Concierge** powered by Gemini.
+      text: `Hello! I am your **Bookit AI Travel Concierge** powered by Gemini.
 
 Where would you like to travel next? You can type your dream destination, dates, and budget (e.g. *"I want to plan an itinerary for 7 days for Turkey with Cappadocia"*), and I will generate an interactive questionnaire, calibrated flight & hotel tiers, and a living day-by-day plan!`,
       quickReplies: [
@@ -997,7 +997,7 @@ I have calibrated flight routes, luxury accommodations, and private transfers st
 
             <div>
               <h1 className="text-sm font-bold text-slate-900 leading-tight">
-                {activeSession?.title || 'TripFlow Concierge'}
+                {activeSession?.title || 'Bookit Concierge'}
               </h1>
               <p className="text-[10px] text-slate-400">
                 Calibrated living itineraries powered by Gemini
@@ -1166,7 +1166,7 @@ I have calibrated flight routes, luxury accommodations, and private transfers st
             </div>
             <div className="flex items-center justify-between text-[11px] text-slate-400 mt-2 px-1">
               <span>Press Enter to send inquiry</span>
-              <span>TripFlow AI · Instant Budget-Calibrated Travel Curation</span>
+              <span>Bookit AI · Instant Budget-Calibrated Travel Curation</span>
             </div>
           </div>
         </div>

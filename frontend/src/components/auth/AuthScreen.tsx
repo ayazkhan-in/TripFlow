@@ -171,12 +171,14 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({
           onClick={onBackToLanding}
           className="flex items-center gap-2.5 text-left cursor-pointer group focus:outline-none"
         >
-          <span className="w-8 h-8 rounded-full bg-[#2563EB] flex items-center justify-center text-white shadow-xs group-hover:bg-[#1D4ED8] transition-colors">
-            <span className="material-symbols-outlined text-lg">flight_takeoff</span>
-          </span>
+          <img
+            src="/bookit.png"
+            alt="Bookit"
+            className="w-8 h-8 rounded-lg object-contain shadow-xs group-hover:scale-105 transition-transform"
+          />
           <div className="flex flex-col">
             <span className="text-[17px] font-bold text-[#004AC6] tracking-tight leading-none">
-              TripFlow
+              Bookit
             </span>
             <span className="text-[9px] uppercase tracking-wider text-[#737686] font-semibold mt-0.5">
               Secure Access Portal
@@ -206,7 +208,7 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({
               </span>
               <div>
                 <h1 className="text-xl font-bold tracking-tight">
-                  {authMode === 'signup' ? 'Create New Account' : authMode === 'signin' ? 'Sign In to TripFlow' : 'Explore Demo Personas'}
+                  {authMode === 'signup' ? 'Create New Account' : authMode === 'signin' ? 'Sign In to Bookit' : 'Explore Demo Personas'}
                 </h1>
                 <p className="text-xs text-blue-200/80">
                   {selectedRole === 'operator'
@@ -389,7 +391,7 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({
                     ) : (
                       <>
                         <span className="material-symbols-outlined text-lg">login</span>
-                        Sign In to TripFlow
+                        Sign In to Bookit
                       </>
                     )}
                   </button>

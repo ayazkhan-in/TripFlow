@@ -485,7 +485,7 @@ export function createCuratedPackageFromOperator(params: {
     routeStops: stopsObj,
     inclusions: inclusionsList,
     operator: {
-      name: 'TripFlow Elite Dispatch',
+      name: 'Bookit Elite Dispatch',
       leadDirector: params.operatorDirector || 'Alex Vance',
       avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=200&q=80',
       license: 'LIC-OPS-GLOBAL-770',

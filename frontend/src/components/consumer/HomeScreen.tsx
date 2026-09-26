@@ -90,7 +90,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
           <div className="flex items-center gap-2 mb-2 flex-wrap">
             <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-blue-50 border border-blue-200 text-blue-700 text-xs font-bold uppercase tracking-wider">
               <span className="w-2 h-2 rounded-full bg-blue-600 animate-pulse"></span>
-              TripFlow Black Tier Concierge
+              Bookit Black Tier Concierge
             </span>
             <span className="text-slate-300">•</span>
             <span className="text-emerald-700 text-xs font-semibold flex items-center gap-1.5">
@@ -350,7 +350,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
             <div className="pt-1.5 flex items-center justify-between text-[11px] text-slate-500 border-t border-slate-100">
               <span className="flex items-center gap-1 font-medium">
                 <span className="material-symbols-outlined text-sm text-blue-600">verified_user</span>
-                TripFlow Guarantee Active
+                Bookit Guarantee Active
               </span>
               <span className="font-mono text-slate-600 flex items-center gap-1.5">
                 <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
@@ -623,8 +623,9 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
       <footer className="border-t border-slate-200 pt-8 text-slate-500 text-xs">
         <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
           <div className="flex items-center gap-2">
+            <img src="/bookit.png" alt="Bookit" className="w-5 h-5 object-contain" />
             <span className="text-sm font-extrabold text-blue-600 tracking-tight">
-              TripFlow
+              Bookit
             </span>
             <span className="text-slate-300">•</span>
             <span className="text-slate-500">

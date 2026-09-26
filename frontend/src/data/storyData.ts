@@ -67,7 +67,7 @@ export const TRAVEL_STORIES: TravelStory[] = [
       verified: true,
     },
     caption: 'The ultimate 4-day snow & mountain itinerary covering Mall Road, Solang Valley snow sports, Rohtang Pass, and the iconic Kalka-Shimla heritage toy train! 🏔️✨',
-    hashtags: ['#Himachal', '#ShimlaManali', '#SnowTrip', '#Travel2025', '#TripFlow'],
+    hashtags: ['#Himachal', '#ShimlaManali', '#SnowTrip', '#Travel2025', '#Bookit'],
     likesCount: 14200,
     commentsCount: 382,
     sharesCount: 1250,

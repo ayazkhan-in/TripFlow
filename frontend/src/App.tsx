@@ -54,7 +54,7 @@ import { OperatorProvider, useOperator } from './context/OperatorContext';
 import { CreateTourPackageModal } from './components/operator/CreateTourPackageModal';
 import { OperatorPackagesScreen } from './components/operator/OperatorPackagesScreen';
 
-function TripFlowApp() {
+function BookitApp() {
   // Navigation & Route State ('landing' is the default route on "/")
   const [currentRoute, setCurrentRoute] = useState<'landing' | 'auth' | 'app'>('landing');
   const [viewMode, setViewMode] = useState<ViewMode>('consumer');
@@ -169,7 +169,7 @@ function TripFlowApp() {
     TripFlowApi.logout();
     setAuthUser(null);
     setCurrentRoute('landing');
-    showToast('Signed out of TripFlow.');
+    showToast('Signed out of Bookit.');
   };
 
   // Quick Explorers from Landing Page
@@ -803,7 +803,7 @@ function TripFlowApp() {
 export default function App() {
   return (
     <OperatorProvider>
-      <TripFlowApp />
+      <BookitApp />
     </OperatorProvider>
   );
 }

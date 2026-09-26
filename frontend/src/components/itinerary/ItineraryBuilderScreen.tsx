@@ -399,7 +399,7 @@ export const ItineraryBuilderScreen: React.FC<ItineraryBuilderScreenProps> = ({
 
   // Share itinerary
   const handleShareItinerary = () => {
-    const shareText = `Check out my TripFlow Itinerary: "${itinerary.title}" — ${itinerary.days.length} Days in ${itinerary.destination} with ${pricing.itemCount} curated experiences! Total: $${pricing.total.toLocaleString()} ($${pricing.perPerson.toLocaleString()}/person).`;
+    const shareText = `Check out my Bookit Itinerary: "${itinerary.title}" — ${itinerary.days.length} Days in ${itinerary.destination} with ${pricing.itemCount} curated experiences! Total: $${pricing.total.toLocaleString()} ($${pricing.perPerson.toLocaleString()}/person).`;
     navigator.clipboard?.writeText(shareText);
     showToast('Itinerary summary copied to clipboard! Ready to share.');
   };
