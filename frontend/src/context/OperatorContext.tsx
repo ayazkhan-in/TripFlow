@@ -429,7 +429,7 @@ export const OperatorProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     const randomSuffix = Math.floor(1000 + Math.random() * 9000);
     const newBookingItem: BookingItem = {
       id: `bkg-${trip.id || Date.now()}`,
-      ref: trip.bookingRef || `TF-${(trip.destination || 'TRIP').substring(0, 3).toUpperCase()}-${randomSuffix}`,
+      ref: trip.bookingRef || `BK-${(trip.destination || 'TRIP').substring(0, 3).toUpperCase()}-${randomSuffix}`,
       guestName: 'Sarah & David Mehta',
       guestEmail: 'sarah.mehta@concierge.tripflow.io',
       tourTitle: trip.title,

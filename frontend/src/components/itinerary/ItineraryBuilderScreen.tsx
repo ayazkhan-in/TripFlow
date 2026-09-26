@@ -185,6 +185,145 @@ export const ItineraryBuilderScreen: React.FC<ItineraryBuilderScreenProps> = ({
     showToast(`Removed item from Day ${dayNumber}`);
   };
 
+  // Export CSV
+  const handleExportCSV = () => {
+    const rows = [
+      ['Day', 'Date', 'Time', 'Category', 'Title', 'Location', 'Price (INR)'],
+    ];
+    itinerary.days.forEach(day => {
+      day.items.forEach(it => {
+        rows.push([
+          `Day ${day.dayNumber}`,
+          `"${day.date || ''}"`,
+          `"${it.time || ''}"`,
+          `"${it.category || ''}"`,
+          `"${(it.title || '').replace(/"/g, '""')}"`,
+          `"${(it.location || '').replace(/"/g, '""')}"`,
+          (it.price || 0).toString(),
+        ]);
+      });
+    });
+    const csvContent =
+      'data:text/csv;charset=utf-8,' + rows.map(e => e.join(',')).join('\n');
+    const encodedUri = encodeURI(csvContent);
+    const link = document.createElement('a');
+    link.setAttribute('href', encodedUri);
+    link.setAttribute(
+      'download',
+      `${(itinerary.title || 'trip').toLowerCase().replace(/[^a-z0-9]/g, '_')}_itinerary.csv`
+    );
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    showToast('Exported CSV guide successfully!');
+  };
+
+  // Export PDF Guide — proper linear journey document
+  const handleExportPDF = () => {
+    const categoryIcons: Record<string, string> = {
+      transport: '✈',
+      hotel: '🏨',
+      meal: '🍽',
+      activity: '⭐',
+      experience: '✨',
+    };
+
+    const categoryColors: Record<string, string> = {
+      transport: '#3b82f6',
+      hotel: '#8b5cf6',
+      meal: '#f59e0b',
+      activity: '#10b981',
+      experience: '#ec4899',
+    };
+
+    const totalItems = itinerary.days.reduce((acc, d) => acc + d.items.length, 0);
+    const today = new Date().toLocaleDateString('en-IN', { year: 'numeric', month: 'long', day: 'numeric' });
+
+    const daysHTML = itinerary.days.map(day => {
+      const dayTotal = day.items.reduce((s, it) => s + (it.price || 0), 0);
+      const itemsHTML = day.items.length === 0
+        ? `<p style="color:#94a3b8;font-style:italic;font-size:13px;margin:8px 0 0 0">No activities scheduled for this day</p>`
+        : day.items.map((item, idx) => `
+          <div style="display:flex;gap:12px;align-items:flex-start;padding:12px 0;${idx < day.items.length - 1 ? 'border-bottom:1px solid #f1f5f9' : ''}">
+            <div style="width:36px;height:36px;border-radius:10px;background:${categoryColors[item.category] || '#64748b'}20;color:${categoryColors[item.category] || '#64748b'};display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0;border:1px solid ${categoryColors[item.category] || '#64748b'}30">
+              ${categoryIcons[item.category] || '📌'}
+            </div>
+            <div style="flex:1;min-width:0">
+              <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap">
+                <div>
+                  ${item.time ? `<span style="font-size:11px;font-weight:700;color:#94a3b8;letter-spacing:0.05em;text-transform:uppercase">${item.time}</span>` : ''}
+                  <h4 style="margin:2px 0 0 0;font-size:14px;font-weight:700;color:#0f172a">${item.title}</h4>
+                </div>
+                ${item.price > 0 ? `<span style="font-size:13px;font-weight:800;color:#2563eb;white-space:nowrap;font-family:monospace">₹${item.price.toLocaleString('en-IN')}</span>` : '<span style="font-size:12px;color:#10b981;font-weight:600">Included</span>'}
+              </div>
+              ${item.location ? `<p style="margin:4px 0 0 0;font-size:12px;color:#64748b">📍 ${item.location}</p>` : ''}
+              ${item.description ? `<p style="margin:4px 0 0 0;font-size:12px;color:#475569;line-height:1.4">${item.description}</p>` : ''}
+            </div>
+          </div>
+        `).join('');
+
+      return `
+        <div style="margin-bottom:28px;background:#fff;border-radius:14px;border:1px solid #e2e8f0;overflow:hidden;page-break-inside:avoid">
+          <div style="background:#f8fafc;padding:12px 18px;border-bottom:1px solid #e2e8f0;display:flex;align-items:center;justify-content:space-between">
+            <div>
+              <span style="font-size:11px;font-weight:800;color:#2563eb;letter-spacing:0.05em;text-transform:uppercase">Day ${day.dayNumber}</span>
+              <h3 style="margin:2px 0 0 0;font-size:16px;font-weight:800;color:#0f172a">${day.title}</h3>
+              ${day.subtitle ? `<span style="font-size:12px;color:#64748b">${day.subtitle}</span>` : ''}
+            </div>
+            <div style="text-align:right">
+              <span style="font-size:11px;color:#64748b;display:block">${day.date || ''}</span>
+              <span style="font-size:13px;font-weight:700;color:#0f172a">₹${dayTotal.toLocaleString('en-IN')}</span>
+            </div>
+          </div>
+          <div style="padding:4px 18px">
+            ${itemsHTML}
+          </div>
+        </div>
+      `;
+    }).join('');
+
+    const printWindow = window.open('', '_blank');
+    if (!printWindow) {
+      showToast('Could not open print window. Please allow popups.');
+      return;
+    }
+
+    printWindow.document.write(`
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <title>${itinerary.title} — Linear Journey Guide</title>
+        <meta charset="utf-8" />
+        <style>
+          body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; color: #1e293b; background: #fff; margin: 0; padding: 24px; }
+          .header { margin-bottom: 24px; padding-bottom: 16px; border-bottom: 2px solid #e2e8f0; }
+          .title { font-size: 24px; font-weight: 800; color: #0f172a; margin: 0; }
+          .meta { font-size: 13px; color: #64748b; margin-top: 6px; }
+          @media print {
+            .no-print { display: none !important; }
+            body { padding: 0; }
+          }
+        </style>
+      </head>
+      <body>
+        <div class="no-print" style="margin-bottom: 20px; display: flex; gap: 10px;">
+          <button onclick="window.print()" style="background:#2563eb;color:#fff;border:none;padding:8px 16px;border-radius:8px;font-weight:600;cursor:pointer">🖨 Print / Save as PDF</button>
+          <button onclick="window.close()" style="background:#f1f5f9;color:#475569;border:none;padding:8px 16px;border-radius:8px;font-weight:600;cursor:pointer">Close</button>
+        </div>
+        <div class="header">
+          <h1 class="title">${itinerary.title}</h1>
+          <div class="meta">
+            ${itinerary.destination} • ${itinerary.dates || ''} • ${totalItems} Activities • Generated on ${today}
+          </div>
+        </div>
+        ${daysHTML}
+      </body>
+      </html>
+    `);
+    printWindow.document.close();
+    showToast('✅ Itinerary PDF preview opened! Click "Print / Save as PDF" to save.');
+  };
+
   // User presentation data
   const userName = user?.name || 'Umme hani Shaikh';
   const userRole = user?.membership || 'Standard Concierge Member';
@@ -361,6 +500,14 @@ export const ItineraryBuilderScreen: React.FC<ItineraryBuilderScreenProps> = ({
 
           {/* Right Header Utility Cluster */}
           <div className="flex items-center gap-3 sm:gap-4">
+            <button
+              onClick={handleExportPDF}
+              className="p-1.5 text-slate-500 hover:text-slate-800 hover:bg-slate-50 rounded-full transition-colors cursor-pointer"
+              title="Download / Print PDF Guide"
+            >
+              <span className="material-symbols-outlined text-lg">picture_as_pdf</span>
+            </button>
+
             <button
               onClick={() => showToast('Search active across activities & reservations')}
               className="p-1.5 text-slate-500 hover:text-slate-800 hover:bg-slate-50 rounded-full transition-colors cursor-pointer"

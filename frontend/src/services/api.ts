@@ -61,9 +61,9 @@ export class TripFlowApi {
     const token = this.getAuthToken();
     if (token) {
       headers['Authorization'] = `Bearer ${token}`;
-    } else {
-      headers['x-demo-user-id'] = 'user-sarah-1024';
     }
+    // Note: x-demo-user-id is NOT sent here automatically.
+    // It is only sent during explicit demo login flows via login() which sets the JWT token.
     return headers;
   }
 
@@ -196,6 +196,9 @@ export class TripFlowApi {
   }
 
   static async getMyTrips(): Promise<BookedTrip[]> {
+    // Only fetch trips if the user has a valid auth token
+    const token = this.getAuthToken();
+    if (!token) return [];
     try {
       const res = await fetch(`${API_BASE}/bookings/my-trips`, {
         headers: this.getHeaders(),
@@ -689,4 +692,6 @@ export class TripFlowApi {
     }
   }
 }
+
+export const BookitApi = TripFlowApi;
 

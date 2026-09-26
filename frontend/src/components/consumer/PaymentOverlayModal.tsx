@@ -173,7 +173,7 @@ export const PaymentOverlayModal: React.FC<PaymentOverlayModalProps> = ({
 
   // Copy share link
   const handleCopyShareLink = () => {
-    const link = `https://tripflow.io/pay/split-${itinerary.id.slice(0, 8)}?amount=${perPersonGroupShare}`;
+    const link = `https://bookit.io/pay/split-${itinerary.id.slice(0, 8)}?amount=${perPersonGroupShare}`;
     navigator.clipboard?.writeText(link);
     setGroupCopied(true);
     setTimeout(() => setGroupCopied(false), 2500);
@@ -181,7 +181,7 @@ export const PaymentOverlayModal: React.FC<PaymentOverlayModalProps> = ({
 
   // Generate Reference
   const destUpper = (itinerary.destination || 'TRIP').toUpperCase().slice(0, 3);
-  const sampleRef = `TF-${destUpper}-${Math.floor(1000 + Math.random() * 9000)}`;
+  const sampleRef = `BK-${destUpper}-${Math.floor(1000 + Math.random() * 9000)}`;
 
   // Handle Complete Payment
   const handleExecutePayment = () => {
@@ -237,7 +237,7 @@ export const PaymentOverlayModal: React.FC<PaymentOverlayModalProps> = ({
           totalMembers: groupSize,
           perPersonAmount: perPersonGroupShare,
           paidMembersCount: groupHostOption === 'simulate_all_paid' ? groupSize : 1,
-          splitLink: `https://tripflow.io/pay/split-${itinerary.id.slice(0, 8)}`,
+          splitLink: `https://bookit.io/pay/split-${itinerary.id.slice(0, 8)}`,
           members: groupMembers.map((m, idx) => ({
             id: m.id,
             name: m.name,
@@ -301,7 +301,7 @@ export const PaymentOverlayModal: React.FC<PaymentOverlayModalProps> = ({
         totalMembers: groupSize,
         perPersonAmount: perPersonGroupShare,
         paidMembersCount: groupHostOption === 'simulate_all_paid' ? groupSize : 1,
-        splitLink: `https://tripflow.io/pay/split-${itinerary.id.slice(0, 8)}`,
+        splitLink: `https://bookit.io/pay/split-${itinerary.id.slice(0, 8)}`,
         members: groupMembers.map((m, idx) => ({
           id: m.id,
           name: m.name,
@@ -527,7 +527,7 @@ export const PaymentOverlayModal: React.FC<PaymentOverlayModalProps> = ({
                   </label>
                   <div className="flex items-center gap-2">
                     <div className="flex-1 bg-white border border-purple-200 rounded-xl px-3 py-2 text-xs font-mono text-purple-900 truncate">
-                      tripflow.io/pay/split-{itinerary.id.slice(0, 8)}?share={perPersonGroupShare}
+                      bookit.io/pay/split-{itinerary.id.slice(0, 8)}?share={perPersonGroupShare}
                     </div>
                     <button
                       type="button"
@@ -821,7 +821,7 @@ export const PaymentOverlayModal: React.FC<PaymentOverlayModalProps> = ({
                     <div className="absolute top-0 right-0 w-32 h-32 bg-blue-500/10 rounded-full blur-xl pointer-events-none"></div>
                     <div className="flex items-center justify-between">
                       <span className="text-[10px] font-mono tracking-widest text-slate-400 uppercase font-bold">
-                        TripFlow Black Metal Concierge
+                        Bookit Black Metal Concierge
                       </span>
                       <span className="text-xs font-bold text-amber-400 flex items-center gap-1">
                         <span className="material-symbols-outlined text-sm">contactless</span>
@@ -938,7 +938,7 @@ export const PaymentOverlayModal: React.FC<PaymentOverlayModalProps> = ({
                 <div className="p-4 bg-emerald-50/80 rounded-2xl border border-emerald-200 space-y-2 text-xs">
                   <div className="flex items-center gap-2">
                     <span className="material-symbols-outlined text-emerald-600 text-lg">verified_user</span>
-                    <span className="font-bold text-emerald-950">TripFlow Escrow Protection Guarantee</span>
+                    <span className="font-bold text-emerald-950">Bookit Escrow Protection Guarantee</span>
                   </div>
                   <p className="text-slate-600 text-[11px] leading-relaxed">
                     Your funds are held securely in institutional trust escrow. Payouts to hotels, airlines, and chauffeurs are verified against GPS milestones and only settled as each leg of your tour is delivered.

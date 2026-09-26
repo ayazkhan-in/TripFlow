@@ -22,7 +22,10 @@ if (apiKey) {
 // GET /api/v1/vault/documents - List documents with filters
 router.get('/documents', optionalAuth, async (req: AuthenticatedRequest, res: Response) => {
   try {
-    const userId = req.user?.id || 'user-sarah-1024';
+    const userId = req.user?.id;
+    if (!userId) {
+      return res.json({ success: true, count: 0, documents: [] });
+    }
     const { tripId, category, q } = req.query;
 
     const where: any = { userId };
@@ -177,7 +180,10 @@ Respond ONLY with valid JSON in this exact structure without markdown backticks:
 // POST /api/v1/vault/upload - Upload file to Cloudinary & store in database
 router.post('/upload', optionalAuth, async (req: AuthenticatedRequest, res: Response) => {
   try {
-    const userId = req.user?.id || 'user-sarah-1024';
+    const userId = req.user?.id;
+    if (!userId) {
+      return res.status(401).json({ error: 'Authentication required to upload documents' });
+    }
     const {
       title,
       category = 'other',

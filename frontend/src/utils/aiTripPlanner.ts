@@ -1111,7 +1111,7 @@ export function compileFinalItinerary(
           time: hIdx === 0 ? '10:30 AM' : '01:00 PM',
           duration: '2 hrs',
           location: `${proposal.destination} Landmark District`,
-          description: `Curated highlight: ${h}. VIP access arranged through your TripFlow concierge.`,
+          description: `Curated highlight: ${h}. VIP access arranged through your Bookit concierge.`,
           image: proposal.heroImage,
           rating: 4.92,
           tags: ['Curated Highlight'],

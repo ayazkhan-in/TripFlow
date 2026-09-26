@@ -55,7 +55,7 @@ import { OperatorProvider, useOperator } from './context/OperatorContext';
 import { CreateTourPackageModal } from './components/operator/CreateTourPackageModal';
 import { OperatorPackagesScreen } from './components/operator/OperatorPackagesScreen';
 
-function TripFlowApp() {
+function BookitApp() {
   // Navigation & Route State ('landing' is the default route on "/")
   const [currentRoute, setCurrentRoute] = useState<'landing' | 'auth' | 'app'>('landing');
   const [viewMode, setViewMode] = useState<ViewMode>('consumer');
@@ -67,13 +67,12 @@ function TripFlowApp() {
   const { addTravelerBooking, pendingCustomizedCount } = useOperator();
 
   // Unified End-to-End Traveler Trip & Itinerary State
-  const initialBookedTrip = convertItineraryToBookedTrip(PREMADE_KERALA_ITINERARY, 2450);
-  const [bookedTrips, setBookedTrips] = useState<BookedTrip[]>([initialBookedTrip]);
-  const [activeBookedTripId, setActiveBookedTripId] = useState<string>(initialBookedTrip.id);
+  // Start with empty trips — populated from backend after login or after booking
+  const [bookedTrips, setBookedTrips] = useState<BookedTrip[]>([]);
+  const [activeBookedTripId, setActiveBookedTripId] = useState<string | null>(null);
   const [currentItinerary, setCurrentItinerary] = useState<TripItinerary>(PREMADE_KERALA_ITINERARY);
   const [modifyingTripId, setModifyingTripId] = useState<string | null>(null);
   const [vaultDocuments, setVaultDocuments] = useState<VaultDocument[]>(() => [
-    ...generateVaultDocsForTrip(initialBookedTrip),
     ...INITIAL_VAULT_DOCUMENTS,
   ]);
   const [vaultSelectedTripId, setVaultSelectedTripId] = useState<string>('all');
@@ -85,7 +84,7 @@ function TripFlowApp() {
 
   // Sync with live Neon PostgreSQL backend
   useEffect(() => {
-    // Restore session if user token exists
+    // Restore session if user token exists, then load their data
     TripFlowApi.getMe().then(user => {
       if (user) {
         const isOp = user.role?.toUpperCase() === 'OPERATOR';
@@ -99,22 +98,29 @@ function TripFlowApp() {
           agencyName: user.agencyName,
           agencyCode: user.agencyCode,
         });
-      }
-    });
 
-    TripFlowApi.getMyTrips().then(trips => {
-      if (trips && trips.length > 0) {
-        setBookedTrips(trips);
-        setActiveBookedTripId(trips[0].id);
-        if (trips[0].itinerary) {
-          setCurrentItinerary(trips[0].itinerary);
-        }
+        // Only load user's own trips and vault after confirming they are authenticated
+        TripFlowApi.getMyTrips().then(trips => {
+          if (trips && trips.length > 0) {
+            setBookedTrips(trips);
+            setActiveBookedTripId(trips[0].id);
+            if (trips[0].itinerary) {
+              setCurrentItinerary(trips[0].itinerary);
+            }
+          } else {
+            // No trips yet — keep empty state
+            setBookedTrips([]);
+            setActiveBookedTripId(null);
+          }
+        });
+
+        TripFlowApi.getVaultDocuments().then(docs => {
+          if (docs && docs.length > 0) {
+            setVaultDocuments(docs);
+          }
+        });
       }
-    });
-    TripFlowApi.getVaultDocuments().then(docs => {
-      if (docs && docs.length > 0) {
-        setVaultDocuments(docs);
-      }
+      // No user = no token = stay with empty state (HomeScreen shows onboarding)
     });
   }, []);
 
@@ -161,6 +167,21 @@ function TripFlowApp() {
     } else {
       setViewMode('consumer');
       setConsumerTab('home');
+
+      // Load their trips after login
+      TripFlowApi.getMyTrips().then(trips => {
+        if (trips && trips.length > 0) {
+          setBookedTrips(trips);
+          setActiveBookedTripId(trips[0].id);
+          if (trips[0].itinerary) setCurrentItinerary(trips[0].itinerary);
+        } else {
+          setBookedTrips([]);
+          setActiveBookedTripId(null);
+        }
+      });
+      TripFlowApi.getVaultDocuments().then(docs => {
+        if (docs && docs.length > 0) setVaultDocuments(docs);
+      });
     }
     setCurrentRoute('app');
     showToast(`Welcome, ${user.name}!`);
@@ -169,6 +190,10 @@ function TripFlowApp() {
   const handleSignOut = () => {
     TripFlowApi.logout();
     setAuthUser(null);
+    // Clear all user-specific data so next login starts fresh
+    setBookedTrips([]);
+    setActiveBookedTripId(null);
+    setVaultDocuments([...INITIAL_VAULT_DOCUMENTS]);
     setCurrentRoute('landing');
     showToast('Signed out of TripFlow.');
   };
@@ -184,6 +209,14 @@ function TripFlowApp() {
         role: 'traveler',
         avatar: res.user.avatarUrl || USER_AVATAR,
         membership: res.user.membershipTier || 'Concierge Elite Member',
+      });
+      // Load Sarah's trips after demo login
+      TripFlowApi.getMyTrips().then(trips => {
+        if (trips && trips.length > 0) {
+          setBookedTrips(trips);
+          setActiveBookedTripId(trips[0].id);
+          if (trips[0].itinerary) setCurrentItinerary(trips[0].itinerary);
+        }
       });
     } catch {
       setAuthUser({
@@ -308,11 +341,11 @@ function TripFlowApp() {
     setModifyingTripId(null);
 
     setViewMode('consumer');
-    setConsumerTab('trips');
+    setConsumerTab('home'); // Return to home so user sees their new active itinerary
     setCurrentRoute('app');
 
     addTravelerBooking(newTrip, customizationDetails);
-    showToast(`🎉 Payment Confirmed! "${newTrip.title}" is now active in Trips & Bookings.`);
+    showToast(`🎉 Booking Confirmed! "${newTrip.title}" is now your active itinerary.`);
   };
 
   const handleProceedToBooking = async (
@@ -374,7 +407,7 @@ function TripFlowApp() {
     setModifyingTripId(null);
     setActiveBookedTripId(targetId);
     setConsumerTab('trips');
-    showToast(`✅ Trip modifications saved! Package price updated to $${newTotal.toLocaleString()}.`);
+    showToast(`✅ Trip modifications saved! Package price updated to ₹${newTotal.toLocaleString('en-IN')}.`);
   };
 
   const handleViewInVault = (tripId?: string) => {
@@ -465,6 +498,9 @@ function TripFlowApp() {
                     onSelectJourneyDetails={journey => setSelectedJourney(journey)}
                     onSelectPremadeTrip={handleSelectPremadeTrip}
                     onOpenPayment={handleOpenPayment}
+                    bookedTrips={bookedTrips}
+                    activeBookedTripId={activeBookedTripId}
+                    userName={authUser?.name || 'Traveler'}
                   />
                 )}
 
@@ -473,7 +509,7 @@ function TripFlowApp() {
                   <TripsAndBookingsScreen
                     initialView={consumerTab === 'bookings' ? 'bookings' : 'timeline'}
                     bookedTrips={bookedTrips}
-                    activeTripId={activeBookedTripId}
+                    activeTripId={activeBookedTripId ?? undefined}
                     onSelectTrip={id => setActiveBookedTripId(id)}
                     onModifyTrip={handleModifyTrip}
                     onViewInVault={handleViewInVault}
@@ -489,6 +525,7 @@ function TripFlowApp() {
                       showToast('Itinerary share link copied to clipboard.')
                     }
                     onOpenTripAssistant={() => setIsWhatsAppOpen(true)}
+                    onNavigateTab={handleConsumerTabChange}
                     showToast={showToast}
                   />
                 )}
@@ -809,7 +846,7 @@ function TripFlowApp() {
 export default function App() {
   return (
     <OperatorProvider>
-      <TripFlowApp />
+      <BookitApp />
     </OperatorProvider>
   );
 }

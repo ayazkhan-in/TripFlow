@@ -188,8 +188,8 @@ export const StoryScreen: React.FC<StoryScreenProps> = ({
     if (navigator.share) {
       try {
         await navigator.share({
-          title: `TripFlow: ${story.title}`,
-          text: `Check out ${story.destination} on TripFlow!`,
+          title: `Bookit: ${story.title}`,
+          text: `Check out ${story.destination} on Bookit!`,
           url: shareUrl,
         });
         showToast('Story shared');

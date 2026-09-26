@@ -62,14 +62,16 @@ export const TopNav: React.FC<TopNavProps> = ({
               onTabChange('home');
             }
           }}
-          className="flex items-center gap-2 text-left cursor-pointer group focus:outline-none"
-          title="TripFlow — Click to view Landing / Home"
+          className="flex items-center gap-2.5 text-left cursor-pointer group focus:outline-none"
+          title="Bookit — Click to view Landing / Home"
         >
-          <span className="w-8 h-8 rounded-full bg-[#2563EB] flex items-center justify-center text-white shadow-xs group-hover:bg-[#1D4ED8] transition-colors">
-            <span className="material-symbols-outlined text-lg">flight_takeoff</span>
-          </span>
+          <img
+            src="/bookit.png"
+            alt="Bookit"
+            className="w-8 h-8 rounded-lg object-contain shadow-xs group-hover:scale-105 transition-transform"
+          />
           <span className="text-[18px] font-bold text-[#004AC6] tracking-tight">
-            TripFlow
+            Bookit
           </span>
         </button>
       </div>
@@ -263,7 +265,7 @@ export const TopNav: React.FC<TopNavProps> = ({
                     className="w-full px-4 py-2 text-left text-xs text-[#374151] hover:bg-[#F0F3FF] hover:text-[#004AC6] flex items-center gap-2.5 cursor-pointer font-medium"
                   >
                     <span className="material-symbols-outlined text-base text-[#737686]">home</span>
-                    <span>TripFlow Landing Page</span>
+                    <span>Bookit Landing Page</span>
                   </button>
                 )}
               </div>

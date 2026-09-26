@@ -191,14 +191,14 @@ export const AuthModal: React.FC<AuthModalProps> = ({
         {/* Header */}
         <div className="bg-gradient-to-r from-blue-900 to-indigo-900 p-6 text-white flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <span className="w-10 h-10 rounded-xl bg-white/10 flex items-center justify-center text-white backdrop-blur-sm border border-white/20">
-              <span className="material-symbols-outlined text-2xl">
-                {selectedRole === 'operator' ? 'hub' : 'flight_takeoff'}
-              </span>
-            </span>
+            <img
+              src="/bookit.png"
+              alt="Bookit"
+              className="w-10 h-10 rounded-xl object-contain bg-white/10 p-1 border border-white/20 backdrop-blur-sm shadow-sm"
+            />
             <div>
               <h2 className="text-lg font-bold text-white tracking-tight flex items-center gap-2">
-                TripFlow Portal
+                Bookit Portal
                 <span className="text-[10px] font-semibold uppercase px-2 py-0.5 rounded-full bg-blue-500/30 border border-blue-400/40 text-blue-200">
                   {authMode === 'signup' ? 'New Account' : authMode === 'signin' ? 'Secure Login' : 'Demo Mode'}
                 </span>

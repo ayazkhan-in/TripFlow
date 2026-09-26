@@ -710,7 +710,7 @@ export function convertItineraryToBookedTrip(
   const total = pricingTotal || calculated.total;
   const dest = itinerary.destination;
   const destUpper = dest.toUpperCase().slice(0, 3);
-  const bookingRef = `TF-${destUpper}-${Math.floor(1000 + Math.random() * 9000)}`;
+  const bookingRef = `BK-${destUpper}-${Math.floor(1000 + Math.random() * 9000)}`;
 
   // Find hotel item if any
   let firstHotel = 'Old Harbour Boutique Hotel';
@@ -816,7 +816,7 @@ export function generateVaultDocsForTrip(trip: BookedTrip): VaultDocument[] {
       fileType: 'pdf',
       fileSize: '3.1 MB',
       uploadedAt: 'Today',
-      verifiedBy: 'TripFlow Automated Airline Dispatch',
+      verifiedBy: 'Bookit Automated Airline Dispatch',
       offlineReady: true,
       fields: {
         'Route': trip.flightDetails.route,
@@ -866,7 +866,7 @@ export function generateVaultDocsForTrip(trip: BookedTrip): VaultDocument[] {
       fileType: 'pdf',
       fileSize: '1.4 MB',
       uploadedAt: 'Today',
-      verifiedBy: 'TripFlow Fleet Command',
+      verifiedBy: 'Bookit Fleet Command',
       offlineReady: true,
       fields: {
         'Assigned Chauffeur': `${trip.carDetails.chauffeurName} (${trip.carDetails.chauffeurPhone})`,

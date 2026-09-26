@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { BookedTrip, TimelineEvent } from '../../types/travel';
+import { BookedTrip, TimelineEvent, ConsumerTab } from '../../types/travel';
 import {
   CONCIERGE_AVATAR,
   DAY2_EVENTS,
@@ -24,6 +24,7 @@ interface TripsAndBookingsScreenProps {
   onDownloadPDF: () => void;
   onShareItinerary: () => void;
   onOpenTripAssistant: () => void;
+  onNavigateTab?: (tab: ConsumerTab) => void;
   showToast?: (message: string) => void;
 }
 
@@ -253,6 +254,7 @@ export const TripsAndBookingsScreen: React.FC<TripsAndBookingsScreenProps> = ({
   onDownloadPDF,
   onShareItinerary,
   onOpenTripAssistant,
+  onNavigateTab,
   showToast = () => {},
 }) => {
   const currentTrip = (bookedTrips && bookedTrips.find(t => t.id === activeTripId)) || (bookedTrips && bookedTrips[0]);
@@ -557,10 +559,14 @@ export const TripsAndBookingsScreen: React.FC<TripsAndBookingsScreenProps> = ({
             {/* Breadcrumb & Inline Trip Switcher */}
             <div className="flex items-center gap-2 text-xs text-slate-500 flex-wrap">
               <span className="font-medium text-slate-400">Trips & Bookings</span>
-              <span className="text-slate-300">/</span>
-              <span className="text-slate-700 font-semibold">
-                {currentTrip?.destination || 'Kerala'}
-              </span>
+              {currentTrip ? (
+                <>
+                  <span className="text-slate-300">/</span>
+                  <span className="text-slate-700 font-semibold">
+                    {currentTrip.destination}
+                  </span>
+                </>
+              ) : null}
 
               {/* Multi-Trip Switcher (inline, clean segmented tabs, no bulky pills) */}
               {bookedTrips && bookedTrips.length > 1 && (
@@ -591,35 +597,38 @@ export const TripsAndBookingsScreen: React.FC<TripsAndBookingsScreenProps> = ({
 
             {/* Main Page Title */}
             <h1 className="text-xl sm:text-2xl text-slate-900 font-extrabold tracking-tight truncate">
-              {activeSection === 'timeline'
-                ? currentTrip?.title || `${currentTrip?.destination || 'Kerala'} Luxury Itinerary`
-                : 'Confirmed Passes & Bookings'}
+              {currentTrip
+                ? activeSection === 'timeline'
+                  ? currentTrip.title || `${currentTrip.destination} Luxury Itinerary`
+                  : 'Confirmed Passes & Bookings'
+                : 'Trips & Bookings'}
             </h1>
 
             {/* Clean Structured Metadata Row (no unnecessary pills) */}
-            <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-slate-500 pt-0.5">
-              <span className="inline-flex items-center gap-1.5 font-medium text-emerald-700">
-                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 shrink-0" />
-                <span>Confirmed</span>
-              </span>
-              <span className="text-slate-300">·</span>
-              <span className="font-mono text-slate-500">
-                Ref #{currentTrip?.bookingRef || 'KL-9402'}
-              </span>
-              <span className="text-slate-300">·</span>
-              <span className="inline-flex items-center gap-1 text-slate-600">
-                <span className="material-symbols-outlined text-[13px] text-slate-400">calendar_today</span>
-                <span>{currentTrip?.dates || 'Oct 14–19, 2025'}</span>
-              </span>
-              <span className="text-slate-300">·</span>
-              <span className="inline-flex items-center gap-1 text-slate-600">
-                <span className="material-symbols-outlined text-[14px] text-slate-400">group</span>
-                <span>{currentTrip?.travelers || 2} Travelers</span>
-              </span>
-              <span className="text-slate-300">·</span>
-              <span className="font-semibold text-slate-900">
-                ₹{currentTrip ? currentTrip.totalPrice.toLocaleString('en-IN') : '42,800'}
-              </span>
+            {currentTrip ? (
+              <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-slate-500 pt-0.5">
+                <span className="inline-flex items-center gap-1.5 font-medium text-emerald-700">
+                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 shrink-0" />
+                  <span>Confirmed</span>
+                </span>
+                <span className="text-slate-300">·</span>
+                <span className="font-mono text-slate-500">
+                  Ref #{currentTrip.bookingRef}
+                </span>
+                <span className="text-slate-300">·</span>
+                <span className="inline-flex items-center gap-1 text-slate-600">
+                  <span className="material-symbols-outlined text-[13px] text-slate-400">calendar_today</span>
+                  <span>{currentTrip.dates}</span>
+                </span>
+                <span className="text-slate-300">·</span>
+                <span className="inline-flex items-center gap-1 text-slate-600">
+                  <span className="material-symbols-outlined text-[14px] text-slate-400">group</span>
+                  <span>{currentTrip.travelers} Travelers</span>
+                </span>
+                <span className="text-slate-300">·</span>
+                <span className="font-semibold text-slate-900">
+                  ₹{currentTrip.totalPrice.toLocaleString('en-IN')}
+                </span>
 
               {/* Payment Plan & Settlement Badge */}
               {currentTrip?.paymentDetails && (
@@ -655,6 +664,7 @@ export const TripsAndBookingsScreen: React.FC<TripsAndBookingsScreenProps> = ({
                 </>
               )}
             </div>
+            ) : null}
           </div>
 
           {/* Right: Modern Segmented View Switcher */}
@@ -684,7 +694,7 @@ export const TripsAndBookingsScreen: React.FC<TripsAndBookingsScreenProps> = ({
                 <span className="material-symbols-outlined text-[16px] text-slate-500">confirmation_number</span>
                 <span>Confirmed Bookings</span>
                 <span className="text-[11px] text-slate-400 font-medium">
-                  ({bookedTrips?.length || 2})
+                  ({bookedTrips?.length ?? 0})
                 </span>
               </button>
             </div>
@@ -693,17 +703,51 @@ export const TripsAndBookingsScreen: React.FC<TripsAndBookingsScreenProps> = ({
       </section>
 
       {/* ============================================================= */}
-      {/* VIEW 1: ACTIVE TIMELINE VIEW                                  */}
-      {/* ============================================================= */}
+      {/* VIEW 1: ACTIVE TIMELINE VIEW */}
       {activeSection === 'timeline' && (
+        !currentTrip ? (
+          <main className="max-w-[1280px] w-full mx-auto px-4 sm:px-6 lg:px-8 py-12 md:py-16 text-center space-y-6 animate-in fade-in duration-200">
+            <div className="max-w-md mx-auto p-8 rounded-3xl bg-white border border-slate-200/80 shadow-sm space-y-5">
+              <div className="w-16 h-16 rounded-2xl bg-blue-50 text-blue-600 mx-auto flex items-center justify-center border border-blue-100 shadow-2xs">
+                <span className="material-symbols-outlined text-3xl">route</span>
+              </div>
+              <div className="space-y-2">
+                <h3 className="text-xl font-extrabold text-slate-900 tracking-tight">
+                  No Active Itinerary Yet
+                </h3>
+                <p className="text-xs sm:text-sm text-slate-500 leading-relaxed">
+                  You don't have any booked trips or active journeys at the moment. Browse our curated luxury circuits or create your custom itinerary.
+                </p>
+              </div>
+              <div className="flex flex-col sm:flex-row items-center justify-center gap-3 pt-2">
+                <button
+                  type="button"
+                  onClick={() => onNavigateTab?.('discover')}
+                  className="w-full sm:w-auto px-6 py-2.5 rounded-full bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold transition-all shadow-xs cursor-pointer flex items-center justify-center gap-2"
+                >
+                  <span className="material-symbols-outlined text-sm">explore</span>
+                  <span>Explore Circuits</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => onNavigateTab?.('builder')}
+                  className="w-full sm:w-auto px-6 py-2.5 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-800 text-xs font-bold transition-all cursor-pointer flex items-center justify-center gap-2"
+                >
+                  <span className="material-symbols-outlined text-sm">edit_calendar</span>
+                  <span>Plan with AI</span>
+                </button>
+              </div>
+            </div>
+          </main>
+        ) : (
         <main className="max-w-[1280px] w-full mx-auto px-4 sm:px-6 lg:px-8 py-8 md:py-10 pb-24 md:pb-12 text-left space-y-8 animate-in fade-in duration-200">
           {/* Hero Banner: Luxury Visual with Live Status */}
           <div className="relative rounded-3xl overflow-hidden min-h-[280px] sm:min-h-[320px] bg-slate-900 shadow-md group">
             <div className="absolute inset-0">
               <img
-                alt={currentTrip?.title || 'Trip hero'}
+                alt={currentTrip.title || 'Trip hero'}
                 className="w-full h-full object-cover object-center transition-transform duration-700 ease-out group-hover:scale-[1.015]"
-                src={currentTrip?.heroImage || KERALA_TIMELINE_HERO}
+                src={currentTrip.heroImage || KERALA_TIMELINE_HERO}
               />
               <div className="absolute inset-0 bg-gradient-to-t from-slate-950/90 via-slate-950/40 to-transparent"></div>
               <div className="absolute inset-0 bg-gradient-to-r from-slate-950/70 via-transparent to-transparent"></div>
@@ -1474,13 +1518,13 @@ export const TripsAndBookingsScreen: React.FC<TripsAndBookingsScreenProps> = ({
                       <span className="material-symbols-outlined text-blue-600 text-sm">near_me</span>
                       Next leg: Fort Kochi → Munnar
                     </span>
-                    <span className="font-mono text-slate-500 text-[11px] font-semibold">08:30 AM</span>
                   </div>
                 </div>
               </div>
             </aside>
           </div>
         </main>
+        )
       )}
 
       {/* ============================================================= */}
@@ -1496,7 +1540,9 @@ export const TripsAndBookingsScreen: React.FC<TripsAndBookingsScreenProps> = ({
                 </span>
                 <span className="text-xs text-emerald-800 bg-emerald-50 px-2.5 py-0.5 rounded-full border border-emerald-200 font-bold flex items-center gap-1.5">
                   <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
-                  4 Active Passes Confirmed
+                  {bookedTrips && bookedTrips.length > 0
+                    ? `${bookedTrips.length} Active Trip${bookedTrips.length > 1 ? 's' : ''} Confirmed`
+                    : '0 Active Bookings'}
                 </span>
               </div>
               <h2 className="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight">
@@ -1508,14 +1554,25 @@ export const TripsAndBookingsScreen: React.FC<TripsAndBookingsScreenProps> = ({
             </div>
 
             <div className="flex items-center gap-2 shrink-0">
-              <button
-                type="button"
-                onClick={() => setActiveSection('timeline')}
-                className="px-4 py-2.5 rounded-full bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold transition-all shadow-xs flex items-center gap-1.5 cursor-pointer"
-              >
-                <span className="material-symbols-outlined text-sm">timeline</span>
-                <span>Back to Kerala Timeline</span>
-              </button>
+              {currentTrip ? (
+                <button
+                  type="button"
+                  onClick={() => setActiveSection('timeline')}
+                  className="px-4 py-2.5 rounded-full bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold transition-all shadow-xs flex items-center gap-1.5 cursor-pointer"
+                >
+                  <span className="material-symbols-outlined text-sm">timeline</span>
+                  <span>Back to {currentTrip.destination} Timeline</span>
+                </button>
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => onNavigateTab?.('discover')}
+                  className="px-4 py-2.5 rounded-full bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold transition-all shadow-xs flex items-center gap-1.5 cursor-pointer"
+                >
+                  <span className="material-symbols-outlined text-sm">explore</span>
+                  <span>Explore & Book Trips</span>
+                </button>
+              )}
             </div>
           </div>
 
@@ -1545,7 +1602,7 @@ export const TripsAndBookingsScreen: React.FC<TripsAndBookingsScreenProps> = ({
           </div>
 
           {/* Dynamic Booked Trips Section */}
-          {bookedTrips && bookedTrips.length > 0 && (
+          {bookedTrips && bookedTrips.length > 0 ? (
             <div className="space-y-4">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
@@ -1604,20 +1661,53 @@ export const TripsAndBookingsScreen: React.FC<TripsAndBookingsScreenProps> = ({
                 ))}
               </div>
             </div>
+          ) : (
+            <div className="p-6 rounded-2xl bg-blue-50/60 border border-blue-200/80 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+              <div className="flex items-center gap-3.5">
+                <div className="w-10 h-10 rounded-xl bg-blue-600 text-white flex items-center justify-center shrink-0 shadow-xs">
+                  <span className="material-symbols-outlined text-xl">luggage</span>
+                </div>
+                <div>
+                  <h4 className="text-sm font-bold text-slate-900">
+                    No Active Bookings on this Account
+                  </h4>
+                  <p className="text-xs text-slate-600 mt-0.5">
+                    Select a curated circuit below or customize an itinerary to book and see your boarding passes and confirmed vouchers here.
+                  </p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => onNavigateTab?.('discover')}
+                className="px-4 py-2 rounded-full bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold transition-all shrink-0 cursor-pointer"
+              >
+                Browse Circuits
+              </button>
+            </div>
           )}
 
           {/* Booking Cards Horizontal / Grid Showcase */}
           <div className="space-y-2 pt-2">
-            <h3 className="text-xs font-bold text-slate-400 uppercase tracking-wider">
-              More Curated Circuits Available for Reservation
-            </h3>
+            <div className="flex items-center justify-between">
+              <h3 className="text-xs font-bold text-slate-400 uppercase tracking-wider">
+                Curated Circuits Available for Instant Booking
+              </h3>
+              <button
+                type="button"
+                onClick={() => onNavigateTab?.('discover')}
+                className="text-xs font-bold text-blue-600 hover:text-blue-800 flex items-center gap-1 cursor-pointer"
+              >
+                <span>View Full Catalog</span>
+                <span className="material-symbols-outlined text-sm">arrow_forward</span>
+              </button>
+            </div>
           </div>
           <div className="flex gap-5 overflow-x-auto pb-4 pt-1 px-1 custom-scrollbar snap-x snap-mandatory scroll-smooth items-stretch">
-            {/* Booking 1: Kerala Escape (Active) */}
+            {/* Booking 1: Kerala Escape */}
             <LuxuryCard
               id="booking-kerala"
               title="Kerala Escape — Luxury Circuit"
-              description="Active 6-day luxury circuit with confirmed IndiGo flights, Old Harbour boutique hotel, and private houseboat."
+              description="6-day luxury circuit with confirmed IndiGo flights, Old Harbour boutique hotel, and private houseboat."
               image={KERALA_HERO_IMAGE}
               rating="4.95/5"
               amenities={[
@@ -1655,7 +1745,7 @@ export const TripsAndBookingsScreen: React.FC<TripsAndBookingsScreenProps> = ({
                   hotelInfo: 'Old Harbour Heritage Suite · Check-in confirmed 14:00',
                   driverInfo: 'Arun V. · Toyota Innova Crysta (KL-07-CD-8841)',
                   conciergeInfo: 'Arun V. (Senior Operations Concierge) · +91 98401 22841',
-                  isCurrentActiveTrip: true,
+                  isCurrentActiveTrip: Boolean(bookedTrips && bookedTrips.some(t => t.id === 'kerala-escape' || t.destination.toLowerCase().includes('kerala'))),
                 })
               }
             />

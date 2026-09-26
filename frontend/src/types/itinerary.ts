@@ -68,6 +68,7 @@ export interface TripItinerary {
   heroImageUrl?: string;
   isPremade?: boolean;
   routeStops?: RouteStop[];
+  travelStyle?: string;
   days: ItineraryDay[];
 }
 

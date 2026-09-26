@@ -56,7 +56,7 @@ export const WhatsAppModal: React.FC<WhatsAppModalProps> = ({ isOpen, onClose })
             <div>
               <h4 className="font-bold text-sm leading-tight">Arun V.</h4>
               <p className="text-[11px] text-white/80">
-                TripFlow Senior Concierge · Online
+                Bookit Senior Concierge · Online
               </p>
             </div>
           </div>
