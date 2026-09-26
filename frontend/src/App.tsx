@@ -522,6 +522,7 @@ function BookitApp() {
                       showToast('Itinerary share link copied to clipboard.')
                     }
                     onOpenTripAssistant={() => setIsWhatsAppOpen(true)}
+                    onNavigateTab={handleConsumerTabChange}
                     showToast={showToast}
                   />
                 )}
