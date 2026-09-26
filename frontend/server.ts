@@ -160,16 +160,18 @@ Do not wrap in markdown quotes if possible, output pure JSON.`;
   }
 });
 
-// Forward all /api/v1 calls to Backend on port 5000 using native stream pipe
+// Forward all /api/v1 calls to Backend on port 5001 (or custom BACKEND_PORT) using native stream pipe
+const BACKEND_PORT = Number(process.env.BACKEND_PORT) || 5001;
+
 app.use('/api/v1', (req, res) => {
   const options = {
     hostname: '127.0.0.1',
-    port: 5000,
+    port: BACKEND_PORT,
     path: req.originalUrl,
     method: req.method,
     headers: {
       ...req.headers,
-      host: '127.0.0.1:5000',
+      host: `127.0.0.1:${BACKEND_PORT}`,
     },
   };
 

@@ -397,9 +397,21 @@ export const OPERATOR_PAYMENTS: PaymentLedgerItem[] = [
 
 export const OPERATOR_CALENDAR_EVENTS: CalendarTourEvent[] = [
   {
+    id: 'cal-0',
+    title: 'Pre-Tour Fleet Inspection & Guide Briefing',
+    tourId: 'TF-IN-4902',
+    date: '2026-10-09',
+    time: '10:00 AM',
+    type: 'transfer',
+    location: 'Cochin Dispatch Terminal',
+    cohort: 'Kerala Heritage',
+    color: '#2563EB',
+    pax: 6,
+  },
+  {
     id: 'cal-1',
     title: 'Tour #1024: Landing at Cochin Airport',
-    tourId: 'BK-IN-4902',
+    tourId: 'TF-IN-4902',
     date: '2026-10-14',
     time: '02:30 PM',
     type: 'departure',
@@ -411,7 +423,7 @@ export const OPERATOR_CALENDAR_EVENTS: CalendarTourEvent[] = [
   {
     id: 'cal-2',
     title: 'Tokyo Arrival & Aman Tokyo Check-In',
-    tourId: 'BK-JP-8421',
+    tourId: 'TF-JP-8421',
     date: '2026-10-14',
     time: '04:00 PM',
     type: 'checkin',
@@ -423,7 +435,7 @@ export const OPERATOR_CALENDAR_EVENTS: CalendarTourEvent[] = [
   {
     id: 'cal-3',
     title: 'Shinkansen Gran Class to Kyoto Departure',
-    tourId: 'BK-JP-8421',
+    tourId: 'TF-JP-8421',
     date: '2026-10-16',
     time: '09:30 AM',
     type: 'transfer',
@@ -433,21 +445,9 @@ export const OPERATOR_CALENDAR_EVENTS: CalendarTourEvent[] = [
     pax: 14,
   },
   {
-    id: 'cal-4',
-    title: 'Exclusive Uji Matcha Ceremony with 15th-Gen Master',
-    tourId: 'BK-JP-8421',
-    date: '2026-10-17',
-    time: '11:00 AM',
-    type: 'experience',
-    location: 'Daitoku-ji Zen Temple, Kyoto',
-    cohort: 'Kyoto Autumn Connoisseurs',
-    color: '#D97706',
-    pax: 4,
-  },
-  {
     id: 'cal-5',
     title: 'Private Kettuvallam Houseboat Embarkation',
-    tourId: 'BK-IN-4902',
+    tourId: 'TF-IN-4902',
     date: '2026-10-18',
     time: '12:30 PM',
     type: 'experience',
@@ -456,4 +456,17 @@ export const OPERATOR_CALENDAR_EVENTS: CalendarTourEvent[] = [
     color: '#2563EB',
     pax: 4,
   },
+  {
+    id: 'cal-6',
+    title: 'Private Chauffeur Transfer to Hakone Onsen',
+    tourId: 'TF-JP-8421',
+    date: '2026-10-22',
+    time: '11:15 AM',
+    type: 'transfer',
+    location: 'Gora Kadan, Hakone',
+    cohort: 'Kyoto Autumn Connoisseurs',
+    color: '#D97706',
+    pax: 2,
+  },
 ];
+

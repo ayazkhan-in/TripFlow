@@ -25,28 +25,33 @@ export const CustomizedBookingFulfillmentModal: React.FC<
 
   if (!isOpen || !booking) return null;
 
-  const customization = booking.customization || {
-    isCustomized: true,
-    basePackageTitle: booking.tourTitle,
-    basePrice: Math.round(booking.amount * 0.8),
-    customPrice: booking.amount,
-    deltaPrice: Math.round(booking.amount * 0.2),
-    customRequests: 'Strict vegetarian gourmet meals. High floor quiet suite with mountain views. Dedicated English-speaking chauffeur.',
-    fulfillmentStatus: {
-      hotelBooked: booking.status === 'Confirmed',
-      flightBooked: booking.status === 'Confirmed',
-      transferBooked: booking.status === 'Confirmed',
-      activityBooked: booking.status === 'Confirmed',
-      guideAssigned: booking.status === 'Confirmed',
-    },
+  const fulfillmentStatus = booking.customization?.fulfillmentStatus || {
+    hotelBooked: booking.status === 'Confirmed',
+    flightBooked: booking.status === 'Confirmed',
+    transferBooked: booking.status === 'Confirmed',
+    activityBooked: booking.status === 'Confirmed',
+    guideAssigned: booking.status === 'Confirmed',
+  };
+
+  const customization = {
+    ...(booking.customization || {
+      isCustomized: true,
+      basePackageTitle: booking.tourTitle,
+      basePrice: Math.round(booking.amount * 0.8),
+      customPrice: booking.amount,
+      deltaPrice: Math.round(booking.amount * 0.2),
+      customRequests: 'Strict vegetarian gourmet meals. High floor quiet suite with mountain views. Dedicated English-speaking chauffeur.',
+    }),
+    fulfillmentStatus,
   };
 
   const isAlreadyFulfilled =
     booking.status === 'Confirmed' &&
-    customization.fulfillmentStatus.hotelBooked &&
-    customization.fulfillmentStatus.flightBooked &&
-    customization.fulfillmentStatus.transferBooked &&
-    customization.fulfillmentStatus.activityBooked;
+    fulfillmentStatus.hotelBooked &&
+    fulfillmentStatus.flightBooked &&
+    fulfillmentStatus.transferBooked &&
+    fulfillmentStatus.activityBooked;
+
 
   const handleFulfillAll = () => {
     setIsFulfillingAll(true);
