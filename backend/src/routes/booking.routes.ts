@@ -7,7 +7,12 @@ const router = Router();
 // GET /api/v1/bookings/my-trips - List user booked trips
 router.get('/my-trips', optionalAuth, async (req: AuthenticatedRequest, res: Response) => {
   try {
-    const userId = req.user?.id || 'user-sarah-1024';
+    // Require an authenticated user — don't fall back to demo account
+    const userId = req.user?.id;
+    if (!userId) {
+      // Return empty trips for unauthenticated/new users instead of Sarah's demo data
+      return res.json({ success: true, count: 0, trips: [] });
+    }
 
     const bookedTrips = await prisma.bookedTrip.findMany({
       where: { userId },
@@ -61,7 +66,11 @@ router.get('/:id', optionalAuth, async (req: AuthenticatedRequest, res: Response
 // POST /api/v1/bookings/checkout - Convert itinerary to booked trip
 router.post('/checkout', optionalAuth, async (req: AuthenticatedRequest, res: Response) => {
   try {
-    const userId = req.user?.id || 'user-sarah-1024';
+    // Require auth for checkout — don't assign bookings to the demo account
+    const userId = req.user?.id;
+    if (!userId) {
+      return res.status(401).json({ error: 'Authentication required to book a trip' });
+    }
     const {
       itinerary,
       totalPrice = 2450,

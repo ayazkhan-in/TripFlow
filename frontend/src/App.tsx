@@ -83,7 +83,7 @@ function BookitApp() {
 
   // Sync with live Neon PostgreSQL backend
   useEffect(() => {
-    // Restore session if user token exists
+    // Restore session if user token exists, then load their data
     TripFlowApi.getMe().then(user => {
       if (user) {
         const isOp = user.role?.toUpperCase() === 'OPERATOR';
@@ -97,26 +97,29 @@ function BookitApp() {
           agencyName: user.agencyName,
           agencyCode: user.agencyCode,
         });
-      }
-    });
 
-    TripFlowApi.getMyTrips().then(trips => {
-      if (trips && trips.length > 0) {
-        setBookedTrips(trips);
-        setActiveBookedTripId(trips[0].id);
-        if (trips[0].itinerary) {
-          setCurrentItinerary(trips[0].itinerary);
-        }
-      } else {
-        // No trips from backend — keep empty state for fresh users
-        setBookedTrips([]);
-        setActiveBookedTripId(null);
+        // Only load user's own trips and vault after confirming they are authenticated
+        TripFlowApi.getMyTrips().then(trips => {
+          if (trips && trips.length > 0) {
+            setBookedTrips(trips);
+            setActiveBookedTripId(trips[0].id);
+            if (trips[0].itinerary) {
+              setCurrentItinerary(trips[0].itinerary);
+            }
+          } else {
+            // No trips yet — keep empty state
+            setBookedTrips([]);
+            setActiveBookedTripId(null);
+          }
+        });
+
+        TripFlowApi.getVaultDocuments().then(docs => {
+          if (docs && docs.length > 0) {
+            setVaultDocuments(docs);
+          }
+        });
       }
-    });
-    TripFlowApi.getVaultDocuments().then(docs => {
-      if (docs && docs.length > 0) {
-        setVaultDocuments(docs);
-      }
+      // No user = no token = stay with empty state (HomeScreen shows onboarding)
     });
   }, []);
 
@@ -163,6 +166,21 @@ function BookitApp() {
     } else {
       setViewMode('consumer');
       setConsumerTab('home');
+
+      // Load their trips after login
+      TripFlowApi.getMyTrips().then(trips => {
+        if (trips && trips.length > 0) {
+          setBookedTrips(trips);
+          setActiveBookedTripId(trips[0].id);
+          if (trips[0].itinerary) setCurrentItinerary(trips[0].itinerary);
+        } else {
+          setBookedTrips([]);
+          setActiveBookedTripId(null);
+        }
+      });
+      TripFlowApi.getVaultDocuments().then(docs => {
+        if (docs && docs.length > 0) setVaultDocuments(docs);
+      });
     }
     setCurrentRoute('app');
     showToast(`Welcome, ${user.name}!`);
@@ -171,8 +189,12 @@ function BookitApp() {
   const handleSignOut = () => {
     TripFlowApi.logout();
     setAuthUser(null);
+    // Clear all user-specific data so next login starts fresh
+    setBookedTrips([]);
+    setActiveBookedTripId(null);
+    setVaultDocuments([...INITIAL_VAULT_DOCUMENTS]);
     setCurrentRoute('landing');
-    showToast('Signed out of Bookit.');
+    showToast('Signed out of TripFlow.');
   };
 
   // Quick Explorers from Landing Page
@@ -186,6 +208,14 @@ function BookitApp() {
         role: 'traveler',
         avatar: res.user.avatarUrl || USER_AVATAR,
         membership: res.user.membershipTier || 'Concierge Elite Member',
+      });
+      // Load Sarah's trips after demo login
+      TripFlowApi.getMyTrips().then(trips => {
+        if (trips && trips.length > 0) {
+          setBookedTrips(trips);
+          setActiveBookedTripId(trips[0].id);
+          if (trips[0].itinerary) setCurrentItinerary(trips[0].itinerary);
+        }
       });
     } catch {
       setAuthUser({

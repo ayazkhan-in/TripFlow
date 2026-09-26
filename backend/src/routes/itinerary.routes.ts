@@ -51,7 +51,10 @@ router.get(['/itineraries/:id', '/:id'], async (req: Request, res: Response) => 
 // POST /api/v1/itineraries - Save new itinerary
 router.post(['/itineraries', '/'], optionalAuth, async (req: AuthenticatedRequest, res: Response) => {
   try {
-    const userId = req.user?.id || 'user-sarah-1024';
+    const userId = req.user?.id;
+    if (!userId) {
+      return res.status(401).json({ error: 'Authentication required to save an itinerary' });
+    }
     const {
       title,
       destination,
