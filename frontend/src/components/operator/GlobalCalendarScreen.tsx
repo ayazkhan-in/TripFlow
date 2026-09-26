@@ -1,6 +1,6 @@
 import React, { useState, useMemo, useEffect } from 'react';
-import { OPERATOR_CALENDAR_EVENTS } from '../../data/operatorSuiteData';
 import { CalendarTourEvent } from '../../types/travel';
+import { useOperator } from '../../context/OperatorContext';
 import { TripFlowApi } from '../../services/api';
 
 interface GlobalCalendarScreenProps {
@@ -12,7 +12,8 @@ export const GlobalCalendarScreen: React.FC<GlobalCalendarScreenProps> = ({
   onInspectTour,
   showToast,
 }) => {
-  const [events, setEvents] = useState<CalendarTourEvent[]>(OPERATOR_CALENDAR_EVENTS);
+  const { calendarEvents: contextEvents } = useOperator();
+  const [events, setEvents] = useState<CalendarTourEvent[]>(contextEvents || []);
   const [selectedDate, setSelectedDate] = useState<string>('2026-10-14');
   const [filterCohort, setFilterCohort] = useState<string>('all');
   const [viewMode, setViewMode] = useState<'month' | 'day'>('month');

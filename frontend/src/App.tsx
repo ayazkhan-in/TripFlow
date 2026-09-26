@@ -46,14 +46,20 @@ import {
   PreferencesModal,
   WhatsAppModal,
 } from './components/common/Modals';
+import { OperatorProvider, useOperator } from './context/OperatorContext';
+import { CreateTourPackageModal } from './components/operator/CreateTourPackageModal';
+import { OperatorPackagesScreen } from './components/operator/OperatorPackagesScreen';
 
-export default function App() {
+function TripFlowApp() {
   // Navigation & Route State ('landing' is the default route on "/")
   const [currentRoute, setCurrentRoute] = useState<'landing' | 'auth' | 'app'>('landing');
   const [viewMode, setViewMode] = useState<ViewMode>('consumer');
   const [consumerTab, setConsumerTab] = useState<ConsumerTab>('home');
   const [operatorTab, setOperatorTab] = useState<OperatorTab>('overview');
   const [operatorTourId, setOperatorTourId] = useState<string | null>(null);
+  const [isCreatePackageOpen, setIsCreatePackageOpen] = useState<boolean>(false);
+
+  const { addTravelerBooking, pendingCustomizedCount } = useOperator();
 
   // Unified End-to-End Traveler Trip & Itinerary State
   const initialBookedTrip = convertItineraryToBookedTrip(PREMADE_KERALA_ITINERARY, 2450);
@@ -205,7 +211,11 @@ export default function App() {
     showToast(`✨ Generated ${generated.days.length}-Day Itinerary for ${params.destination}! Ready to personalize.`);
   };
 
-  const handleProceedToBooking = async (itinerary: TripItinerary, totalPrice: number) => {
+  const handleProceedToBooking = async (
+    itinerary: TripItinerary,
+    totalPrice: number,
+    customizationDetails?: any
+  ) => {
     const backendTrip = await TripFlowApi.checkoutBooking(itinerary, totalPrice);
     const newTrip = backendTrip || convertItineraryToBookedTrip(itinerary, totalPrice);
     setBookedTrips(prev => [newTrip, ...prev.filter(t => t.id !== newTrip.id)]);
@@ -214,7 +224,11 @@ export default function App() {
     setVaultDocuments(prev => [...newDocs, ...prev]);
     setModifyingTripId(null);
     setConsumerTab('trips');
-    showToast(`🎉 Payment Confirmed! "${newTrip.title}" is now active in Trips & Bookings.`);
+
+    // Transmit to Operator Store as a Customized Booking!
+    addTravelerBooking(newTrip, customizationDetails);
+
+    showToast(`🎉 Payment Confirmed! "${newTrip.title}" is now active in Trips & Bookings and transmitted to Operator Desk.`);
   };
 
   const handleModifyTrip = (trip: BookedTrip) => {
@@ -428,9 +442,11 @@ export default function App() {
                   setOperatorTab(tab);
                   setOperatorTourId(null);
                 }}
-                onOpenNewDispatch={() => setIsNewDispatchOpen(true)}
+                onOpenNewDispatch={() => setIsCreatePackageOpen(true)}
+                onOpenCreatePackage={() => setIsCreatePackageOpen(true)}
                 onSwitchMode={mode => setViewMode(mode)}
                 openIssuesCount={isDisruptionResolved ? 2 : 3}
+                pendingCustomizedCount={pendingCustomizedCount}
                 onGoToLanding={() => setCurrentRoute('landing')}
                 onSignOut={handleSignOut}
               />
@@ -448,10 +464,24 @@ export default function App() {
                     {(operatorTab === 'hub' || operatorTab === 'overview' || operatorTab === 'operations') && (
                       <OpsCommandHub
                         onInspectTour={tourId => setOperatorTourId(tourId)}
-                        onOpenNewTour={() => setIsNewDispatchOpen(true)}
+                        onOpenNewTour={() => setIsCreatePackageOpen(true)}
+                        onOpenCreatePackage={() => setIsCreatePackageOpen(true)}
+                        onNavigateToTab={tab => setOperatorTab(tab)}
                         onOpenCommandPalette={() => setIsCommandPaletteOpen(true)}
                         isDisruptionResolved={isDisruptionResolved}
                         onResolveDisruption={handleResolveDisruption}
+                      />
+                    )}
+
+                    {operatorTab === 'packages' && (
+                      <OperatorPackagesScreen
+                        showToast={showToast}
+                        onNavigateToDiscover={() => {
+                          setViewMode('consumer');
+                          setConsumerTab('discover');
+                          setCurrentRoute('app');
+                        }}
+                        onOpenCreatePackageModal={() => setIsCreatePackageOpen(true)}
                       />
                     )}
 
@@ -470,6 +500,7 @@ export default function App() {
                       <BookingsInventoryScreen
                         activeCategory="all"
                         onInspectTour={tourId => setOperatorTourId(tourId)}
+                        onNavigateToTab={tab => setOperatorTab(tab)}
                         showToast={showToast}
                       />
                     )}
@@ -601,6 +632,24 @@ export default function App() {
           setCurrentRoute('app');
         }}
       />
+
+      {/* Operator Tour Package Creator Modal */}
+      <CreateTourPackageModal
+        isOpen={isCreatePackageOpen}
+        onClose={() => setIsCreatePackageOpen(false)}
+        showToast={showToast}
+        onPackageCreated={pkgTitle => {
+          showToast(`🚀 "${pkgTitle}" published live to Discover!`);
+        }}
+      />
     </div>
+  );
+}
+
+export default function App() {
+  return (
+    <OperatorProvider>
+      <TripFlowApp />
+    </OperatorProvider>
   );
 }

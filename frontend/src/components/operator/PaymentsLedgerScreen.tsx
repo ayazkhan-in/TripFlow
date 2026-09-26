@@ -1,7 +1,7 @@
 import React, { useState, useMemo, useEffect } from 'react';
-import { OPERATOR_PAYMENTS } from '../../data/operatorSuiteData';
 import { PaymentLedgerItem } from '../../types/travel';
 import { formatCurrency } from '../../utils/pricing';
+import { useOperator } from '../../context/OperatorContext';
 import { TripFlowApi } from '../../services/api';
 
 interface PaymentsLedgerScreenProps {
@@ -9,7 +9,8 @@ interface PaymentsLedgerScreenProps {
 }
 
 export const PaymentsLedgerScreen: React.FC<PaymentsLedgerScreenProps> = ({ showToast }) => {
-  const [payments, setPayments] = useState<PaymentLedgerItem[]>(OPERATOR_PAYMENTS);
+  const { payments: contextPayments } = useOperator();
+  const [payments, setPayments] = useState<PaymentLedgerItem[]>(contextPayments || []);
   const [searchQuery, setSearchQuery] = useState('');
   const [typeFilter, setTypeFilter] = useState<'all' | 'inbound' | 'disbursement'>('all');
   const [statusFilter, setStatusFilter] = useState<'all' | 'Settled' | 'Processing'>('all');

@@ -1,6 +1,6 @@
 import React, { useState, useMemo, useEffect } from 'react';
-import { OPERATOR_GUIDES } from '../../data/operatorSuiteData';
 import { TourGuideStaffItem } from '../../types/travel';
+import { useOperator } from '../../context/OperatorContext';
 import { TripFlowApi } from '../../services/api';
 
 interface TourGuidesScreenProps {
@@ -8,7 +8,8 @@ interface TourGuidesScreenProps {
 }
 
 export const TourGuidesScreen: React.FC<TourGuidesScreenProps> = ({ showToast }) => {
-  const [guides, setGuides] = useState<TourGuideStaffItem[]>(OPERATOR_GUIDES);
+  const { guides: contextGuides } = useOperator();
+  const [guides, setGuides] = useState<TourGuideStaffItem[]>(contextGuides || []);
   const [searchQuery, setSearchQuery] = useState('');
   const [roleFilter, setRoleFilter] = useState<string>('all');
   const [selectedGuide, setSelectedGuide] = useState<TourGuideStaffItem | null>(null);

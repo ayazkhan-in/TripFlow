@@ -9,7 +9,11 @@ interface BookingSummaryModalProps {
   pricing: PriceBreakdown;
   isModifying?: boolean;
   originalPrice?: number;
-  onConfirmBooking: () => void;
+  onConfirmBooking: (customizations?: {
+    dietaryRestrictions: string;
+    transferPreference: string;
+    customRequests: string;
+  }) => void;
 }
 
 export const BookingSummaryModal: React.FC<BookingSummaryModalProps> = ({
@@ -23,6 +27,11 @@ export const BookingSummaryModal: React.FC<BookingSummaryModalProps> = ({
 }) => {
   const [paymentMethod, setPaymentMethod] = useState<'card' | 'upi' | 'escrow'>('upi');
   const [isProcessing, setIsProcessing] = useState(false);
+  const [dietary, setDietary] = useState('Strict Vegetarian');
+  const [transferPref, setTransferPref] = useState('Toyota Vellfire Executive Lounge');
+  const [customNotes, setCustomNotes] = useState(
+    '10th Wedding Anniversary celebration. Require quiet high-floor suite & English-speaking chauffeur.'
+  );
 
   if (!isOpen) return null;
 
@@ -37,7 +46,11 @@ export const BookingSummaryModal: React.FC<BookingSummaryModalProps> = ({
     setIsProcessing(true);
     setTimeout(() => {
       setIsProcessing(false);
-      onConfirmBooking();
+      onConfirmBooking({
+        dietaryRestrictions: dietary,
+        transferPreference: transferPref,
+        customRequests: customNotes,
+      });
       onClose();
     }, 700);
   };
@@ -214,6 +227,67 @@ export const BookingSummaryModal: React.FC<BookingSummaryModalProps> = ({
               </div>
             </div>
           )}
+
+          {/* Traveler Concierge Customizations & Preferences */}
+          <div className="p-4 bg-slate-50 border border-slate-200/80 rounded-2xl space-y-3">
+            <div className="flex items-center gap-2">
+              <span className="material-symbols-outlined text-blue-600 text-base">tune</span>
+              <h4 className="text-xs font-bold text-slate-900 uppercase tracking-wider">
+                Traveler Customization & Concierge Preferences
+              </h4>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div>
+                <label className="text-[10px] font-bold uppercase text-slate-500 block mb-1">
+                  Dietary Requirements
+                </label>
+                <select
+                  value={dietary}
+                  onChange={e => setDietary(e.target.value)}
+                  className="w-full p-2 bg-white border border-slate-200 rounded-xl text-xs font-semibold text-slate-800 focus:outline-none focus:border-blue-600"
+                >
+                  <option value="Strict Vegetarian">Strict Vegetarian (Indian/Global)</option>
+                  <option value="Vegan">Vegan (Plant-Based Gourmet)</option>
+                  <option value="Gluten-Free">Gluten-Free Clean Dining</option>
+                  <option value="Halal">Halal Certified</option>
+                  <option value="No Restrictions">No Dietary Restrictions</option>
+                </select>
+              </div>
+
+              <div>
+                <label className="text-[10px] font-bold uppercase text-slate-500 block mb-1">
+                  Chauffeur & Fleet Choice
+                </label>
+                <select
+                  value={transferPref}
+                  onChange={e => setTransferPref(e.target.value)}
+                  className="w-full p-2 bg-white border border-slate-200 rounded-xl text-xs font-semibold text-slate-800 focus:outline-none focus:border-blue-600"
+                >
+                  <option value="Toyota Vellfire Executive Lounge">Toyota Vellfire VIP Lounge</option>
+                  <option value="Mercedes-Maybach S 680">Mercedes-Maybach Luxury Sedan</option>
+                  <option value="Range Rover Autobiography">Range Rover Executive SUV</option>
+                  <option value="Electric Luxury EV Sedan">Electric Luxury EV Sedan</option>
+                </select>
+              </div>
+            </div>
+
+            <div>
+              <label className="text-[10px] font-bold uppercase text-slate-500 block mb-1">
+                Special Requests & Notes for Operator
+              </label>
+              <textarea
+                rows={2}
+                value={customNotes}
+                onChange={e => setCustomNotes(e.target.value)}
+                placeholder="e.g. Anniversary celebration, prefer quiet high-floor suite, English-fluent driver..."
+                className="w-full p-2 bg-white border border-slate-200 rounded-xl text-xs text-slate-800 focus:outline-none focus:border-blue-600"
+              />
+              <span className="text-[10px] text-slate-400 block mt-0.5">
+                These requests are transmitted directly to the Operator Dispatch Desk for component bookings.
+              </span>
+            </div>
+          </div>
 
           {/* Payment Method Selector */}
           <div className="space-y-2">

@@ -6,8 +6,10 @@ interface OpsSidebarProps {
   activeTab: OperatorTab;
   onTabChange: (tab: OperatorTab) => void;
   onOpenNewDispatch: () => void;
+  onOpenCreatePackage?: () => void;
   onSwitchMode: (mode: ViewMode) => void;
   openIssuesCount?: number;
+  pendingCustomizedCount?: number;
   onGoToLanding?: () => void;
   onSignOut?: () => void;
 }
@@ -39,7 +41,9 @@ export const OpsSidebar: React.FC<OpsSidebarProps> = ({
   activeTab,
   onTabChange,
   onOpenNewDispatch,
+  onOpenCreatePackage,
   onSwitchMode,
+  pendingCustomizedCount,
   onSignOut,
 }) => {
   const [isBookingsExpanded, setIsBookingsExpanded] = useState<boolean>(true);
@@ -89,11 +93,17 @@ export const OpsSidebar: React.FC<OpsSidebarProps> = ({
         {/* Primary Action Button */}
         <div>
           <button
-            onClick={onOpenNewDispatch}
+            type="button"
+            onClick={() => {
+              if (onOpenCreatePackage) {
+                onOpenCreatePackage();
+              }
+              onTabChange('packages');
+            }}
             className="w-full flex items-center justify-center gap-2 py-2 px-3 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold shadow-xs active:scale-[0.99] transition-all cursor-pointer"
           >
-            <span className="material-symbols-outlined text-base">add</span>
-            <span>New Dispatch</span>
+            <span className="material-symbols-outlined text-base">add_business</span>
+            <span>Create Tour Package</span>
           </button>
         </div>
 
@@ -119,24 +129,62 @@ export const OpsSidebar: React.FC<OpsSidebarProps> = ({
             <span className="truncate">Operator Hub</span>
           </button>
 
-          {/* 2. Package Bookings (Separate page showing people who booked packages) */}
+          {/* 2. Tour Packages & Creator Studio */}
+          <button
+            type="button"
+            onClick={() => onTabChange('packages')}
+            className={`w-full text-left transition-all duration-150 cursor-pointer px-3 py-2 rounded-xl text-xs font-medium flex items-center justify-between ${
+              currentTab === 'packages'
+                ? 'bg-slate-900 text-white font-semibold shadow-xs'
+                : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50'
+            }`}
+          >
+            <div className="flex items-center gap-2.5 min-w-0">
+              <span
+                className={`material-symbols-outlined text-[18px] shrink-0 ${
+                  currentTab === 'packages' ? 'text-white' : 'text-blue-600'
+                }`}
+              >
+                card_travel
+              </span>
+              <span className="truncate">Tour Packages (Creator)</span>
+            </div>
+            <span
+              className={`px-1.5 py-0.5 rounded-md text-[10px] font-bold ${
+                currentTab === 'packages'
+                  ? 'bg-blue-600 text-white'
+                  : 'bg-blue-50 text-blue-700'
+              }`}
+            >
+              Studio
+            </span>
+          </button>
+
+          {/* 3. Package Bookings (Separate page showing people who booked packages) */}
           <button
             type="button"
             onClick={() => onTabChange('bookings')}
-            className={`w-full text-left transition-all duration-150 cursor-pointer px-3 py-2 rounded-xl text-xs font-medium flex items-center gap-2.5 ${
+            className={`w-full text-left transition-all duration-150 cursor-pointer px-3 py-2 rounded-xl text-xs font-medium flex items-center justify-between ${
               currentTab === 'bookings'
                 ? 'bg-slate-900 text-white font-semibold shadow-xs'
                 : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50'
             }`}
           >
-            <span
-              className={`material-symbols-outlined text-[18px] shrink-0 ${
-                currentTab === 'bookings' ? 'text-white' : 'text-slate-400'
-              }`}
-            >
-              receipt_long
-            </span>
-            <span className="truncate">Package Bookings</span>
+            <div className="flex items-center gap-2.5 min-w-0">
+              <span
+                className={`material-symbols-outlined text-[18px] shrink-0 ${
+                  currentTab === 'bookings' ? 'text-white' : 'text-slate-400'
+                }`}
+              >
+                receipt_long
+              </span>
+              <span className="truncate">Package Bookings</span>
+            </div>
+            {pendingCustomizedCount !== undefined && pendingCustomizedCount > 0 && (
+              <span className="px-1.5 py-0.5 rounded-full text-[10px] font-bold bg-amber-500 text-white shrink-0 animate-pulse">
+                {pendingCustomizedCount}
+              </span>
+            )}
           </button>
 
           {/* 3. Expandable Tree Bookings Section (Component Bookings: Flights, Stays, Transfers, Activities) */}

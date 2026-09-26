@@ -8,6 +8,7 @@ import {
   AIGenerateParams,
 } from '../../data/premadeItineraries';
 import { TripFlowApi } from '../../services/api';
+import { useOperator } from '../../context/OperatorContext';
 
 interface DiscoverScreenProps {
   onNavigateTab: (tab: ConsumerTab) => void;
@@ -143,6 +144,7 @@ interface OperatorCuratedPackage {
     badge: string;
   };
   itineraryTemplate: TripItinerary;
+  isNewlyCreated?: boolean;
 }
 
 const OPERATOR_PACKAGES: OperatorCuratedPackage[] = [
@@ -334,6 +336,8 @@ export const DiscoverScreen: React.FC<DiscoverScreenProps> = ({
   onSelectPremadeTrip,
   onGenerateAITrip,
 }) => {
+  const { packages: operatorPackages } = useOperator();
+
   // Main natural language input state
   const [naturalLanguageInput, setNaturalLanguageInput] = useState<string>('');
   const [isBuilding, setIsBuilding] = useState<boolean>(false);
@@ -567,13 +571,19 @@ export const DiscoverScreen: React.FC<DiscoverScreenProps> = ({
 
   // Filter curated packages based on entered criteria, scope (domestic/international), and search query
   const filteredPackages = useMemo(() => {
-    return packages.filter(pkg => {
+    const combined = [
+      ...packages,
+      ...(operatorPackages ? operatorPackages.filter(op => !packages.some(p => p.id === op.id)) : []),
+    ];
+    const sourcePackages = combined.length > 0 ? combined : OPERATOR_PACKAGES;
+
+    const filtered = sourcePackages.filter(pkg => {
       // 1. Domestic vs International scope check
       if (scopeFilter === 'domestic' && !pkg.isDomestic) return false;
       if (scopeFilter === 'international' && pkg.isDomestic) return false;
 
-      // 2. Budget check (in INR)
-      if (pkg.totalPriceINR > maxBudgetINR) return false;
+      // 2. Budget check (in INR) - skip budget check for newly created tours so they are always visible
+      if (!pkg.isNewlyCreated && pkg.totalPriceINR > maxBudgetINR) return false;
 
       // 3. Duration check
       if (selectedDays !== 'all') {
@@ -597,7 +607,14 @@ export const DiscoverScreen: React.FC<DiscoverScreenProps> = ({
 
       return true;
     });
-  }, [packages, maxBudgetINR, scopeFilter, selectedDays, curatedSearchQuery]);
+
+    // Newly created operator tours appear first
+    return [...filtered].sort((a, b) => {
+      if (a.isNewlyCreated && !b.isNewlyCreated) return -1;
+      if (!a.isNewlyCreated && b.isNewlyCreated) return 1;
+      return 0;
+    });
+  }, [packages, operatorPackages, maxBudgetINR, scopeFilter, selectedDays, curatedSearchQuery]);
 
   const handleCuratedSearch = (e: React.FormEvent) => {
     e.preventDefault();
@@ -1176,8 +1193,16 @@ export const DiscoverScreen: React.FC<DiscoverScreenProps> = ({
                   />
                   <div className="absolute inset-0 bg-gradient-to-t from-slate-900/85 via-slate-900/20 to-transparent" />
                   
-                  <div className="absolute top-3 left-3 bg-white/95 backdrop-blur-xs text-slate-900 text-[10px] font-extrabold px-2.5 py-1 rounded-full shadow-xs">
-                    {pkg.tag}
+                  <div className="absolute top-3 left-3 flex items-center gap-1.5 flex-wrap max-w-[70%]">
+                    {pkg.isNewlyCreated && (
+                      <span className="bg-gradient-to-r from-blue-600 to-indigo-600 text-white text-[10px] font-extrabold px-2.5 py-1 rounded-full shadow-md flex items-center gap-1">
+                        <span className="material-symbols-outlined text-[11px]">sparkles</span>
+                        <span>Operator Published</span>
+                      </span>
+                    )}
+                    <span className="bg-white/95 backdrop-blur-xs text-slate-900 text-[10px] font-extrabold px-2.5 py-1 rounded-full shadow-xs">
+                      {pkg.tag}
+                    </span>
                   </div>
                   
                   <div className={`absolute top-3 right-3 ${pkg.badgeBg} text-white text-[10px] font-extrabold px-2.5 py-1 rounded-full shadow-xs`}>

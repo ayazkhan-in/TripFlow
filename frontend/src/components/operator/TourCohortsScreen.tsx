@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { OPERATOR_COHORTS } from '../../data/operatorSuiteData';
 import { TourCohortItem } from '../../types/travel';
+import { useOperator } from '../../context/OperatorContext';
 import { TripFlowApi } from '../../services/api';
 
 interface TourCohortsScreenProps {
@@ -12,7 +12,8 @@ export const TourCohortsScreen: React.FC<TourCohortsScreenProps> = ({
   onInspectTour,
   showToast,
 }) => {
-  const [cohorts, setCohorts] = useState<TourCohortItem[]>(OPERATOR_COHORTS);
+  const { cohorts: contextCohorts } = useOperator();
+  const [cohorts, setCohorts] = useState<TourCohortItem[]>(contextCohorts || []);
   const [selectedCohort, setSelectedCohort] = useState<TourCohortItem | null>(null);
   const [broadcastMessage, setBroadcastMessage] = useState('');
   const [isBroadcastOpen, setIsBroadcastOpen] = useState(false);

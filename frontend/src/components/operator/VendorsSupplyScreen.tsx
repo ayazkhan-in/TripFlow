@@ -1,6 +1,6 @@
 import React, { useState, useMemo, useEffect } from 'react';
-import { OPERATOR_VENDORS } from '../../data/operatorSuiteData';
 import { VendorSupplyItem } from '../../types/travel';
+import { useOperator } from '../../context/OperatorContext';
 import { TripFlowApi } from '../../services/api';
 
 interface VendorsSupplyScreenProps {
@@ -8,7 +8,8 @@ interface VendorsSupplyScreenProps {
 }
 
 export const VendorsSupplyScreen: React.FC<VendorsSupplyScreenProps> = ({ showToast }) => {
-  const [vendors, setVendors] = useState<VendorSupplyItem[]>(OPERATOR_VENDORS);
+  const { vendors: contextVendors, addVendor } = useOperator();
+  const [vendors, setVendors] = useState<VendorSupplyItem[]>(contextVendors || []);
   const [searchQuery, setSearchQuery] = useState('');
   const [categoryFilter, setCategoryFilter] = useState<string>('all');
   const [isAddVendorOpen, setIsAddVendorOpen] = useState(false);
@@ -62,6 +63,7 @@ export const VendorsSupplyScreen: React.FC<VendorsSupplyScreenProps> = ({ showTo
       contractRenewal: 'Dec 2027',
     };
 
+    addVendor(newVendor);
     setVendors(prev => [newVendor, ...prev]);
     TripFlowApi.addVendor(newVendor).catch(console.warn);
     setIsAddVendorOpen(false);

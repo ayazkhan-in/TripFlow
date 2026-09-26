@@ -41,7 +41,14 @@ export function calculateTripPricing(itinerary: TripItinerary): PriceBreakdown {
   };
 }
 
-export function formatCurrency(amount: number, currency: string = '$'): string {
+export function formatINR(amount: number): string {
+  return `₹${Math.round(amount).toLocaleString('en-IN')}`;
+}
+
+export function formatCurrency(amount: number, currency: string = '₹'): string {
+  if (currency === '₹' || currency === 'INR') {
+    return `₹${Math.round(amount).toLocaleString('en-IN')}`;
+  }
   return `${currency}${amount.toLocaleString('en-US')}`;
 }
 
