@@ -8,11 +8,28 @@ import {
   AIGenerateParams,
 } from '../../data/premadeItineraries';
 import { useOperator } from '../../context/OperatorContext';
+import {
+  parseInitialPrompt,
+  generateProposalFromDetails,
+  compileFinalItinerary,
+  AITripDetails,
+  AIGeneratedProposal,
+  AIFlightOption,
+  AIHotelOption,
+  AITransferOption,
+  AIActivityOption,
+} from '../../utils/aiTripPlanner';
+import { addCustomCatalogItems } from '../../data/itineraryData';
+import { formatCurrency } from '../../utils/pricing';
+import { USER_AVATAR } from '../../data/mockData';
 
 interface DiscoverScreenProps {
   onNavigateTab: (tab: ConsumerTab) => void;
   onSelectPremadeTrip: (itinerary: TripItinerary) => void;
   onGenerateAITrip: (params: AIGenerateParams) => void;
+  onOpenAssistantWithPrompt?: (prompt: string) => void;
+  userName?: string;
+  userAvatar?: string;
 }
 
 interface OrbitCard {
@@ -332,16 +349,39 @@ const TYPEWRITER_SUFFIXES = [
 ];
 
 export const DiscoverScreen: React.FC<DiscoverScreenProps> = ({
+  onNavigateTab,
   onSelectPremadeTrip,
   onGenerateAITrip,
+  onOpenAssistantWithPrompt,
+  userName = 'Sarah Mehta',
+  userAvatar = USER_AVATAR,
 }) => {
   const { packages: operatorPackages } = useOperator();
 
   // Main natural language input state
   const [naturalLanguageInput, setNaturalLanguageInput] = useState<string>('');
   const [isBuilding, setIsBuilding] = useState<boolean>(false);
-  const inputRef = useRef<HTMLInputElement>(null);
+  const [planningFor, setPlanningFor] = useState<'you' | 'someone_else'>('you');
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
   const curatedSectionRef = useRef<HTMLDivElement>(null);
+
+  // AI Interactive Concierge State
+  const [aiStage, setAiStage] = useState<'idle' | 'questions' | 'generating' | 'proposal'>('idle');
+  const [aiDetails, setAiDetails] = useState<AITripDetails>({
+    destination: 'Tokyo',
+    country: 'Japan',
+    days: 5,
+    startDate: '2025-10-15',
+    travelers: 2,
+    travelStyle: 'Luxury Concierge',
+    interests: ['Historical Heritage', 'Gourmet Dining', 'Wellness & Relaxation'],
+  });
+  const [aiProposal, setAiProposal] = useState<AIGeneratedProposal | null>(null);
+  const [selectedFlightId, setSelectedFlightId] = useState<string>('');
+  const [selectedHotelId, setSelectedHotelId] = useState<string>('');
+  const [selectedTransferId, setSelectedTransferId] = useState<string>('');
+  const [selectedExtraActivityIds, setSelectedExtraActivityIds] = useState<string[]>([]);
+  const [activeAlternativeDrawer, setActiveAlternativeDrawer] = useState<'none' | 'flight' | 'hotel' | 'transfer'>('none');
 
   // Typewriter effect state for input placeholder
   const [typewriterSuffixIndex, setTypewriterSuffixIndex] = useState<number>(0);
@@ -457,68 +497,120 @@ export const DiscoverScreen: React.FC<DiscoverScreenProps> = ({
   // Helper when clicking a prompt suggestion chip
   const handleSelectSuggestion = (promptText: string) => {
     setNaturalLanguageInput(promptText);
-    inputRef.current?.focus();
+    handleStartAI(promptText);
   };
 
-  // Helper to extract basic parameters from natural language
-  const parseNaturalLanguage = (text: string): AIGenerateParams => {
-    const lower = text.toLowerCase();
-    
-    // Check for days
-    const daysMatch = lower.match(/(\d+)\s*(?:day|days)/);
-    const parsedDays = daysMatch ? parseInt(daysMatch[1], 10) : 5;
-
-    // Check for known destinations
-    let destination = 'Kerala';
-    if (lower.includes('tokyo') || lower.includes('japan')) destination = 'Tokyo';
-    else if (lower.includes('riyadh') || lower.includes('saudi')) destination = 'Riyadh';
-    else if (lower.includes('new york') || lower.includes('nyc')) destination = 'New York';
-    else if (lower.includes('seoul') || lower.includes('korea')) destination = 'Seoul';
-    else if (lower.includes('beijing') || lower.includes('china')) destination = 'Beijing';
-    else if (lower.includes('delhi') || lower.includes('india') || lower.includes('kerala')) destination = 'Kerala';
-    else if (lower.includes('dubai')) destination = 'Dubai';
-    else if (lower.includes('rajasthan')) destination = 'Rajasthan';
-    else if (lower.includes('goa')) destination = 'Goa';
-    else {
-      const toMatch = text.match(/(?:to|in)\s+([A-Za-z]+)/i);
-      if (toMatch && toMatch[1]) {
-        destination = toMatch[1];
-      }
-    }
-
-    return {
-      destination,
-      days: Math.min(10, Math.max(2, parsedDays)),
-      dates: `${new Date().toISOString().split('T')[0]} (${parsedDays} Days)`,
-      travelers: lower.includes('family') ? 4 : lower.includes('solo') ? 1 : 2,
-      budget: maxBudgetINR,
-      travelStyle: lower.includes('luxury') ? 'Luxury Concierge' : 'Cultural Heritage',
-      interests: ['Local Heritage', 'Fine Dining', 'Private Chauffeur'],
-    };
-  };
-
-  // Trigger natural language generation
-  const handleGenerate = () => {
-    const trimmed = naturalLanguageInput.trim();
-    if (!trimmed) {
-      inputRef.current?.focus();
+  // AI Concierge Workflow: Open the AI Assistant page immediately with the prompt
+  const handleStartAI = (promptText?: string) => {
+    const raw = (promptText !== undefined ? promptText : naturalLanguageInput).trim();
+    if (!raw) {
+      textareaRef.current?.focus();
       return;
     }
+    const finalPrompt = planningFor === 'someone_else'
+      ? `${raw} (Note: Planning this journey for someone else)`
+      : raw;
 
-    setIsBuilding(true);
-    setTimeout(() => {
-      setIsBuilding(false);
-      const params = parseNaturalLanguage(trimmed);
-      onGenerateAITrip(params);
-    }, 550);
-  };
-
-  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
-    if (e.key === 'Enter') {
-      e.preventDefault();
-      handleGenerate();
+    // Instantly navigate to the AI Assistant page with the prompt
+    if (onOpenAssistantWithPrompt) {
+      onOpenAssistantWithPrompt(finalPrompt);
+    } else {
+      onNavigateTab('assistant');
     }
   };
+
+  // AI Concierge Workflow: Generate Proposal from questions
+  const handleGenerateProposal = () => {
+    setIsBuilding(true);
+    setAiStage('generating');
+    setTimeout(() => {
+      setIsBuilding(false);
+      const proposal = generateProposalFromDetails(aiDetails);
+      setAiProposal(proposal);
+      setSelectedFlightId(proposal.selectedFlightId);
+      setSelectedHotelId(proposal.selectedHotelId);
+      setSelectedTransferId(proposal.selectedTransferId);
+      setSelectedExtraActivityIds([]);
+      setActiveAlternativeDrawer('none');
+      setAiStage('proposal');
+    }, 850);
+  };
+
+  // AI Concierge Workflow: Confirm and open in Itinerary Builder
+  const handleConfirmAndOpenInBuilder = () => {
+    if (!aiProposal) return;
+    const finalItinerary = compileFinalItinerary(
+      aiProposal,
+      selectedFlightId,
+      selectedHotelId,
+      selectedTransferId,
+      selectedExtraActivityIds
+    );
+    // Register all AI extra activities into the Itinerary Builder catalog
+    if (aiProposal.extraActivities && aiProposal.extraActivities.length > 0) {
+      addCustomCatalogItems(aiProposal.extraActivities);
+    }
+    // Launch builder
+    onSelectPremadeTrip(finalItinerary);
+  };
+
+  // Reset AI flow back to idle
+  const handleResetAI = () => {
+    setAiStage('idle');
+    setAiProposal(null);
+    setActiveAlternativeDrawer('none');
+  };
+
+  // Key down on textarea / input
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      handleStartAI();
+    }
+  };
+
+  // Dynamic pricing computation for Proposal stage
+  const proposalPricing = useMemo(() => {
+    if (!aiProposal) {
+      return {
+        totalUSD: 0,
+        perPersonUSD: 0,
+        priceDeltaUSD: 0,
+        nights: 1,
+        chosenFlight: null,
+        chosenHotel: null,
+        chosenTransfer: null,
+      };
+    }
+
+    const chosenFlight = aiProposal.flights.find(f => f.id === selectedFlightId) || aiProposal.flights[0];
+    const chosenHotel = aiProposal.hotels.find(h => h.id === selectedHotelId) || aiProposal.hotels[0];
+    const chosenTransfer = aiProposal.transfers.find(t => t.id === selectedTransferId) || aiProposal.transfers[0];
+
+    const nights = Math.max(1, aiProposal.days - 1);
+    const flightTotal = chosenFlight.priceUSD * aiProposal.travelers;
+    const hotelTotal = chosenHotel.pricePerNightUSD * nights;
+    const activitiesBase = 180 * aiProposal.days;
+    const transferDelta = chosenTransfer.priceDeltaUSD;
+
+    const extrasTotal = aiProposal.extraActivities
+      .filter(act => selectedExtraActivityIds.includes(act.id))
+      .reduce((sum, act) => sum + act.price, 0);
+
+    const totalUSD = flightTotal + hotelTotal + activitiesBase + transferDelta + extrasTotal;
+    const perPersonUSD = Math.round(totalUSD / aiProposal.travelers);
+    const priceDeltaUSD = totalUSD - aiProposal.basePriceUSD;
+
+    return {
+      totalUSD,
+      perPersonUSD,
+      priceDeltaUSD,
+      nights,
+      chosenFlight,
+      chosenHotel,
+      chosenTransfer,
+    };
+  }, [aiProposal, selectedFlightId, selectedHotelId, selectedTransferId, selectedExtraActivityIds]);
 
   // Filter curated packages based on entered criteria, scope (domestic/international), and search query
   const filteredPackages = useMemo(() => {
@@ -621,65 +713,922 @@ export const DiscoverScreen: React.FC<DiscoverScreenProps> = ({
           </div>
 
           {/* --------------------------------------------------------- */}
-          {/* WIDER NATURAL LANGUAGE INPUT CARD                         */}
+          {/* DYNAMIC EXPANDING AI NATURAL LANGUAGE CARD                */}
           {/* --------------------------------------------------------- */}
-          <div className="relative z-20 w-full max-w-3xl lg:max-w-4xl mx-auto bg-white rounded-3xl p-5 sm:p-7 shadow-[0_20px_50px_rgba(0,0,0,0.06),0_2px_8px_rgba(0,0,0,0.03)] border border-slate-100 text-left">
-            {/* Expanded Search Input Pill */}
-            <div className="relative flex items-center bg-[#F1F3F6] rounded-full px-5 sm:px-6 py-3 sm:py-3.5 focus-within:ring-2 focus-within:ring-slate-300 transition-all">
-              <input
-                ref={inputRef}
-                type="text"
-                value={naturalLanguageInput}
-                onChange={e => setNaturalLanguageInput(e.target.value)}
-                onKeyDown={handleKeyDown}
-                placeholder={`${TYPEWRITER_PREFIX}${typewriterText}`}
-                className="w-full bg-transparent text-slate-800 placeholder:text-slate-400 text-sm sm:text-base font-normal focus:outline-none pr-3"
-              />
-
-              {naturalLanguageInput && (
-                <button
-                  type="button"
-                  onClick={() => {
-                    setNaturalLanguageInput('');
-                    inputRef.current?.focus();
-                  }}
-                  className="mr-2 text-slate-400 hover:text-slate-600 text-xs cursor-pointer p-1"
-                  title="Clear input"
+          <div className="relative z-20 w-full max-w-3xl lg:max-w-4xl mx-auto bg-white rounded-3xl p-5 sm:p-7 shadow-[0_20px_50px_rgba(0,0,0,0.06),0_2px_8px_rgba(0,0,0,0.03)] border border-slate-100 text-left transition-all duration-300">
+            
+            {/* ======================================================= */}
+            {/* STAGE 0: IDLE / TYPING (EXPANDING TEXTBOX)             */}
+            {/* ======================================================= */}
+            {aiStage === 'idle' && (
+              <>
+                {/* Unified Butter-Smooth Expanding Input Container */}
+                <div
+                  className={`relative flex flex-col bg-[#F1F3F6] transition-all duration-300 ease-out border border-transparent focus-within:border-slate-300 focus-within:bg-[#EEF1F5] ${
+                    naturalLanguageInput.trim().length > 0
+                      ? 'rounded-[20px] p-4 sm:p-5 min-h-[125px] shadow-inner'
+                      : 'rounded-[28px] px-5 sm:px-6 py-2 sm:py-2.5 min-h-[54px] sm:min-h-[58px]'
+                  }`}
                 >
-                  ✕
-                </button>
-              )}
+                  {/* Textarea & Top/Inline Action */}
+                  <div className="flex items-start justify-between gap-3 w-full">
+                    <textarea
+                      ref={textareaRef}
+                      value={naturalLanguageInput}
+                      onChange={e => setNaturalLanguageInput(e.target.value)}
+                      onKeyDown={handleKeyDown}
+                      rows={naturalLanguageInput.trim().length > 0 ? 2 : 1}
+                      placeholder={
+                        naturalLanguageInput.trim().length > 0
+                          ? 'Describe your ideal journey (e.g. 5 days in Tokyo with luxury ryokan, temples, and Michelin sushi)...'
+                          : `${TYPEWRITER_PREFIX}${typewriterText}`
+                      }
+                      className={`w-full bg-transparent text-slate-800 placeholder:text-slate-400 text-sm sm:text-base font-normal focus:outline-none resize-none leading-relaxed transition-all duration-200 ${
+                        naturalLanguageInput.trim().length > 0
+                          ? 'min-h-[54px] pt-0.5'
+                          : 'h-[32px] leading-[32px] overflow-hidden'
+                      }`}
+                      autoFocus={naturalLanguageInput.trim().length > 0}
+                    />
 
-              {/* Circular Arrow Submit Button */}
-              <button
-                type="button"
-                onClick={handleGenerate}
-                disabled={isBuilding}
-                className="w-10 h-10 sm:w-11 sm:h-11 rounded-full bg-[#2F3542] hover:bg-slate-900 active:scale-95 text-white flex items-center justify-center shrink-0 transition-all shadow-xs cursor-pointer focus:outline-none"
-                title="Generate Itinerary"
-              >
-                {isBuilding ? (
-                  <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                ) : (
-                  <span className="material-symbols-outlined text-lg">arrow_forward</span>
-                )}
-              </button>
-            </div>
+                    {/* Idle State: Plan button inside pill row */}
+                    {naturalLanguageInput.trim().length === 0 ? (
+                      <button
+                        type="button"
+                        onClick={() => handleStartAI()}
+                        disabled={isBuilding}
+                        className="px-5 py-2 rounded-full bg-slate-900 hover:bg-black text-white text-xs sm:text-sm font-semibold flex items-center gap-1.5 shadow-xs shrink-0 cursor-pointer transition-all active:scale-95"
+                        title="Plan"
+                      >
+                        <span>Plan</span>
+                        <span className="material-symbols-outlined text-sm">arrow_forward</span>
+                      </button>
+                    ) : (
+                      /* Typing State: Clear button at top right */
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setNaturalLanguageInput('');
+                          textareaRef.current?.focus();
+                        }}
+                        className="text-slate-400 hover:text-slate-600 text-xs cursor-pointer p-1 shrink-0 rounded transition-colors"
+                        title="Clear input"
+                      >
+                        ✕
+                      </button>
+                    )}
+                  </div>
 
-            {/* Prompt Suggestion Chips */}
-            <div className="flex flex-wrap items-center gap-2 pt-3.5">
-              {QUICK_SUGGESTIONS.map((sug, idx) => (
-                <button
-                  key={idx}
-                  type="button"
-                  onClick={() => handleSelectSuggestion(sug.prompt)}
-                  className="px-3.5 py-1.5 rounded-full bg-white hover:bg-slate-50 border border-slate-200/90 text-xs font-medium text-slate-700 hover:text-slate-900 transition-all flex items-center gap-1.5 cursor-pointer shadow-2xs hover:shadow-xs active:scale-98"
-                >
-                  <span className="text-emerald-500 font-bold text-xs">✨</span>
-                  <span>{sug.label}</span>
-                </button>
-              ))}
-            </div>
+                  {/* Typing State: Bottom Helper Bar with Plan button */}
+                  {naturalLanguageInput.trim().length > 0 && (
+                    <div className="flex items-center justify-between pt-3 border-t border-slate-200/60 mt-2 animate-in fade-in duration-200">
+                      <div className="text-[11px] text-slate-400 flex items-center gap-1.5">
+                        <span>Press</span>
+                        <kbd className="font-mono bg-white px-1.5 py-0.5 rounded text-[10px] text-slate-600 border border-slate-200 shadow-2xs font-semibold">
+                          Enter ↵
+                        </kbd>
+                        <span>to plan</span>
+                      </div>
+
+                      <button
+                        type="button"
+                        onClick={() => handleStartAI()}
+                        className="px-5 py-2 rounded-xl bg-slate-900 hover:bg-black text-white text-xs sm:text-sm font-semibold flex items-center gap-1.5 shadow-xs cursor-pointer transition-all active:scale-95"
+                      >
+                        <span>Plan</span>
+                        <span className="material-symbols-outlined text-sm">arrow_forward</span>
+                      </button>
+                    </div>
+                  )}
+                </div>
+
+                {/* User Identity & For You / For Someone Else Toggle */}
+                <div className="flex flex-wrap items-center justify-between gap-3 pt-4 px-1">
+                  {/* User Profile Info */}
+                  <div className="flex items-center gap-2.5">
+                    <img
+                      src={userAvatar}
+                      alt={userName}
+                      className="w-7 h-7 rounded-full object-cover ring-1 ring-slate-200 shadow-2xs"
+                    />
+                    <div className="flex items-center gap-1.5 text-xs">
+                      <span className="font-semibold text-slate-800">{userName}</span>
+                      <span className="text-slate-300">•</span>
+                      <span className="text-slate-500 font-normal">
+                        {planningFor === 'you' ? 'Planning for yourself' : 'Planning for someone else'}
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* Toggle: For you / For someone else */}
+                  <div className="flex items-center bg-[#F1F3F6] p-1 rounded-full border border-slate-200/70 text-xs">
+                    <button
+                      type="button"
+                      onClick={() => setPlanningFor('you')}
+                      className={`px-3.5 py-1 rounded-full transition-all cursor-pointer ${
+                        planningFor === 'you'
+                          ? 'bg-white text-slate-900 font-semibold shadow-2xs'
+                          : 'text-slate-500 hover:text-slate-800 font-medium'
+                      }`}
+                    >
+                      For you
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setPlanningFor('someone_else')}
+                      className={`px-3.5 py-1 rounded-full transition-all cursor-pointer ${
+                        planningFor === 'someone_else'
+                          ? 'bg-white text-slate-900 font-semibold shadow-2xs'
+                          : 'text-slate-500 hover:text-slate-800 font-medium'
+                      }`}
+                    >
+                      For someone else
+                    </button>
+                  </div>
+                </div>
+              </>
+            )}
+
+            {/* ======================================================= */}
+            {/* STAGE 1: ASK QUESTIONS TO THE USER (REQUIREMENT 1)      */}
+            {/* ======================================================= */}
+            {aiStage === 'questions' && (
+              <div className="space-y-6 animate-in fade-in duration-200">
+                {/* Header */}
+                <div className="flex items-start justify-between pb-3 border-b border-slate-100">
+                  <div className="flex items-center gap-3">
+                    <div className="w-9 h-9 rounded-xl bg-gradient-to-tr from-slate-900 to-indigo-900 text-amber-400 flex items-center justify-center shadow-xs">
+                      <span className="material-symbols-outlined text-lg">auto_awesome</span>
+                    </div>
+                    <div>
+                      <div className="flex items-center gap-2">
+                        <h3 className="text-base font-bold text-slate-900">TripFlow AI Concierge</h3>
+                        <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full bg-indigo-50 text-indigo-700 border border-indigo-100">
+                          Step 1: Clarifying Trip Details
+                        </span>
+                      </div>
+                      <p className="text-xs text-slate-500">
+                        Tailoring a bespoke journey for{' '}
+                        <span className="font-semibold text-slate-800">
+                          {aiDetails.destination}, {aiDetails.country}
+                        </span>
+                        . Select your preferences below:
+                      </p>
+                    </div>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={handleResetAI}
+                    className="text-slate-400 hover:text-slate-600 p-1.5 rounded-lg hover:bg-slate-100 text-xs flex items-center gap-1 cursor-pointer"
+                  >
+                    <span className="material-symbols-outlined text-sm">close</span>
+                    <span>Exit</span>
+                  </button>
+                </div>
+
+                {/* Question 1: Duration */}
+                <div className="space-y-2">
+                  <label className="text-xs font-bold text-slate-700 uppercase tracking-wider flex items-center gap-1.5">
+                    <span className="material-symbols-outlined text-sm text-slate-400">calendar_today</span>
+                    Trip Duration
+                  </label>
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                    {[
+                      { days: 3, label: '3 Days', sub: 'Weekend Escape' },
+                      { days: 5, label: '5 Days', sub: 'Signature Circuit' },
+                      { days: 7, label: '7 Days', sub: 'Immersive Journey' },
+                      { days: 10, label: '10 Days', sub: 'Grand Explorer' },
+                    ].map(opt => (
+                      <button
+                        key={opt.days}
+                        type="button"
+                        onClick={() => setAiDetails(prev => ({ ...prev, days: opt.days }))}
+                        className={`p-2.5 rounded-xl border text-left transition-all cursor-pointer ${
+                          aiDetails.days === opt.days
+                            ? 'border-slate-900 bg-slate-900 text-white shadow-xs'
+                            : 'border-slate-200 bg-white text-slate-700 hover:bg-slate-50'
+                        }`}
+                      >
+                        <div className="text-xs font-bold">{opt.label}</div>
+                        <div
+                          className={`text-[10px] ${
+                            aiDetails.days === opt.days ? 'text-slate-300' : 'text-slate-400'
+                          }`}
+                        >
+                          {opt.sub}
+                        </div>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Question 2: Who is traveling */}
+                <div className="space-y-2">
+                  <label className="text-xs font-bold text-slate-700 uppercase tracking-wider flex items-center gap-1.5">
+                    <span className="material-symbols-outlined text-sm text-slate-400">group</span>
+                    Travel Party
+                  </label>
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                    {[
+                      { count: 1, label: 'Solo Traveler', icon: 'person' },
+                      { count: 2, label: 'Couple / Duo', icon: 'favorite' },
+                      { count: 4, label: 'Family (4 Pax)', icon: 'family_restroom' },
+                      { count: 6, label: 'Group (6+ Pax)', icon: 'groups' },
+                    ].map(opt => (
+                      <button
+                        key={opt.count}
+                        type="button"
+                        onClick={() => setAiDetails(prev => ({ ...prev, travelers: opt.count }))}
+                        className={`p-2.5 rounded-xl border text-left flex items-center gap-2 transition-all cursor-pointer ${
+                          aiDetails.travelers === opt.count
+                            ? 'border-slate-900 bg-slate-900 text-white shadow-xs'
+                            : 'border-slate-200 bg-white text-slate-700 hover:bg-slate-50'
+                        }`}
+                      >
+                        <span
+                          className={`material-symbols-outlined text-base ${
+                            aiDetails.travelers === opt.count ? 'text-amber-400' : 'text-slate-400'
+                          }`}
+                        >
+                          {opt.icon}
+                        </span>
+                        <span className="text-xs font-semibold">{opt.label}</span>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Question 3: Travel Style */}
+                <div className="space-y-2">
+                  <label className="text-xs font-bold text-slate-700 uppercase tracking-wider flex items-center gap-1.5">
+                    <span className="material-symbols-outlined text-sm text-slate-400">diamond</span>
+                    Travel Tier & Accommodation Style
+                  </label>
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                    {[
+                      {
+                        id: 'Luxury Concierge',
+                        label: 'Ultra Luxury 5-Star',
+                        sub: 'Palaces, penthouses & private butler service',
+                      },
+                      {
+                        id: 'Boutique Heritage',
+                        label: 'Boutique Heritage & Charm',
+                        sub: 'Handcrafted villas & authentic culture',
+                      },
+                      {
+                        id: 'Balanced Comfort',
+                        label: 'Balanced Luxury Comfort',
+                        sub: 'Top-rated stays & relaxed pacing',
+                      },
+                    ].map(opt => (
+                      <button
+                        key={opt.id}
+                        type="button"
+                        onClick={() => setAiDetails(prev => ({ ...prev, travelStyle: opt.id as any }))}
+                        className={`p-3 rounded-xl border text-left transition-all cursor-pointer ${
+                          aiDetails.travelStyle === opt.id
+                            ? 'border-slate-900 bg-slate-900 text-white shadow-xs'
+                            : 'border-slate-200 bg-white text-slate-700 hover:bg-slate-50'
+                        }`}
+                      >
+                        <div className="text-xs font-bold">{opt.label}</div>
+                        <div
+                          className={`text-[10px] mt-0.5 ${
+                            aiDetails.travelStyle === opt.id ? 'text-slate-300' : 'text-slate-400'
+                          }`}
+                        >
+                          {opt.sub}
+                        </div>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Question 4: Primary Interests */}
+                <div className="space-y-2">
+                  <label className="text-xs font-bold text-slate-700 uppercase tracking-wider flex items-center gap-1.5">
+                    <span className="material-symbols-outlined text-sm text-slate-400">interests</span>
+                    Curated Interests (Select all that apply)
+                  </label>
+                  <div className="flex flex-wrap gap-2">
+                    {[
+                      'Historical Heritage',
+                      'Gourmet Dining',
+                      'Wellness & Relaxation',
+                      'Scenic Nature & Wildlife',
+                      'Modern City & Nightlife',
+                    ].map(interest => {
+                      const isSelected = aiDetails.interests.includes(interest);
+                      return (
+                        <button
+                          key={interest}
+                          type="button"
+                          onClick={() => {
+                            setAiDetails(prev => ({
+                              ...prev,
+                              interests: isSelected
+                                ? prev.interests.filter(i => i !== interest)
+                                : [...prev.interests, interest],
+                            }));
+                          }}
+                          className={`px-3 py-1.5 rounded-full text-xs font-medium border transition-all cursor-pointer ${
+                            isSelected
+                              ? 'bg-slate-900 text-white border-slate-900 shadow-2xs'
+                              : 'bg-white text-slate-700 border-slate-200 hover:bg-slate-50'
+                          }`}
+                        >
+                          {isSelected ? '✓ ' : '+ '}
+                          {interest}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                {/* Actions */}
+                <div className="pt-2 flex items-center justify-between border-t border-slate-100">
+                  <button
+                    type="button"
+                    onClick={handleResetAI}
+                    className="text-xs text-slate-500 hover:text-slate-800 font-medium cursor-pointer"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleGenerateProposal}
+                    className="px-5 py-2.5 rounded-xl bg-slate-900 hover:bg-black text-white text-xs font-bold flex items-center gap-2 shadow-xs hover:shadow transition-all cursor-pointer active:scale-98"
+                  >
+                    <span>Generate Itinerary with Options</span>
+                    <span className="material-symbols-outlined text-sm">arrow_forward</span>
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {/* ======================================================= */}
+            {/* STAGE 2: GENERATING ANIMATION                           */}
+            {/* ======================================================= */}
+            {aiStage === 'generating' && (
+              <div className="py-12 flex flex-col items-center justify-center text-center space-y-4 animate-in fade-in duration-300">
+                <div className="w-12 h-12 rounded-2xl bg-slate-900 text-amber-400 flex items-center justify-center shadow-md animate-bounce">
+                  <span className="material-symbols-outlined text-2xl">auto_awesome</span>
+                </div>
+                <div>
+                  <h3 className="text-base font-bold text-slate-900">Synthesizing Your Bespoke Itinerary</h3>
+                  <p className="text-xs text-slate-500 mt-1">
+                    Matching flight availability, boutique suites & private chauffeurs in{' '}
+                    <span className="font-semibold text-slate-700">{aiDetails.destination}</span>...
+                  </p>
+                </div>
+                <div className="w-48 h-1.5 bg-slate-100 rounded-full overflow-hidden">
+                  <div className="h-full bg-slate-900 rounded-full animate-pulse w-3/4" />
+                </div>
+              </div>
+            )}
+
+            {/* ======================================================= */}
+            {/* STAGE 3: ITINERARY PROPOSAL & ALTERNATIVES (REQ 2, 3, 4)*/}
+            {/* ======================================================= */}
+            {aiStage === 'proposal' && aiProposal && (
+              <div className="space-y-6 animate-in fade-in duration-200">
+                {/* Header Bar */}
+                <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4 pb-4 border-b border-slate-100">
+                  <div className="flex items-start gap-3">
+                    <img
+                      src={aiProposal.heroImage}
+                      alt={aiProposal.destination}
+                      className="w-16 h-16 rounded-2xl object-cover shadow-xs shrink-0"
+                    />
+                    <div>
+                      <div className="flex items-center gap-2">
+                        <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200">
+                          ✨ AI Custom Proposal
+                        </span>
+                        <span className="text-xs text-slate-400">
+                          {aiProposal.days} Days · {aiProposal.travelers} Guests
+                        </span>
+                      </div>
+                      <h3 className="text-lg font-bold text-slate-900 tracking-tight mt-0.5">
+                        {aiProposal.title}
+                      </h3>
+                      <p className="text-xs text-slate-500 line-clamp-1 mt-0.5">
+                        {aiProposal.summary}
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* Pricing Box */}
+                  <div className="text-right sm:shrink-0 bg-slate-50 p-2.5 rounded-2xl border border-slate-100">
+                    <div className="text-[11px] text-slate-400 font-medium">Estimated Total</div>
+                    <div className="text-lg font-black text-slate-900">
+                      ${proposalPricing.totalUSD.toLocaleString()}{' '}
+                      <span className="text-xs font-normal text-slate-500">
+                        (${proposalPricing.perPersonUSD.toLocaleString()}/person)
+                      </span>
+                    </div>
+                    {proposalPricing.priceDeltaUSD !== 0 && (
+                      <div
+                        className={`text-[10px] font-bold mt-0.5 ${
+                          proposalPricing.priceDeltaUSD > 0 ? 'text-amber-600' : 'text-emerald-600'
+                        }`}
+                      >
+                        {proposalPricing.priceDeltaUSD > 0
+                          ? `+$${proposalPricing.priceDeltaUSD.toLocaleString()} (Upgraded Options)`
+                          : `-$${Math.abs(proposalPricing.priceDeltaUSD).toLocaleString()} (Cheaper Alternatives)`}
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                {/* --------------------------------------------------- */}
+                {/* INTERACTIVE LOGISTICS BENTO: FLIGHT, HOTEL, CAR     */}
+                {/* --------------------------------------------------- */}
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between">
+                    <h4 className="text-xs font-bold text-slate-700 uppercase tracking-wider flex items-center gap-1.5">
+                      <span className="material-symbols-outlined text-sm text-slate-400">tune</span>
+                      1. Select Your Flights, Stays & Chauffeur
+                    </h4>
+                    <span className="text-[11px] text-slate-400">
+                      Click any card to switch to alternatives
+                    </span>
+                  </div>
+
+                  {/* 1. FLIGHT SELECTOR CARD */}
+                  <div className="rounded-2xl border border-slate-200 bg-white overflow-hidden shadow-2xs">
+                    <div className="p-3.5 bg-slate-50/70 border-b border-slate-100 flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <span className="w-7 h-7 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center">
+                          <span className="material-symbols-outlined text-sm">flight</span>
+                        </span>
+                        <div>
+                          <span className="text-xs font-bold text-slate-800">Flight Selection: </span>
+                          <span className="text-xs text-slate-600">
+                            {proposalPricing.chosenFlight?.airline} ({proposalPricing.chosenFlight?.flightNumber})
+                          </span>
+                        </div>
+                      </div>
+
+                      <button
+                        type="button"
+                        onClick={() =>
+                          setActiveAlternativeDrawer(prev => (prev === 'flight' ? 'none' : 'flight'))
+                        }
+                        className="text-xs font-bold text-blue-600 hover:text-blue-700 flex items-center gap-1 px-2.5 py-1 rounded-lg hover:bg-blue-50 cursor-pointer transition-colors"
+                      >
+                        <span>
+                          {activeAlternativeDrawer === 'flight'
+                            ? 'Hide Alternatives'
+                            : '⇄ Switch Flight (3 Options)'}
+                        </span>
+                        <span className="material-symbols-outlined text-sm">
+                          {activeAlternativeDrawer === 'flight' ? 'expand_less' : 'expand_more'}
+                        </span>
+                      </button>
+                    </div>
+
+                    {/* Active Flight Preview */}
+                    <div className="p-3.5 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs">
+                      <div className="space-y-0.5">
+                        <div className="flex items-center gap-2">
+                          <span className="font-bold text-slate-900 text-sm">
+                            {proposalPricing.chosenFlight?.originCode} ➔ {proposalPricing.chosenFlight?.destCode}
+                          </span>
+                          <span className="px-2 py-0.2 rounded-full text-[10px] font-semibold bg-slate-100 text-slate-600">
+                            {proposalPricing.chosenFlight?.cabinClass}
+                          </span>
+                          <span className="px-2 py-0.2 rounded-full text-[10px] font-semibold bg-emerald-50 text-emerald-700">
+                            {proposalPricing.chosenFlight?.badge}
+                          </span>
+                        </div>
+                        <p className="text-slate-500 text-[11px]">
+                          Departure: {proposalPricing.chosenFlight?.departureTime} · Duration:{' '}
+                          {proposalPricing.chosenFlight?.duration} ({proposalPricing.chosenFlight?.stops}) ·{' '}
+                          {proposalPricing.chosenFlight?.baggage}
+                        </p>
+                      </div>
+
+                      <div className="text-right sm:shrink-0">
+                        <span className="text-sm font-bold text-slate-900">
+                          ${proposalPricing.chosenFlight?.priceUSD}
+                        </span>
+                        <span className="text-[10px] text-slate-400 block">/ traveler</span>
+                      </div>
+                    </div>
+
+                    {/* Flight Alternatives Drawer */}
+                    {activeAlternativeDrawer === 'flight' && (
+                      <div className="p-3.5 bg-slate-50/90 border-t border-slate-100 space-y-2 animate-in fade-in duration-150">
+                        <div className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">
+                          Choose Alternative Flight Option:
+                        </div>
+                        <div className="grid grid-cols-1 gap-2">
+                          {aiProposal.flights.map(flt => {
+                            const isSelected = selectedFlightId === flt.id;
+                            return (
+                              <div
+                                key={flt.id}
+                                onClick={() => {
+                                  setSelectedFlightId(flt.id);
+                                  setActiveAlternativeDrawer('none');
+                                }}
+                                className={`p-3 rounded-xl border flex items-center justify-between cursor-pointer transition-all ${
+                                  isSelected
+                                    ? 'border-blue-600 bg-blue-50/50 shadow-xs ring-1 ring-blue-600'
+                                    : 'border-slate-200 bg-white hover:border-slate-300'
+                                }`}
+                              >
+                                <div className="flex items-center gap-3">
+                                  <div
+                                    className={`w-4 h-4 rounded-full border flex items-center justify-center ${
+                                      isSelected
+                                        ? 'border-blue-600 bg-blue-600 text-white'
+                                        : 'border-slate-300 bg-white'
+                                    }`}
+                                  >
+                                    {isSelected && <span className="text-[9px] font-bold">✓</span>}
+                                  </div>
+                                  <div>
+                                    <div className="flex items-center gap-2">
+                                      <span className="font-bold text-xs text-slate-900">
+                                        {flt.airline} ({flt.flightNumber})
+                                      </span>
+                                      <span
+                                        className={`px-2 py-0.2 rounded-full text-[10px] font-bold ${
+                                          flt.type === 'cheaper'
+                                            ? 'bg-emerald-100 text-emerald-800'
+                                            : flt.type === 'luxury'
+                                            ? 'bg-amber-100 text-amber-800'
+                                            : 'bg-slate-100 text-slate-700'
+                                        }`}
+                                      >
+                                        {flt.label}
+                                      </span>
+                                    </div>
+                                    <div className="text-[11px] text-slate-500 mt-0.5">
+                                      {flt.departureTime} – {flt.arrivalTime} · {flt.duration} ({flt.stops}) ·{' '}
+                                      {flt.cabinClass}
+                                    </div>
+                                  </div>
+                                </div>
+
+                                <div className="text-right">
+                                  <div className="text-xs font-bold text-slate-900">${flt.priceUSD}</div>
+                                  <div className="text-[10px] text-slate-400">
+                                    {flt.priceDeltaUSD === 0
+                                      ? 'Base Rate'
+                                      : flt.priceDeltaUSD > 0
+                                      ? `+$${flt.priceDeltaUSD}`
+                                      : `-$${Math.abs(flt.priceDeltaUSD)}`}
+                                  </div>
+                                </div>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* 2. HOTEL SELECTOR CARD */}
+                  <div className="rounded-2xl border border-slate-200 bg-white overflow-hidden shadow-2xs">
+                    <div className="p-3.5 bg-slate-50/70 border-b border-slate-100 flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <span className="w-7 h-7 rounded-lg bg-amber-50 text-amber-600 flex items-center justify-center">
+                          <span className="material-symbols-outlined text-sm">hotel</span>
+                        </span>
+                        <div>
+                          <span className="text-xs font-bold text-slate-800">Hotel Selection: </span>
+                          <span className="text-xs text-slate-600">
+                            {proposalPricing.chosenHotel?.name}
+                          </span>
+                        </div>
+                      </div>
+
+                      <button
+                        type="button"
+                        onClick={() =>
+                          setActiveAlternativeDrawer(prev => (prev === 'hotel' ? 'none' : 'hotel'))
+                        }
+                        className="text-xs font-bold text-blue-600 hover:text-blue-700 flex items-center gap-1 px-2.5 py-1 rounded-lg hover:bg-blue-50 cursor-pointer transition-colors"
+                      >
+                        <span>
+                          {activeAlternativeDrawer === 'hotel'
+                            ? 'Hide Alternatives'
+                            : '⇄ Switch Hotel (3 Options)'}
+                        </span>
+                        <span className="material-symbols-outlined text-sm">
+                          {activeAlternativeDrawer === 'hotel' ? 'expand_less' : 'expand_more'}
+                        </span>
+                      </button>
+                    </div>
+
+                    {/* Active Hotel Preview */}
+                    <div className="p-3.5 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs">
+                      <div className="flex items-start gap-3">
+                        <img
+                          src={proposalPricing.chosenHotel?.image}
+                          alt={proposalPricing.chosenHotel?.name}
+                          className="w-14 h-14 rounded-xl object-cover shrink-0 shadow-2xs"
+                        />
+                        <div className="space-y-0.5">
+                          <div className="flex items-center gap-2">
+                            <span className="font-bold text-slate-900 text-sm">
+                              {proposalPricing.chosenHotel?.name}
+                            </span>
+                            <span className="px-2 py-0.2 rounded-full text-[10px] font-semibold bg-amber-50 text-amber-700">
+                              ★ {proposalPricing.chosenHotel?.rating} ({proposalPricing.chosenHotel?.reviewsCount})
+                            </span>
+                            <span className="px-2 py-0.2 rounded-full text-[10px] font-semibold bg-slate-100 text-slate-600">
+                              {proposalPricing.chosenHotel?.label}
+                            </span>
+                          </div>
+                          <p className="text-slate-600 text-[11px]">
+                            {proposalPricing.chosenHotel?.roomType} · {proposalPricing.chosenHotel?.location}
+                          </p>
+                          <div className="flex flex-wrap gap-1.5 pt-0.5">
+                            {proposalPricing.chosenHotel?.perks.slice(0, 3).map((p, idx) => (
+                              <span
+                                key={idx}
+                                className="text-[10px] bg-slate-100 text-slate-600 px-1.5 py-0.2 rounded"
+                              >
+                                ✓ {p}
+                              </span>
+                            ))}
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="text-right sm:shrink-0">
+                        <span className="text-sm font-bold text-slate-900">
+                          ${proposalPricing.chosenHotel?.pricePerNightUSD}
+                        </span>
+                        <span className="text-[10px] text-slate-400 block">
+                          / night × {proposalPricing.nights} nights
+                        </span>
+                      </div>
+                    </div>
+
+                    {/* Hotel Alternatives Drawer */}
+                    {activeAlternativeDrawer === 'hotel' && (
+                      <div className="p-3.5 bg-slate-50/90 border-t border-slate-100 space-y-2 animate-in fade-in duration-150">
+                        <div className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">
+                          Choose Alternative Accommodation:
+                        </div>
+                        <div className="grid grid-cols-1 gap-2">
+                          {aiProposal.hotels.map(htl => {
+                            const isSelected = selectedHotelId === htl.id;
+                            return (
+                              <div
+                                key={htl.id}
+                                onClick={() => {
+                                  setSelectedHotelId(htl.id);
+                                  setActiveAlternativeDrawer('none');
+                                }}
+                                className={`p-3 rounded-xl border flex items-center justify-between cursor-pointer transition-all ${
+                                  isSelected
+                                    ? 'border-blue-600 bg-blue-50/50 shadow-xs ring-1 ring-blue-600'
+                                    : 'border-slate-200 bg-white hover:border-slate-300'
+                                }`}
+                              >
+                                <div className="flex items-center gap-3">
+                                  <div
+                                    className={`w-4 h-4 rounded-full border flex items-center justify-center shrink-0 ${
+                                      isSelected
+                                        ? 'border-blue-600 bg-blue-600 text-white'
+                                        : 'border-slate-300 bg-white'
+                                    }`}
+                                  >
+                                    {isSelected && <span className="text-[9px] font-bold">✓</span>}
+                                  </div>
+                                  <img
+                                    src={htl.image}
+                                    alt={htl.name}
+                                    className="w-12 h-12 rounded-lg object-cover shrink-0"
+                                  />
+                                  <div>
+                                    <div className="flex items-center gap-2">
+                                      <span className="font-bold text-xs text-slate-900">{htl.name}</span>
+                                      <span
+                                        className={`px-2 py-0.2 rounded-full text-[10px] font-bold ${
+                                          htl.type === 'cheaper'
+                                            ? 'bg-emerald-100 text-emerald-800'
+                                            : htl.type === 'luxury'
+                                            ? 'bg-amber-100 text-amber-800'
+                                            : 'bg-slate-100 text-slate-700'
+                                        }`}
+                                      >
+                                        {htl.label}
+                                      </span>
+                                    </div>
+                                    <div className="text-[11px] text-slate-500 mt-0.5">
+                                      {htl.roomType} · ★ {htl.rating} · {htl.perks.slice(0, 2).join(' · ')}
+                                    </div>
+                                  </div>
+                                </div>
+
+                                <div className="text-right shrink-0">
+                                  <div className="text-xs font-bold text-slate-900">
+                                    ${htl.pricePerNightUSD}/nt
+                                  </div>
+                                  <div className="text-[10px] text-slate-400">
+                                    {htl.priceDeltaPerNightUSD === 0
+                                      ? 'Base Choice'
+                                      : htl.priceDeltaPerNightUSD > 0
+                                      ? `+$${htl.priceDeltaPerNightUSD}/nt`
+                                      : `-$${Math.abs(htl.priceDeltaPerNightUSD)}/nt`}
+                                  </div>
+                                </div>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* 3. CHAUFFEUR & FLEET CARD */}
+                  <div className="rounded-2xl border border-slate-200 bg-white p-3.5 flex items-center justify-between text-xs shadow-2xs">
+                    <div className="flex items-center gap-3">
+                      <span className="w-8 h-8 rounded-xl bg-purple-50 text-purple-600 flex items-center justify-center shrink-0">
+                        <span className="material-symbols-outlined text-base">directions_car</span>
+                      </span>
+                      <div>
+                        <div className="flex items-center gap-2">
+                          <span className="font-bold text-slate-900 text-xs">
+                            Private Chauffeur: {proposalPricing.chosenTransfer?.vehicle}
+                          </span>
+                          <span className="px-2 py-0.2 rounded-full text-[10px] font-semibold bg-emerald-50 text-emerald-700">
+                            ★ {proposalPricing.chosenTransfer?.rating} Verified
+                          </span>
+                        </div>
+                        <p className="text-slate-500 text-[11px] mt-0.5">
+                          {proposalPricing.chosenTransfer?.description}
+                        </p>
+                      </div>
+                    </div>
+
+                    <div className="text-right shrink-0">
+                      <span className="text-[11px] font-bold text-emerald-700 bg-emerald-50 px-2 py-1 rounded-lg">
+                        Included
+                      </span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* --------------------------------------------------- */}
+                {/* DAY-BY-DAY SCHEDULE PREVIEW                         */}
+                {/* --------------------------------------------------- */}
+                <div className="space-y-3">
+                  <h4 className="text-xs font-bold text-slate-700 uppercase tracking-wider flex items-center gap-1.5">
+                    <span className="material-symbols-outlined text-sm text-slate-400">route</span>
+                    2. Daily Flow & Signature Highlights
+                  </h4>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                    {aiProposal.schedulePreview.map(day => (
+                      <div
+                        key={day.dayNumber}
+                        className="p-3 rounded-2xl border border-slate-100 bg-slate-50/60 space-y-1.5 text-xs text-left"
+                      >
+                        <div className="flex items-center gap-1.5 font-bold text-slate-900">
+                          <span className="w-5 h-5 rounded-full bg-slate-900 text-white text-[10px] flex items-center justify-center font-mono">
+                            {day.dayNumber}
+                          </span>
+                          <span className="line-clamp-1">{day.title}</span>
+                        </div>
+                        <ul className="space-y-1 pl-6 list-disc text-slate-500 text-[11px]">
+                          {day.highlights.map((h, i) => (
+                            <li key={i} className="line-clamp-1">
+                              {h}
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                {/* --------------------------------------------------- */}
+                {/* AI-GENERATED EXTRA ACTIVITIES (REQUIREMENT 4)       */}
+                {/* --------------------------------------------------- */}
+                <div className="space-y-3 pt-2">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <h4 className="text-xs font-bold text-slate-900 uppercase tracking-wider flex items-center gap-1.5">
+                        <span className="text-amber-500 text-sm">✨</span>
+                        3. AI Recommended Extra Experiences
+                      </h4>
+                      <p className="text-[11px] text-slate-500 mt-0.5">
+                        Select any to add directly to your schedule now, or find them ready in the Itinerary
+                        Builder catalog.
+                      </p>
+                    </div>
+                    <span className="text-[11px] font-bold text-slate-400">
+                      {selectedExtraActivityIds.length} Added
+                    </span>
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                    {aiProposal.extraActivities.map(act => {
+                      const isAdded = selectedExtraActivityIds.includes(act.id);
+                      return (
+                        <div
+                          key={act.id}
+                          className={`p-3 rounded-2xl border flex items-center justify-between gap-3 text-xs transition-all ${
+                            isAdded
+                              ? 'border-emerald-500 bg-emerald-50/30 shadow-xs ring-1 ring-emerald-500'
+                              : 'border-slate-200 bg-white hover:border-slate-300'
+                          }`}
+                        >
+                          <div className="flex items-center gap-2.5 min-w-0">
+                            <img
+                              src={act.image}
+                              alt={act.title}
+                              className="w-12 h-12 rounded-xl object-cover shrink-0 shadow-2xs"
+                            />
+                            <div className="min-w-0">
+                              <h5 className="font-bold text-slate-900 text-xs line-clamp-1">
+                                {act.title}
+                              </h5>
+                              <div className="text-[11px] text-slate-500 flex items-center gap-1.5 mt-0.5">
+                                <span className="capitalize">{act.category}</span>
+                                <span>•</span>
+                                <span>{act.duration}</span>
+                                <span>•</span>
+                                <span className="text-amber-600 font-semibold">★ {act.rating}</span>
+                              </div>
+                              <div className="text-xs font-bold text-slate-900 mt-0.5">
+                                ${act.price}
+                              </div>
+                            </div>
+                          </div>
+
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setSelectedExtraActivityIds(prev =>
+                                isAdded ? prev.filter(id => id !== act.id) : [...prev, act.id]
+                              );
+                            }}
+                            className={`px-3 py-1.5 rounded-xl text-xs font-bold shrink-0 transition-all cursor-pointer ${
+                              isAdded
+                                ? 'bg-emerald-600 text-white shadow-xs'
+                                : 'bg-slate-100 hover:bg-slate-200 text-slate-700'
+                            }`}
+                          >
+                            {isAdded ? '✓ Added' : '+ Add'}
+                          </button>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                {/* --------------------------------------------------- */}
+                {/* BOTTOM CONFIRMATION & LAUNCH IN BUILDER (REQ 3)     */}
+                {/* --------------------------------------------------- */}
+                <div className="pt-4 border-t border-slate-200 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                  <div className="flex items-center gap-3">
+                    <button
+                      type="button"
+                      onClick={() => setAiStage('questions')}
+                      className="text-xs text-slate-500 hover:text-slate-800 font-semibold flex items-center gap-1 cursor-pointer"
+                    >
+                      <span className="material-symbols-outlined text-sm">arrow_back</span>
+                      <span>Edit Preferences</span>
+                    </button>
+                    <span className="text-slate-300">|</span>
+                    <button
+                      type="button"
+                      onClick={handleResetAI}
+                      className="text-xs text-slate-400 hover:text-slate-600 cursor-pointer"
+                    >
+                      Exit to Discover
+                    </button>
+                  </div>
+
+                  <div className="flex items-center gap-3">
+                    <div className="text-right hidden sm:block">
+                      <div className="text-xs font-black text-slate-900">
+                        ${proposalPricing.totalUSD.toLocaleString()}
+                      </div>
+                      <div className="text-[10px] text-slate-400">Total for all travelers</div>
+                    </div>
+
+                    <button
+                      type="button"
+                      onClick={handleConfirmAndOpenInBuilder}
+                      className="w-full sm:w-auto px-6 py-3 rounded-2xl bg-gradient-to-r from-slate-900 to-indigo-950 hover:from-black hover:to-slate-900 text-white text-xs font-bold flex items-center justify-center gap-2 shadow-md hover:shadow-lg transition-all cursor-pointer active:scale-98"
+                    >
+                      <span>Confirm & Open in Itinerary Builder</span>
+                      <span className="material-symbols-outlined text-base">arrow_forward</span>
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
         </div>
 

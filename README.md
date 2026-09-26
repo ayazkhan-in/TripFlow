@@ -19,6 +19,10 @@ TripFlow/
     └── BACKEND_SPECIFICATION.md  # Complete DB schema & API Endpoints Blueprint
 ```
 
+## Complete Features & Platform Documentation
+The comprehensive breakdown of all consumer and operator features, dynamic pricing engine, Gemini AI OCR scanner, real-time telemetry, and architecture is documented in:
+👉 **[`FEATURES.md`](./FEATURES.md)**
+
 ## Backend Blueprint & Database Schema
 The complete PostgreSQL schema (DDL & Prisma), entity relationships, Gemini API prompts, Cloudinary folder structure, and 40+ REST API endpoints are documented in:
 👉 **[`backend/BACKEND_SPECIFICATION.md`](./backend/BACKEND_SPECIFICATION.md)**

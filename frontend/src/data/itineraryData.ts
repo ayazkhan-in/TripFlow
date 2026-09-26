@@ -597,3 +597,35 @@ export const INITIAL_TRIP_ITINERARY: TripItinerary = {
     },
   ],
 };
+
+// ============================================================================
+// CUSTOM / AI CATALOG REGISTRATION
+// ============================================================================
+
+export function addCustomCatalogItems(items: CatalogItem[]) {
+  const existingIds = new Set(CATALOG_ITEMS.map(i => i.id));
+  const newItems = items.filter(i => !existingIds.has(i.id));
+  if (newItems.length > 0) {
+    CATALOG_ITEMS.unshift(...newItems);
+    try {
+      localStorage.setItem('tripflow_custom_catalog_v1', JSON.stringify(CATALOG_ITEMS.slice(0, 50)));
+    } catch (e) {
+      console.warn('Could not persist custom catalog items:', e);
+    }
+  }
+}
+
+// Load cached catalog items on module initialization
+try {
+  const saved = localStorage.getItem('tripflow_custom_catalog_v1');
+  if (saved) {
+    const parsed = JSON.parse(saved);
+    if (Array.isArray(parsed)) {
+      const existingIds = new Set(CATALOG_ITEMS.map(i => i.id));
+      const toAdd = parsed.filter(i => !existingIds.has(i.id));
+      CATALOG_ITEMS.unshift(...toAdd);
+    }
+  }
+} catch (e) {
+  // Ignore SSR or local storage parse errors
+}

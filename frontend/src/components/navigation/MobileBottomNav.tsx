@@ -45,6 +45,21 @@ export const MobileBottomNav: React.FC<MobileBottomNavProps> = ({
       </button>
 
       <button
+        onClick={() => onTabChange('assistant')}
+        className={`flex flex-col items-center gap-0.5 py-1 transition-colors cursor-pointer ${
+          activeTab === 'assistant' ? 'text-[#004AC6]' : 'text-[#737686] hover:text-[#151c27]'
+        }`}
+      >
+        <span
+          className="material-symbols-outlined text-xl"
+          style={activeTab === 'assistant' ? { fontVariationSettings: "'FILL' 1" } : {}}
+        >
+          auto_awesome
+        </span>
+        <span className="text-[10px] font-semibold">Assistant</span>
+      </button>
+
+      <button
         onClick={() => onTabChange('builder')}
         className={`flex flex-col items-center gap-0.5 py-1 transition-colors cursor-pointer ${
           activeTab === 'builder' ? 'text-[#004AC6]' : 'text-[#737686] hover:text-[#151c27]'
