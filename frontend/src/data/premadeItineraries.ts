@@ -1,5 +1,5 @@
 import { TripItinerary, ItineraryDay, ItineraryItem, CatalogItem } from '../types/itinerary';
-import { BookedTrip } from '../types/travel';
+import { BookedTrip, PaymentDetails } from '../types/travel';
 import { VaultDocument } from '../types/vault';
 import { calculateTripPricing } from '../utils/pricing';
 
@@ -703,7 +703,8 @@ export function generateAIItinerary(params: AIGenerateParams): TripItinerary {
 
 export function convertItineraryToBookedTrip(
   itinerary: TripItinerary,
-  pricingTotal?: number
+  pricingTotal?: number,
+  paymentDetails?: PaymentDetails
 ): BookedTrip {
   const calculated = calculateTripPricing(itinerary);
   const total = pricingTotal || calculated.total;
@@ -786,6 +787,7 @@ export function convertItineraryToBookedTrip(
     },
 
     itinerary: itinerary,
+    paymentDetails: paymentDetails,
   };
 
   return bookedTrip;

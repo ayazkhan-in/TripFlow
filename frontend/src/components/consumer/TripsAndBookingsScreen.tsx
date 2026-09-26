@@ -301,6 +301,7 @@ export const TripsAndBookingsScreen: React.FC<TripsAndBookingsScreenProps> = ({
   const [isFutureExpanded, setIsFutureExpanded] = useState<boolean>(false);
   const [bookingFilter, setBookingFilter] = useState<'all' | 'flight' | 'hotel' | 'transfer' | 'experience'>('all');
   const [copiedKey, setCopiedKey] = useState<string | null>(null);
+  const [isPaymentReceiptOpen, setIsPaymentReceiptOpen] = useState<boolean>(false);
 
   const [selectedEventModal, setSelectedEventModal] = useState<TimelineEvent | null>(null);
   const [selectedBookingVoucher, setSelectedBookingVoucher] = useState<{
@@ -619,6 +620,40 @@ export const TripsAndBookingsScreen: React.FC<TripsAndBookingsScreenProps> = ({
               <span className="font-semibold text-slate-900">
                 ₹{currentTrip ? currentTrip.totalPrice.toLocaleString('en-IN') : '42,800'}
               </span>
+
+              {/* Payment Plan & Settlement Badge */}
+              {currentTrip?.paymentDetails && (
+                <>
+                  <span className="text-slate-300">·</span>
+                  <button
+                    type="button"
+                    onClick={() => setIsPaymentReceiptOpen(true)}
+                    className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-bold transition-all cursor-pointer shadow-2xs hover:opacity-90 active:scale-95 ${
+                      currentTrip.paymentDetails.type === 'group_split'
+                        ? 'bg-purple-50 text-purple-800 border border-purple-200'
+                        : currentTrip.paymentDetails.type === 'installments'
+                        ? 'bg-amber-50 text-amber-800 border border-amber-200'
+                        : 'bg-emerald-50 text-emerald-800 border border-emerald-200'
+                    }`}
+                  >
+                    <span className="material-symbols-outlined text-[13px]">
+                      {currentTrip.paymentDetails.type === 'group_split'
+                        ? 'groups'
+                        : currentTrip.paymentDetails.type === 'installments'
+                        ? 'calendar_month'
+                        : 'verified'}
+                    </span>
+                    <span>
+                      {currentTrip.paymentDetails.type === 'group_split'
+                        ? `Group Split (${currentTrip.paymentDetails.groupSplit?.paidMembersCount || 1}/${currentTrip.paymentDetails.groupSplit?.totalMembers || 4} Settled)`
+                        : currentTrip.paymentDetails.type === 'installments'
+                        ? `Installments (${currentTrip.paymentDetails.installmentsPlan?.paidInstallments || 1}/${currentTrip.paymentDetails.installmentsPlan?.totalInstallments || 3} Paid)`
+                        : 'Settled in Full'}
+                    </span>
+                    <span className="material-symbols-outlined text-[11px]">receipt_long</span>
+                  </button>
+                </>
+              )}
             </div>
           </div>
 
@@ -2004,6 +2039,231 @@ export const TripsAndBookingsScreen: React.FC<TripsAndBookingsScreenProps> = ({
                   </div>
                 </div>
               </div>
+            </div>
+          </div>
+        </div>
+      )}
+      {/* ============================================================= */}
+      {/* VIEW 3: PAYMENT RECEIPT & PLAN SCHEDULE MODAL                 */}
+      {/* ============================================================= */}
+      {isPaymentReceiptOpen && currentTrip?.paymentDetails && (
+        <div
+          onClick={() => setIsPaymentReceiptOpen(false)}
+          className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-slate-950/70 backdrop-blur-sm animate-in fade-in duration-200"
+        >
+          <div
+            onClick={e => e.stopPropagation()}
+            className="bg-white rounded-3xl max-w-lg w-full border border-slate-200 shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200 text-left font-sans"
+          >
+            {/* Modal Header */}
+            <div className="p-5 bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 text-white flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-2xl bg-white/10 flex items-center justify-center text-white shrink-0">
+                  <span className="material-symbols-outlined text-xl">receipt_long</span>
+                </div>
+                <div>
+                  <div className="flex items-center gap-2">
+                    <span className="text-[10px] font-mono uppercase tracking-wider bg-white/20 px-2 py-0.5 rounded-full font-bold">
+                      Official Payment Receipt
+                    </span>
+                    <span className="text-[11px] text-emerald-400 font-bold">Verified</span>
+                  </div>
+                  <h3 className="text-base font-extrabold text-white tracking-tight mt-0.5">
+                    {currentTrip.title}
+                  </h3>
+                  <p className="text-xs text-slate-300 font-mono">
+                    Ref #{currentTrip.bookingRef} · Txn #{currentTrip.paymentDetails.transactionRef}
+                  </p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setIsPaymentReceiptOpen(false)}
+                className="w-8 h-8 rounded-full bg-white/10 hover:bg-white/20 text-white flex items-center justify-center transition-colors cursor-pointer"
+              >
+                <span className="material-symbols-outlined text-base">close</span>
+              </button>
+            </div>
+
+            {/* Modal Content */}
+            <div className="p-5 space-y-4 max-h-[72vh] overflow-y-auto custom-scrollbar text-xs">
+              {/* Payment Summary Metrics */}
+              <div className="grid grid-cols-3 gap-2 bg-slate-50 p-3 rounded-2xl border border-slate-200/80 text-center">
+                <div>
+                  <span className="text-[10px] uppercase font-bold text-slate-400 block">Total Tour Price</span>
+                  <span className="font-extrabold text-slate-900 text-sm">₹{currentTrip.totalPrice.toLocaleString('en-IN')}</span>
+                </div>
+                <div>
+                  <span className="text-[10px] uppercase font-bold text-emerald-600 block">Paid to Date</span>
+                  <span className="font-extrabold text-emerald-700 text-sm">₹{currentTrip.paymentDetails.amountPaid.toLocaleString('en-IN')}</span>
+                </div>
+                <div>
+                  <span className="text-[10px] uppercase font-bold text-slate-400 block">Structure</span>
+                  <span className="font-bold text-slate-800 uppercase text-[11px] block truncate">
+                    {currentTrip.paymentDetails.type.replace('_', ' ')}
+                  </span>
+                </div>
+              </div>
+
+              {/* GROUP SPLIT ROSTER IF APPLICABLE */}
+              {currentTrip.paymentDetails.type === 'group_split' && currentTrip.paymentDetails.groupSplit && (
+                <div className="space-y-3 p-3.5 rounded-2xl bg-purple-50/60 border border-purple-200/80">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <span className="font-bold text-purple-950 block text-xs">Group Bill Split Status</span>
+                      <span className="text-[11px] text-purple-700">
+                        {currentTrip.paymentDetails.groupSplit.totalMembers} Members · ₹{currentTrip.paymentDetails.groupSplit.perPersonAmount.toLocaleString('en-IN')} Each
+                      </span>
+                    </div>
+                    <span className="px-2 py-0.5 rounded-full bg-purple-100 text-purple-900 font-bold text-[10px]">
+                      {currentTrip.paymentDetails.groupSplit.paidMembersCount} of {currentTrip.paymentDetails.groupSplit.totalMembers} Paid
+                    </span>
+                  </div>
+
+                  {/* Shareable Link Box */}
+                  <div className="flex items-center gap-2 bg-white p-2 rounded-xl border border-purple-200">
+                    <span className="font-mono text-[11px] text-purple-900 flex-1 truncate">
+                      {currentTrip.paymentDetails.groupSplit.splitLink}
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        navigator.clipboard?.writeText(currentTrip.paymentDetails?.groupSplit?.splitLink || '');
+                        showToast?.('Split payment link copied to clipboard!');
+                      }}
+                      className="px-2.5 py-1 rounded-lg bg-purple-600 text-white font-bold text-[10px] hover:bg-purple-700 transition-colors cursor-pointer shrink-0"
+                    >
+                      Copy Link
+                    </button>
+                  </div>
+
+                  {/* Member Rows */}
+                  <div className="space-y-1.5 pt-1">
+                    {currentTrip.paymentDetails.groupSplit.members.map((m, idx) => (
+                      <div
+                        key={m.id || idx}
+                        className="flex items-center justify-between p-2 rounded-xl bg-white border border-purple-100 text-xs"
+                      >
+                        <div className="flex items-center gap-2 min-w-0">
+                          <span className={`w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold ${
+                            m.status === 'PAID' ? 'bg-purple-600 text-white' : 'bg-slate-200 text-slate-600'
+                          }`}>
+                            {idx + 1}
+                          </span>
+                          <span className="font-semibold text-slate-800 truncate">{m.name}</span>
+                        </div>
+                        <div className="flex items-center gap-2 shrink-0">
+                          <span className="font-mono text-slate-600">₹{m.amount.toLocaleString('en-IN')}</span>
+                          <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${
+                            m.status === 'PAID'
+                              ? 'bg-emerald-100 text-emerald-800'
+                              : 'bg-amber-100 text-amber-800'
+                          }`}>
+                            {m.status === 'PAID' ? 'Settled' : 'Invited'}
+                          </span>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* INSTALLMENTS SCHEDULE IF APPLICABLE */}
+              {currentTrip.paymentDetails.type === 'installments' && currentTrip.paymentDetails.installmentsPlan && (
+                <div className="space-y-2.5 p-3.5 rounded-2xl bg-amber-50/70 border border-amber-200/80">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <span className="font-bold text-amber-950 block text-xs">Installment Schedule</span>
+                      <span className="text-[11px] text-amber-800">
+                        {currentTrip.paymentDetails.installmentsPlan.frequency === 'milestones'
+                          ? '3-Stage Milestone Plan (0% Interest)'
+                          : `${currentTrip.paymentDetails.installmentsPlan.totalInstallments}-Month No-Cost EMI`}
+                      </span>
+                    </div>
+                    <span className="px-2 py-0.5 rounded-full bg-amber-100 text-amber-900 font-bold text-[10px]">
+                      {currentTrip.paymentDetails.installmentsPlan.paidInstallments} of {currentTrip.paymentDetails.installmentsPlan.totalInstallments} Paid
+                    </span>
+                  </div>
+
+                  <div className="space-y-1.5">
+                    {currentTrip.paymentDetails.installmentsPlan.schedule.map((item, idx) => (
+                      <div
+                        key={item.installmentNumber || idx}
+                        className={`p-2.5 rounded-xl border flex items-center justify-between text-xs ${
+                          item.status === 'PAID'
+                            ? 'bg-white border-amber-300'
+                            : 'bg-white/60 border-amber-100'
+                        }`}
+                      >
+                        <div className="flex items-center gap-2">
+                          <span className={`w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold ${
+                            item.status === 'PAID' ? 'bg-amber-600 text-white' : 'bg-slate-200 text-slate-600'
+                          }`}>
+                            {idx + 1}
+                          </span>
+                          <div>
+                            <span className="font-bold text-slate-800 block">{item.label}</span>
+                            <span className="text-[10px] text-slate-500">{item.dueDate}</span>
+                          </div>
+                        </div>
+                        <div className="text-right">
+                          <span className="font-mono font-bold text-slate-900 block">₹{item.amount.toLocaleString('en-IN')}</span>
+                          <span className={`px-1.5 py-0.2 rounded text-[9px] font-bold ${
+                            item.status === 'PAID'
+                              ? 'bg-emerald-100 text-emerald-800'
+                              : 'bg-slate-100 text-slate-600'
+                          }`}>
+                            {item.status === 'PAID' ? 'Paid' : 'Scheduled'}
+                          </span>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Payment Method & Security Card */}
+              <div className="p-3 bg-slate-50 rounded-xl border border-slate-200 space-y-1 text-xs">
+                <div className="flex items-center justify-between">
+                  <span className="text-slate-500">Method of Payment:</span>
+                  <span className="font-bold text-slate-800 capitalize">
+                    {currentTrip.paymentDetails.cardBrand || 'Card'} {currentTrip.paymentDetails.cardLast4 ? `ending in ••${currentTrip.paymentDetails.cardLast4}` : ''}
+                  </span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-slate-500">Date Paid:</span>
+                  <span className="font-mono text-slate-700">{currentTrip.paymentDetails.paidAt || 'Just Now'}</span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-slate-500">Buyer Protection:</span>
+                  <span className="text-emerald-700 font-semibold flex items-center gap-1">
+                    <span className="material-symbols-outlined text-xs">verified</span>
+                    100% Escrow Guarantee
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            {/* Modal Footer */}
+            <div className="p-4 bg-slate-50 border-t border-slate-100 flex items-center justify-end gap-2">
+              <button
+                type="button"
+                onClick={() => setIsPaymentReceiptOpen(false)}
+                className="px-4 py-2 rounded-xl text-xs font-semibold text-slate-600 hover:text-slate-800 transition-colors cursor-pointer"
+              >
+                Close
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  onDownloadPDF();
+                  showToast?.(`Downloaded tax invoice for ${currentTrip.title}`);
+                }}
+                className="px-4 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold transition-all shadow-xs flex items-center gap-1.5 cursor-pointer"
+              >
+                <span className="material-symbols-outlined text-sm">download</span>
+                <span>Download Tax Invoice (PDF)</span>
+              </button>
             </div>
           </div>
         </div>

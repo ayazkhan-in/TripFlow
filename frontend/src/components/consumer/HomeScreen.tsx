@@ -17,6 +17,7 @@ interface HomeScreenProps {
   onOpenContactDriver: () => void;
   onSelectJourneyDetails: (journey: SavedJourney) => void;
   onSelectPremadeTrip?: (itinerary: TripItinerary) => void;
+  onOpenPayment?: (itinerary: TripItinerary, totalPrice: number) => void;
 }
 
 export const HomeScreen: React.FC<HomeScreenProps> = ({
@@ -26,6 +27,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
   onOpenContactDriver,
   onSelectJourneyDetails,
   onSelectPremadeTrip,
+  onOpenPayment,
 }) => {
   const [filter, setFilter] = useState<'all' | 'domestic' | 'international'>('all');
   const { packages: operatorPackages } = useOperator();
@@ -567,10 +569,16 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
                 price={`₹${pkg.totalPriceINR.toLocaleString('en-IN')}`}
                 pricePeriod="/package"
                 actionVariant="button"
-                actionLabel="Select & Customize"
+                actionLabel="Reserve Tour"
                 theme="light"
                 className="w-[320px] sm:w-[340px] shrink-0"
-                onActionClick={() => handleSelectPackage(pkg)}
+                onActionClick={() => {
+                  if (onOpenPayment) {
+                    onOpenPayment(pkg.itineraryTemplate, pkg.totalPriceINR);
+                  } else {
+                    handleSelectPackage(pkg);
+                  }
+                }}
                 onClick={() => handleSelectPackage(pkg)}
               />
             ))}

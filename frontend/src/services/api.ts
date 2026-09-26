@@ -174,12 +174,17 @@ export class TripFlowApi {
   // 2. BOOKINGS & TRIP MODIFICATIONS
   // --------------------------------------------------------------------------
 
-  static async checkoutBooking(itinerary: TripItinerary, totalPrice: number): Promise<BookedTrip | null> {
+  static async checkoutBooking(
+    itinerary: TripItinerary,
+    totalPrice: number,
+    paymentMethod = 'Amex Concierge Card ending in ••8842',
+    paymentDetails?: any
+  ): Promise<BookedTrip | null> {
     try {
       const res = await fetch(`${API_BASE}/bookings/checkout`, {
         method: 'POST',
         headers: this.getHeaders(),
-        body: JSON.stringify({ itinerary, totalPrice }),
+        body: JSON.stringify({ itinerary, totalPrice, paymentMethod, paymentDetails }),
       });
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const data = await res.json();

@@ -48,7 +48,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({
       {/* ------------------------------------------------------------- */}
       {/* CINEMATIC HERO SECTION WITH FLOATING HEADER (REFERENCE LAYOUT)*/}
       {/* ------------------------------------------------------------- */}
-      <section className="relative min-h-screen flex flex-col justify-between text-white overflow-hidden isolate font-['Plus_Jakarta_Sans',sans-serif]">
+      <section className="relative min-h-screen flex flex-col justify-between text-white overflow-hidden isolate font-sans">
         {/* Background Media with Hero Video (No dark overlay) */}
         <div className="absolute inset-0 pointer-events-none overflow-hidden select-none z-0">
           <video

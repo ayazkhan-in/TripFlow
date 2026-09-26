@@ -31,6 +31,7 @@ interface DiscoverScreenProps {
   onSelectPremadeTrip: (itinerary: TripItinerary) => void;
   onGenerateAITrip: (params: AIGenerateParams) => void;
   onOpenAssistantWithPrompt?: (prompt: string) => void;
+  onOpenPayment?: (itinerary: TripItinerary, totalPrice: number) => void;
   userName?: string;
   userAvatar?: string;
 }
@@ -356,6 +357,7 @@ export const DiscoverScreen: React.FC<DiscoverScreenProps> = ({
   onSelectPremadeTrip,
   onGenerateAITrip,
   onOpenAssistantWithPrompt,
+  onOpenPayment,
   userName = 'Sarah Mehta',
   userAvatar = USER_AVATAR,
 }) => {
@@ -1674,10 +1676,36 @@ export const DiscoverScreen: React.FC<DiscoverScreenProps> = ({
 
                     <button
                       type="button"
-                      onClick={handleConfirmAndOpenInBuilder}
-                      className="w-full sm:w-auto px-6 py-3 rounded-2xl bg-gradient-to-r from-slate-900 to-indigo-950 hover:from-black hover:to-slate-900 text-white text-xs font-bold flex items-center justify-center gap-2 shadow-md hover:shadow-lg transition-all cursor-pointer active:scale-98"
+                      onClick={() => {
+                        if (!aiProposal) return;
+                        const finalItinerary = compileFinalItinerary(
+                          aiProposal,
+                          selectedFlightId,
+                          selectedHotelId,
+                          selectedTransferId,
+                          selectedExtraActivityIds
+                        );
+                        if (aiProposal.extraActivities && aiProposal.extraActivities.length > 0) {
+                          addCustomCatalogItems(aiProposal.extraActivities);
+                        }
+                        if (onOpenPayment) {
+                          onOpenPayment(finalItinerary, proposalPricing.totalUSD);
+                        } else {
+                          handleConfirmAndOpenInBuilder();
+                        }
+                      }}
+                      className="px-5 py-3 rounded-2xl bg-blue-600 hover:bg-blue-700 text-white text-xs font-extrabold flex items-center justify-center gap-1.5 shadow-md hover:shadow-lg transition-all cursor-pointer active:scale-98"
                     >
-                      <span>Confirm & Open in Itinerary Builder</span>
+                      <span className="material-symbols-outlined text-base">lock</span>
+                      <span>Reserve Tour</span>
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={handleConfirmAndOpenInBuilder}
+                      className="w-full sm:w-auto px-5 py-3 rounded-2xl bg-gradient-to-r from-slate-900 to-indigo-950 hover:from-black hover:to-slate-900 text-white text-xs font-bold flex items-center justify-center gap-2 shadow-md hover:shadow-lg transition-all cursor-pointer active:scale-98"
+                    >
+                      <span>Customize in Builder</span>
                       <span className="material-symbols-outlined text-base">arrow_forward</span>
                     </button>
                   </div>
@@ -2115,10 +2143,16 @@ export const DiscoverScreen: React.FC<DiscoverScreenProps> = ({
                 price={`₹${pkg.totalPriceINR.toLocaleString('en-IN')}`}
                 pricePeriod="/package"
                 actionVariant="button"
-                actionLabel="Select & Customize"
+                actionLabel="Reserve Tour"
                 theme="light"
                 className="w-full max-w-[340px]"
-                onActionClick={() => onSelectPremadeTrip(pkg.itineraryTemplate)}
+                onActionClick={() => {
+                  if (onOpenPayment) {
+                    onOpenPayment(pkg.itineraryTemplate, pkg.totalPriceINR);
+                  } else {
+                    onSelectPremadeTrip(pkg.itineraryTemplate);
+                  }
+                }}
                 onClick={() => onSelectPremadeTrip(pkg.itineraryTemplate)}
               />
             ))}

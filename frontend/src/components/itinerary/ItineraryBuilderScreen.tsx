@@ -21,6 +21,7 @@ interface ItineraryBuilderScreenProps {
   originalBookedPrice?: number;
   onProceedToBooking?: (itinerary: TripItinerary, total: number, customizations?: any) => void;
   onSaveModifications?: (itinerary: TripItinerary, total: number) => void;
+  onOpenPayment?: (itinerary: TripItinerary, total: number, customizations?: any) => void;
 }
 
 export const ItineraryBuilderScreen: React.FC<ItineraryBuilderScreenProps> = ({
@@ -31,6 +32,7 @@ export const ItineraryBuilderScreen: React.FC<ItineraryBuilderScreenProps> = ({
   originalBookedPrice,
   onProceedToBooking,
   onSaveModifications,
+  onOpenPayment,
 }) => {
   // Itinerary Core State
   const [itinerary, setItinerary] = useState<TripItinerary>(() => {
@@ -634,6 +636,8 @@ export const ItineraryBuilderScreen: React.FC<ItineraryBuilderScreenProps> = ({
 
           if (isModifyingBookedTrip && onSaveModifications) {
             onSaveModifications(itinerary, pricing.total);
+          } else if (onOpenPayment) {
+            onOpenPayment(itinerary, pricing.total, customizationDetails);
           } else if (onProceedToBooking) {
             onProceedToBooking(itinerary, pricing.total, customizationDetails);
           } else {

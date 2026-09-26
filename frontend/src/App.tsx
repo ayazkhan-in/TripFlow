@@ -4,10 +4,12 @@
  */
 
 import React, { useState, useEffect } from 'react';
-import { ConsumerTab, OperatorTab, SavedJourney, ViewMode, BookedTrip } from './types/travel';
+import { ConsumerTab, OperatorTab, SavedJourney, ViewMode, BookedTrip, PaymentDetails } from './types/travel';
 import { TripItinerary } from './types/itinerary';
 import { VaultDocument } from './types/vault';
 import { INITIAL_VAULT_DOCUMENTS } from './data/vaultData';
+import { INITIAL_OPERATOR_PACKAGES } from './data/operatorPackagesData';
+import { PaymentOverlayModal } from './components/consumer/PaymentOverlayModal';
 import {
   PREMADE_KERALA_ITINERARY,
   generateAIItinerary,
@@ -74,6 +76,9 @@ function TripFlowApp() {
   ]);
   const [vaultSelectedTripId, setVaultSelectedTripId] = useState<string>('all');
   const [assistantInitialPrompt, setAssistantInitialPrompt] = useState<string | null>(null);
+  const [isPaymentOverlayOpen, setIsPaymentOverlayOpen] = useState<boolean>(false);
+  const [paymentOverlayItinerary, setPaymentOverlayItinerary] = useState<TripItinerary | null>(null);
+  const [paymentOverlayPrice, setPaymentOverlayPrice] = useState<number>(0);
 
   // Sync with live Neon PostgreSQL backend
   useEffect(() => {
@@ -259,24 +264,65 @@ function TripFlowApp() {
     showToast(`✨ Generated ${generated.days.length}-Day Itinerary for ${params.destination}! Ready to personalize.`);
   };
 
-  const handleProceedToBooking = async (
+  const handleOpenPayment = (
     itinerary: TripItinerary,
     totalPrice: number,
+    _customization?: any
+  ) => {
+    setPaymentOverlayItinerary(itinerary);
+    setPaymentOverlayPrice(totalPrice);
+    setIsPaymentOverlayOpen(true);
+  };
+
+  const handlePaymentSuccess = async (
+    itinerary: TripItinerary,
+    totalPrice: number,
+    paymentDetails: PaymentDetails,
     customizationDetails?: any
   ) => {
-    const backendTrip = await TripFlowApi.checkoutBooking(itinerary, totalPrice);
-    const newTrip = backendTrip || convertItineraryToBookedTrip(itinerary, totalPrice);
+    const paymentMethodLabel = paymentDetails.cardLast4
+      ? `Amex Concierge Card ending in ••${paymentDetails.cardLast4}`
+      : paymentDetails.method === 'upi'
+      ? `UPI (${paymentDetails.upiId || 'sarah@upi'})`
+      : 'TripFlow Escrow Hold';
+
+    const backendTrip = await TripFlowApi.checkoutBooking(
+      itinerary,
+      totalPrice,
+      paymentMethodLabel,
+      paymentDetails
+    );
+
+    const newTrip = backendTrip || convertItineraryToBookedTrip(itinerary, totalPrice, paymentDetails);
+    newTrip.paymentDetails = paymentDetails;
+
     setBookedTrips(prev => [newTrip, ...prev.filter(t => t.id !== newTrip.id)]);
     setActiveBookedTripId(newTrip.id);
+    setCurrentItinerary(itinerary);
+
     const newDocs = generateVaultDocsForTrip(newTrip);
     setVaultDocuments(prev => [...newDocs, ...prev]);
     setModifyingTripId(null);
+
+    setViewMode('consumer');
     setConsumerTab('trips');
+    setCurrentRoute('app');
 
-    // Transmit to Operator Store as a Customized Booking!
     addTravelerBooking(newTrip, customizationDetails);
+    showToast(`🎉 Payment Confirmed! "${newTrip.title}" is now active in Trips & Bookings.`);
+  };
 
-    showToast(`🎉 Payment Confirmed! "${newTrip.title}" is now active in Trips & Bookings and transmitted to Operator Desk.`);
+  const handleProceedToBooking = async (
+    itinerary: TripItinerary,
+    totalPrice: number,
+    customizationDetails?: any,
+    paymentDetails?: PaymentDetails
+  ) => {
+    if (!paymentDetails) {
+      handleOpenPayment(itinerary, totalPrice, customizationDetails);
+      return;
+    }
+    await handlePaymentSuccess(itinerary, totalPrice, paymentDetails, customizationDetails);
   };
 
   const handleModifyTrip = (trip: BookedTrip) => {
@@ -413,6 +459,7 @@ function TripFlowApp() {
                     onOpenContactDriver={() => setIsWhatsAppOpen(true)}
                     onSelectJourneyDetails={journey => setSelectedJourney(journey)}
                     onSelectPremadeTrip={handleSelectPremadeTrip}
+                    onOpenPayment={handleOpenPayment}
                   />
                 )}
 
@@ -460,6 +507,7 @@ function TripFlowApp() {
                       setAssistantInitialPrompt(prompt);
                       setConsumerTab('assistant');
                     }}
+                    onOpenPayment={handleOpenPayment}
                     userName={authUser?.name || 'Sarah Mehta'}
                     userAvatar={authUser?.avatar || USER_AVATAR}
                   />
@@ -487,6 +535,7 @@ function TripFlowApp() {
                     onBackToHome={() => handleConsumerTabChange('discover')}
                     onProceedToBooking={handleProceedToBooking}
                     onSaveModifications={handleSaveModifications}
+                    onOpenPayment={handleOpenPayment}
                     showToast={showToast}
                   />
                 )}
@@ -701,6 +750,25 @@ function TripFlowApp() {
           setConsumerTab('trips');
           setCurrentRoute('app');
         }}
+        onReserveTour={journey => {
+          setSelectedJourney(null);
+          const matchedPkg = INITIAL_OPERATOR_PACKAGES.find(
+            p => p.id === journey.id || p.title === journey.title || p.destination.toLowerCase() === journey.destination.toLowerCase()
+          );
+          const targetItinerary = matchedPkg?.itineraryTemplate || PREMADE_KERALA_ITINERARY;
+          const priceNumeric = parseInt(journey.price.replace(/[^\d]/g, ''), 10) || matchedPkg?.totalPriceINR || 185000;
+          handleOpenPayment(targetItinerary, priceNumeric);
+        }}
+      />
+
+      {/* Global Payment & Tour Reservation Overlay Modal */}
+      <PaymentOverlayModal
+        isOpen={isPaymentOverlayOpen}
+        onClose={() => setIsPaymentOverlayOpen(false)}
+        itinerary={paymentOverlayItinerary}
+        totalPrice={paymentOverlayPrice}
+        onPaymentSuccess={handlePaymentSuccess}
+        user={authUser}
       />
 
       {/* Operator Tour Package Creator Modal */}

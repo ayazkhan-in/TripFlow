@@ -62,7 +62,12 @@ router.get('/:id', optionalAuth, async (req: AuthenticatedRequest, res: Response
 router.post('/checkout', optionalAuth, async (req: AuthenticatedRequest, res: Response) => {
   try {
     const userId = req.user?.id || 'user-sarah-1024';
-    const { itinerary, totalPrice = 2450, paymentMethod = 'Amex Concierge Card ending in ••8842' } = req.body;
+    const {
+      itinerary,
+      totalPrice = 2450,
+      paymentMethod = 'Amex Concierge Card ending in ••8842',
+      paymentDetails,
+    } = req.body;
 
     if (!itinerary) {
       return res.status(400).json({ error: 'Itinerary payload is required' });
@@ -200,14 +205,19 @@ router.post('/checkout', optionalAuth, async (req: AuthenticatedRequest, res: Re
         carDetails,
         transactions: {
           create: {
-            transactionRef: `TXN-${Date.now()}`,
-            party: 'Stripe / Amex Concierge Checkout',
+            transactionRef: paymentDetails?.transactionRef || `TXN-${Date.now()}`,
+            party:
+              paymentDetails?.type === 'group_split'
+                ? 'Group Split Escrow · TripFlow'
+                : paymentDetails?.type === 'installments'
+                ? 'Installment Flex Pay · TripFlow'
+                : 'Stripe / Amex Concierge Checkout',
             type: 'inbound',
-            amount: Number(totalPrice),
+            amount: Number(paymentDetails?.amountPaid || totalPrice),
             currency: 'USD',
             status: 'SETTLED',
-            paymentMethod,
-            description: `Payment confirmed for ${itinerary.title}`,
+            paymentMethod: paymentMethod || 'Amex Concierge Card',
+            description: `Payment confirmed for ${itinerary.title} (${paymentDetails?.type || 'full'})`,
           },
         },
         vaultDocuments: {
@@ -270,7 +280,10 @@ router.post('/checkout', optionalAuth, async (req: AuthenticatedRequest, res: Re
     res.status(201).json({
       success: true,
       message: 'Booking confirmed and documents synchronized to Travel Vault!',
-      bookedTrip,
+      bookedTrip: {
+        ...bookedTrip,
+        paymentDetails: paymentDetails || undefined,
+      },
     });
   } catch (err: any) {
     console.error('Error during booking checkout:', err);

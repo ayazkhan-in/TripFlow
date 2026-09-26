@@ -122,12 +122,14 @@ interface JourneyDetailsModalProps {
   journey: SavedJourney | null;
   onClose: () => void;
   onBookNow: (journey: SavedJourney) => void;
+  onReserveTour?: (journey: SavedJourney) => void;
 }
 
 export const JourneyDetailsModal: React.FC<JourneyDetailsModalProps> = ({
   journey,
   onClose,
   onBookNow,
+  onReserveTour,
 }) => {
   if (!journey) return null;
 
@@ -326,21 +328,28 @@ export const JourneyDetailsModal: React.FC<JourneyDetailsModalProps> = ({
               <div className="flex items-center gap-2">
                 <button
                   type="button"
-                  onClick={onClose}
-                  className="px-3.5 py-1.5 rounded-full bg-white/10 hover:bg-white/20 text-white text-[11px] font-medium transition-colors cursor-pointer"
-                >
-                  Close
-                </button>
-                <button
-                  type="button"
                   onClick={() => {
                     onBookNow(journey);
                     onClose();
                   }}
-                  className="px-4 py-1.5 rounded-full bg-white hover:bg-blue-50 text-gray-950 font-bold text-[11px] transition-all cursor-pointer flex items-center gap-1"
+                  className="px-3.5 py-1.5 rounded-full bg-white/10 hover:bg-white/20 text-white text-[11px] font-medium transition-colors cursor-pointer"
                 >
-                  <span>Explore Timeline</span>
-                  <span className="material-symbols-outlined text-[12px]">arrow_forward</span>
+                  Explore Timeline
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (onReserveTour) {
+                      onReserveTour(journey);
+                    } else {
+                      onBookNow(journey);
+                    }
+                    onClose();
+                  }}
+                  className="px-4 py-1.5 rounded-full bg-blue-600 hover:bg-blue-500 text-white font-extrabold text-[11px] transition-all cursor-pointer flex items-center gap-1 shadow-md shadow-blue-600/30"
+                >
+                  <span className="material-symbols-outlined text-[13px]">lock</span>
+                  <span>Confirm & Reserve Tour</span>
                 </button>
               </div>
             </div>

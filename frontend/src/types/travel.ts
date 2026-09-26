@@ -54,6 +54,58 @@ export interface BookedTrip {
     gpsTrackingActive: boolean;
   };
   itinerary: TripItinerary;
+  paymentDetails?: PaymentDetails;
+}
+
+export type PaymentPlanType = 'full' | 'installments' | 'group_split';
+
+export interface GroupMemberPayment {
+  id: string;
+  name: string;
+  email: string;
+  phone?: string;
+  amount: number;
+  status: 'PAID' | 'INVITED' | 'PENDING';
+  isHost: boolean;
+  paidAt?: string;
+}
+
+export interface InstallmentScheduleItem {
+  installmentNumber: number;
+  label: string;
+  dueDate: string;
+  amount: number;
+  status: 'PAID' | 'SCHEDULED' | 'PENDING';
+}
+
+export interface PaymentDetails {
+  method: 'card' | 'upi' | 'escrow' | 'installments' | 'group_split';
+  type: PaymentPlanType;
+  status: 'SETTLED' | 'PROCESSING' | 'PARTIALLY_PAID';
+  amountPaid: number;
+  totalAmount: number;
+  currency: string;
+  transactionRef: string;
+  paidAt: string;
+  cardLast4?: string;
+  cardBrand?: string;
+  upiId?: string;
+  notes?: string;
+  installmentsPlan?: {
+    frequency: 'milestones' | 'monthly';
+    tenureMonths?: number;
+    totalInstallments: number;
+    paidInstallments: number;
+    installmentAmount: number;
+    schedule: InstallmentScheduleItem[];
+  };
+  groupSplit?: {
+    totalMembers: number;
+    perPersonAmount: number;
+    paidMembersCount: number;
+    splitLink: string;
+    members: GroupMemberPayment[];
+  };
 }
 
 export type OperatorTab =
