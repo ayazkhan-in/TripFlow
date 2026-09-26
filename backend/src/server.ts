@@ -21,6 +21,7 @@ import vaultRoutes from './routes/vault.routes.js';
 import telemetryRoutes from './routes/telemetry.routes.js';
 import operatorRoutes from './routes/operator.routes.js';
 import mediaRoutes from './routes/media.routes.js';
+import assistantRoutes from './routes/assistant.routes.js';
 
 process.on('uncaughtException', (err) => {
   try {
@@ -65,6 +66,7 @@ app.use('/api/v1/vault', vaultRoutes);
 app.use('/api/v1/telemetry', telemetryRoutes);
 app.use('/api/v1/operator', operatorRoutes);
 app.use('/api/v1/media', mediaRoutes);
+app.use('/api/v1/assistant', assistantRoutes);
 
 // Mount Legacy Compatibility Routes (/api/*)
 app.use('/api/classify-document', (req, res, next) => {

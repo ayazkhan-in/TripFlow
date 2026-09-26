@@ -556,6 +556,56 @@ export class TripFlowApi {
       return null;
     }
   }
+
+  // --------------------------------------------------------------------------
+  // AI CONCIERGE ASSISTANT WORKFLOW
+  // --------------------------------------------------------------------------
+
+  static async getAssistantClarification(prompt: string): Promise<{
+    destination: string;
+    days: number;
+    travelers: number;
+    questions: any[];
+  } | null> {
+    try {
+      const res = await fetchWithTimeout(`${API_BASE}/assistant/clarify`, {
+        method: 'POST',
+        headers: this.getHeaders(),
+        body: JSON.stringify({ prompt }),
+      }, 10000);
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const data = await res.json();
+      return data;
+    } catch (err) {
+      console.warn('API getAssistantClarification fallback:', err);
+      return null;
+    }
+  }
+
+  static async generateAssistantProposal(params: {
+    prompt: string;
+    destination?: string;
+    days?: number;
+    travelers?: number;
+    answers?: Record<string, any>;
+    targetBudgetUSD?: number;
+    currency?: string;
+  }): Promise<any | null> {
+    try {
+      const res = await fetchWithTimeout(`${API_BASE}/assistant/generate-proposal`, {
+        method: 'POST',
+        headers: this.getHeaders(),
+        body: JSON.stringify(params),
+      }, 15000);
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const data = await res.json();
+      return data.proposal || null;
+    } catch (err) {
+      console.warn('API generateAssistantProposal fallback:', err);
+      return null;
+    }
+  }
 }
+
 
 
