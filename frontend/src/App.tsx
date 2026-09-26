@@ -476,8 +476,10 @@ function TripFlowApp() {
                     }}
                     initialPrompt={assistantInitialPrompt}
                     onClearInitialPrompt={() => setAssistantInitialPrompt(null)}
+                    currentUser={authUser}
                   />
                 )}
+
 
                 {consumerTab === 'builder' && (
                   <ItineraryBuilderScreen

@@ -57,7 +57,31 @@ interface AssistantScreenProps {
   onOpenItineraryInBuilder: (itinerary: TripItinerary) => void;
   initialPrompt?: string | null;
   onClearInitialPrompt?: () => void;
+  currentUser?: any;
 }
+
+const DEFAULT_WELCOME_SESSION: ChatSession = {
+  id: 'session-turkey-welcome',
+  title: 'Turkey Curated Journey',
+  destination: 'Turkey',
+  updatedAt: 'Just now',
+  messages: [
+    {
+      id: 'msg-welcome',
+      sender: 'assistant',
+      timestamp: 'Just now',
+      text: `Hello! I am your **TripFlow AI Travel Concierge** powered by Gemini.
+
+Where would you like to travel next? You can type your dream destination, dates, and budget (e.g. *"I want to plan an itinerary for 7 days for Turkey with Cappadocia"*), and I will generate an interactive questionnaire, calibrated flight & hotel tiers, and a living day-by-day plan!`,
+      quickReplies: [
+        '7 days itinerary for Turkey with Cappadocia',
+        '5 days luxury getaway to Tokyo & Kyoto',
+        '6 days Kerala backwaters with private houseboat',
+        'Weekend catamaran charter in Goa',
+      ],
+    },
+  ],
+};
 
 const TYPEWRITER_PHRASES = [
   '7 days itinerary for Turkey with Cappadocia and Istanbul...',
@@ -100,9 +124,9 @@ function buildDefaultQuestionnaire(
         { id: 'wellness_retreat', label: 'Luxury Wellness & Traditional Spa Day', icon: 'spa' },
       ];
 
-  const baseSmartBudget = Math.round(days * 180 * travelers);
-  const basePremiumBudget = Math.round(days * 350 * travelers);
-  const baseLuxuryBudget = Math.round(days * 650 * travelers);
+  const baseSmartBudget = Math.round(days * 14000 * travelers);
+  const basePremiumBudget = Math.round(days * 28000 * travelers);
+  const baseLuxuryBudget = Math.round(days * 55000 * travelers);
 
   const fallbackQuestions: QuestionnaireQuestion[] = [
     {
@@ -136,27 +160,27 @@ function buildDefaultQuestionnaire(
       defaultValue: {
         selectedTier: 'premium_comfort',
         targetAmount: basePremiumBudget,
-        currency: 'USD',
+        currency: 'INR',
       },
       options: [
         {
           id: 'smart_value',
           label: 'Smart Value / Boutique',
-          badge: `~$${baseSmartBudget.toLocaleString()} Total`,
+          badge: `~₹${baseSmartBudget.toLocaleString('en-IN')} Total`,
           desc: 'High-value 4★ boutique stays, reliable economy flights, core highlights',
           icon: 'savings',
         },
         {
           id: 'premium_comfort',
           label: 'Premium Comfort (Recommended)',
-          badge: `~$${basePremiumBudget.toLocaleString()} Total`,
+          badge: `~₹${basePremiumBudget.toLocaleString('en-IN')} Total`,
           desc: '5★ landmark luxury properties, optimal direct flights, private chauffeur',
           icon: 'stars',
         },
         {
           id: 'ultra_luxury',
           label: 'Ultra-Luxury VIP Concierge',
-          badge: `~$${baseLuxuryBudget.toLocaleString()}+ Total`,
+          badge: `~₹${baseLuxuryBudget.toLocaleString('en-IN')}+ Total`,
           desc: 'Iconic Palace / Penthouse suites, Business Class lie-flat seating, private yachts',
           icon: 'diamond',
         },
@@ -188,7 +212,7 @@ function buildDefaultQuestionnaire(
       initialAnswers[q.id] = {
         selectedTier: 'premium_comfort',
         targetAmount: basePremiumBudget,
-        currency: 'USD',
+        currency: 'INR',
       };
     }
   });
@@ -354,35 +378,10 @@ export const AssistantScreen: React.FC<AssistantScreenProps> = ({
   onOpenItineraryInBuilder,
   initialPrompt,
   onClearInitialPrompt,
+  currentUser,
 }) => {
-  const [sessions, setSessions] = useState<ChatSession[]>(() => {
-    return [
-      {
-        id: 'session-turkey-welcome',
-        title: 'Turkey Curated Journey',
-        destination: 'Turkey',
-        updatedAt: 'Just now',
-        messages: [
-          {
-            id: 'msg-welcome',
-            sender: 'assistant',
-            timestamp: 'Just now',
-            text: `Hello! I am your **TripFlow AI Travel Concierge** powered by Gemini.
-
-Where would you like to travel next? You can type your dream destination, dates, and budget (e.g. *"I want to plan an itinerary for 7 days for Turkey with Cappadocia"*), and I will generate an interactive questionnaire, calibrated flight & hotel tiers, and a living day-by-day plan!`,
-            quickReplies: [
-              '7 days itinerary for Turkey with Cappadocia',
-              '5 days luxury getaway to Tokyo & Kyoto',
-              '6 days Kerala backwaters with private houseboat',
-              'Weekend catamaran charter in Goa',
-            ],
-          },
-        ],
-      },
-    ];
-  });
-
-  const [activeSessionId, setActiveSessionId] = useState<string>('session-turkey-welcome');
+  const [sessions, setSessions] = useState<ChatSession[]>([DEFAULT_WELCOME_SESSION]);
+  const [activeSessionId, setActiveSessionId] = useState<string>(DEFAULT_WELCOME_SESSION.id);
   const [isSidebarOpen, setIsSidebarOpen] = useState<boolean>(true);
   const [searchHistoryQuery, setSearchHistoryQuery] = useState<string>('');
 
@@ -395,8 +394,52 @@ Where would you like to travel next? You can type your dream destination, dates,
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
+  // Helper to persist session to Neon PostgreSQL
+  const persistSessionToDb = (session: ChatSession) => {
+    if (!session || !session.id) return;
+    TripFlowApi.saveAssistantSession({
+      id: session.id,
+      title: session.title,
+      destination: session.destination,
+      messages: session.messages,
+      proposal: session.proposal || null,
+    }).catch(err => {
+      console.warn('Failed to save session to DB:', err);
+    });
+  };
+
+  // Sync / Load user-specific sessions from database
+  useEffect(() => {
+    let isSubscribed = true;
+
+    TripFlowApi.getAssistantSessions()
+      .then(dbSessions => {
+        if (!isSubscribed) return;
+        if (dbSessions && Array.isArray(dbSessions) && dbSessions.length > 0) {
+          setSessions(dbSessions);
+          if (!initialPrompt) {
+            setActiveSessionId(dbSessions[0].id);
+          }
+        } else {
+          // If no sessions yet in DB for this user, seed default welcome
+          setSessions([DEFAULT_WELCOME_SESSION]);
+          if (!initialPrompt) {
+            setActiveSessionId(DEFAULT_WELCOME_SESSION.id);
+          }
+        }
+      })
+      .catch(err => {
+        if (!isSubscribed) return;
+        console.warn('Could not load sessions from DB:', err);
+      });
+
+    return () => {
+      isSubscribed = false;
+    };
+  }, [currentUser?.id]);
+
   const activeSession = useMemo(() => {
-    return sessions.find(s => s.id === activeSessionId) || sessions[0];
+    return sessions.find(s => s.id === activeSessionId) || sessions[0] || DEFAULT_WELCOME_SESSION;
   }, [sessions, activeSessionId]);
 
   useEffect(() => {
@@ -434,17 +477,19 @@ Where would you like to travel next? You can type your dream destination, dates,
     return () => clearTimeout(timeoutId);
   }, [typewriterText, isDeleting, typewriterIndex, inputMessage]);
 
-  // Helper to update current session messages
+  // Helper to update current session messages and persist
   const updateCurrentSessionMessages = (msgs: ChatMessage[], newTitle?: string) => {
     setSessions(prev =>
       prev.map(s => {
         if (s.id === activeSessionId) {
-          return {
+          const updated: ChatSession = {
             ...s,
             title: newTitle || s.title,
             updatedAt: 'Just now',
             messages: msgs,
           };
+          persistSessionToDb(updated);
+          return updated;
         }
         return s;
       })
@@ -476,6 +521,7 @@ Where would you like to travel next? You can type your dream destination, dates,
       setSessions(prev => [newSession, ...prev]);
       setActiveSessionId(newSessionId);
       setInputMessage('');
+      persistSessionToDb(newSession);
 
       if (onClearInitialPrompt) onClearInitialPrompt();
 
@@ -502,10 +548,12 @@ Where would you like to travel next? You can type your dream destination, dates,
         setSessions(prev =>
           prev.map(s => {
             if (s.id === newSessionId) {
-              return {
+              const updated = {
                 ...s,
                 messages: [userMsg, assistantQuestionMsg],
               };
+              persistSessionToDb(updated);
+              return updated;
             }
             return s;
           })
@@ -540,11 +588,15 @@ Where would you like to travel next? You can type your dream destination, dates,
     setSessions(prev => [newSession, ...prev]);
     setActiveSessionId(newSession.id);
     setInputMessage('');
+    persistSessionToDb(newSession);
   };
 
   // Delete chat session
   const handleDeleteSession = (id: string, e: React.MouseEvent) => {
     e.stopPropagation();
+    TripFlowApi.deleteAssistantSession(id).catch(err => {
+      console.warn('Failed to delete session in DB:', err);
+    });
     if (sessions.length <= 1) {
       handleNewChat();
       return;
@@ -555,6 +607,7 @@ Where would you like to travel next? You can type your dream destination, dates,
       setActiveSessionId(remaining[0].id);
     }
   };
+
 
   // User submits a prompt text
   const handleUserSubmit = async (userText?: string) => {
@@ -603,7 +656,7 @@ Where would you like to travel next? You can type your dream destination, dates,
     setSessions(prev =>
       prev.map(s => {
         if (s.id === activeSessionId) {
-          return {
+          const updated: ChatSession = {
             ...s,
             messages: s.messages.map(m => {
               if (m.id === msgId && m.questionnaire) {
@@ -621,6 +674,8 @@ Where would you like to travel next? You can type your dream destination, dates,
               return m;
             }),
           };
+          persistSessionToDb(updated);
+          return updated;
         }
         return s;
       })
@@ -662,7 +717,7 @@ Where would you like to travel next? You can type your dream destination, dates,
     setSessions(prev =>
       prev.map(s => {
         if (s.id === activeSessionId) {
-          return {
+          const updated: ChatSession = {
             ...s,
             messages: s.messages.map(m => {
               if (m.id === msgId && m.questionnaire) {
@@ -677,13 +732,15 @@ Where would you like to travel next? You can type your dream destination, dates,
               return m;
             }),
           };
+          persistSessionToDb(updated);
+          return updated;
         }
         return s;
       })
     );
 
     // 2. Extract budget
-    let targetBudget = Math.round(questionnaire.days * 350 * questionnaire.travelers);
+    let targetBudget = Math.round(questionnaire.days * 28000 * questionnaire.travelers);
     const budgetAns = questionnaire.answers['budget_tier'];
     if (budgetAns && typeof budgetAns === 'object' && budgetAns.targetAmount) {
       targetBudget = budgetAns.targetAmount;
@@ -722,7 +779,7 @@ Where would you like to travel next? You can type your dream destination, dates,
       timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
       text: `✨ **Here is your customized living itinerary for ${proposal.title}!**
 
-I have calibrated flight routes, luxury accommodations, and private transfers strictly to your target budget of $${targetBudget.toLocaleString()}. You can switch flight options, select hotel tiers, or add extra experiences below before opening in the **Itinerary Builder**.`,
+I have calibrated flight routes, luxury accommodations, and private transfers strictly to your target budget of ₹${targetBudget.toLocaleString('en-IN')}. You can switch flight options, select hotel tiers, or add extra experiences below before opening in the **Itinerary Builder**.`,
       proposal,
       targetBudgetUSD: targetBudget,
       selectedFlightId: proposal.selectedFlightId || proposal.flights[1]?.id || proposal.flights[0]?.id,
@@ -731,7 +788,32 @@ I have calibrated flight routes, luxury accommodations, and private transfers st
       selectedActivityIds: proposal.extraActivities?.filter(a => a.isIncluded).map(a => a.id) || [],
     };
 
-    updateCurrentSessionMessages([...activeSession.messages, assistantProposalMsg]);
+    setSessions(prev =>
+      prev.map(s => {
+        if (s.id === activeSessionId) {
+          const currentMsgs = s.messages.map(m => {
+            if (m.id === msgId && m.questionnaire) {
+              return {
+                ...m,
+                questionnaire: {
+                  ...m.questionnaire,
+                  isSubmitted: true,
+                },
+              };
+            }
+            return m;
+          });
+          const updated: ChatSession = {
+            ...s,
+            proposal,
+            messages: [...currentMsgs, assistantProposalMsg],
+          };
+          persistSessionToDb(updated);
+          return updated;
+        }
+        return s;
+      })
+    );
   };
 
   // Update proposal selections (flights, hotels, transfers, activities)
@@ -739,7 +821,7 @@ I have calibrated flight routes, luxury accommodations, and private transfers st
     setSessions(prev =>
       prev.map(s => {
         if (s.id === activeSessionId) {
-          return {
+          const updated: ChatSession = {
             ...s,
             messages: s.messages.map(m => {
               if (m.id === msgId) {
@@ -751,11 +833,14 @@ I have calibrated flight routes, luxury accommodations, and private transfers st
               return m;
             }),
           };
+          persistSessionToDb(updated);
+          return updated;
         }
         return s;
       })
     );
   };
+
 
   // Open in Builder
   const handleOpenProposalInBuilder = (msg: ChatMessage) => {
@@ -886,6 +971,13 @@ I have calibrated flight routes, luxury accommodations, and private transfers st
             );
           })}
         </div>
+
+        <div className="p-3 border-t border-slate-200/60 shrink-0 bg-white/60">
+          <div className="flex items-center gap-2 text-[11px] text-slate-500">
+            <span className="material-symbols-outlined text-xs text-emerald-600">cloud_done</span>
+            <span className="truncate">Saved to {currentUser?.name ? `${currentUser.name}'s Account` : 'Secure Neon Database'}</span>
+          </div>
+        </div>
       </aside>
 
       {/* 2. MAIN CONVERSATION STREAM */}
@@ -913,13 +1005,20 @@ I have calibrated flight routes, luxury accommodations, and private transfers st
             </div>
           </div>
 
-          <button
-            type="button"
-            onClick={handleNewChat}
-            className="text-xs text-indigo-600 hover:text-indigo-700 font-semibold px-2.5 py-1.5 rounded-lg bg-indigo-50/80 hover:bg-indigo-100 cursor-pointer transition-colors"
-          >
-            + New Chat
-          </button>
+          <div className="flex items-center gap-2">
+            <span className="hidden sm:inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[11px] font-medium bg-emerald-50 text-emerald-700 border border-emerald-200/60">
+              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+              <span>Cloud Synced</span>
+            </span>
+
+            <button
+              type="button"
+              onClick={handleNewChat}
+              className="text-xs text-indigo-600 hover:text-indigo-700 font-semibold px-2.5 py-1.5 rounded-lg bg-indigo-50/80 hover:bg-indigo-100 cursor-pointer transition-colors"
+            >
+              + New Chat
+            </button>
+          </div>
         </header>
 
         {/* Message Stream */}

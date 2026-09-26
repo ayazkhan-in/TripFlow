@@ -45,11 +45,8 @@ export function formatINR(amount: number): string {
   return `₹${Math.round(amount).toLocaleString('en-IN')}`;
 }
 
-export function formatCurrency(amount: number, currency: string = '₹'): string {
-  if (currency === '₹' || currency === 'INR') {
-    return `₹${Math.round(amount).toLocaleString('en-IN')}`;
-  }
-  return `${currency}${amount.toLocaleString('en-US')}`;
+export function formatCurrency(amount: number, _currency: string = '₹'): string {
+  return `₹${Math.round(amount).toLocaleString('en-IN')}`;
 }
 
 export const CATEGORY_CONFIG: Record<

@@ -605,7 +605,83 @@ export class TripFlowApi {
       return null;
     }
   }
+
+  static async getAssistantSessions(): Promise<any[]> {
+    try {
+      const res = await fetchWithTimeout(`${API_BASE}/assistant/sessions`, {
+        headers: this.getHeaders(),
+      }, 8000);
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const data = await res.json();
+      return data.sessions || [];
+    } catch (err) {
+      console.warn('API getAssistantSessions fallback:', err);
+      return [];
+    }
+  }
+
+  static async saveAssistantSession(session: {
+    id: string;
+    title?: string;
+    destination?: string;
+    messages?: any[];
+    proposal?: any;
+  }): Promise<any> {
+    try {
+      const res = await fetchWithTimeout(`${API_BASE}/assistant/sessions`, {
+        method: 'POST',
+        headers: this.getHeaders(),
+        body: JSON.stringify(session),
+      }, 8000);
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const data = await res.json();
+      return data.session || null;
+    } catch (err) {
+      console.warn('API saveAssistantSession fallback:', err);
+      return null;
+    }
+  }
+
+  static async deleteAssistantSession(id: string): Promise<boolean> {
+    try {
+      const res = await fetchWithTimeout(`${API_BASE}/assistant/sessions/${id}`, {
+        method: 'DELETE',
+        headers: this.getHeaders(),
+      }, 8000);
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      return true;
+    } catch (err) {
+      console.warn('API deleteAssistantSession fallback:', err);
+      return false;
+    }
+  }
+
+  static async modifyItineraryWithAI(params: {
+    prompt: string;
+    currentItinerary: any;
+    activeDayNumber?: number;
+    destination?: string;
+  }): Promise<{
+    success: boolean;
+    explanation: string;
+    modifiedDays: any[];
+    targetDayNumber?: number;
+    priceDelta?: number;
+    highlightItemId?: string;
+  } | null> {
+    try {
+      const res = await fetchWithTimeout(`${API_BASE}/assistant/modify-itinerary`, {
+        method: 'POST',
+        headers: this.getHeaders(),
+        body: JSON.stringify(params),
+      }, 15000);
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const data = await res.json();
+      return data;
+    } catch (err) {
+      console.warn('API modifyItineraryWithAI fallback:', err);
+      return null;
+    }
+  }
 }
-
-
 

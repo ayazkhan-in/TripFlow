@@ -34,16 +34,11 @@ export const MultiOptionComparisonDeck: React.FC<MultiOptionComparisonDeckProps>
   onToggleActivity,
   onOpenInBuilder,
 }) => {
-  const [currency, setCurrency] = useState<'USD' | 'INR'>('USD');
   const [activeTab, setActiveTab] = useState<'all' | 'flights' | 'hotels' | 'itinerary'>('all');
   const [isScheduleOpen, setIsScheduleOpen] = useState(true);
 
-  const exchangeRate = currency === 'USD' ? 1 : 83;
-  const currencySymbol = currency === 'USD' ? '$' : '₹';
-
-  const formatPrice = (usd: number) => {
-    const val = currency === 'USD' ? usd : Math.round(usd * exchangeRate);
-    return `${currencySymbol}${val.toLocaleString()}`;
+  const formatPrice = (amount: number) => {
+    return `₹${Math.round(amount).toLocaleString('en-IN')}`;
   };
 
   // Find currently selected items
@@ -55,7 +50,7 @@ export const MultiOptionComparisonDeck: React.FC<MultiOptionComparisonDeckProps>
   const flightTotal = (activeFlight?.priceUSD || 0) * proposal.travelers;
   const hotelTotal = (activeHotel?.pricePerNightUSD || 0) * nights;
   const transferDelta = activeTransfer?.priceDeltaUSD || 0;
-  const baseActivities = 180 * proposal.days;
+  const baseActivities = 3500 * proposal.days;
   const extrasTotal = (proposal.extraActivities || [])
     .filter(act => selectedActivityIds.includes(act.id))
     .reduce((sum, act) => sum + act.price, 0);
@@ -68,7 +63,7 @@ export const MultiOptionComparisonDeck: React.FC<MultiOptionComparisonDeckProps>
 
   return (
     <div className="w-full bg-white border border-slate-200/90 rounded-2xl p-5 sm:p-6 shadow-sm space-y-6 text-left animate-in fade-in duration-200">
-      {/* 1. TOP HEADER & CURRENCY SWITCHER */}
+      {/* 1. TOP HEADER & CURRENCY INDICATOR */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 border-b border-slate-100">
         <div>
           <div className="flex items-center gap-2">
@@ -87,30 +82,10 @@ export const MultiOptionComparisonDeck: React.FC<MultiOptionComparisonDeckProps>
           </p>
         </div>
 
-        {/* Currency Switcher Pill */}
-        <div className="flex items-center self-start sm:self-auto bg-slate-100 p-1 rounded-lg border border-slate-200/80 shrink-0">
-          <button
-            type="button"
-            onClick={() => setCurrency('USD')}
-            className={`px-2.5 py-1 text-xs font-bold rounded-md transition-all cursor-pointer ${
-              currency === 'USD'
-                ? 'bg-white text-blue-700 shadow-2xs'
-                : 'text-slate-500 hover:text-slate-900'
-            }`}
-          >
-            USD ($)
-          </button>
-          <button
-            type="button"
-            onClick={() => setCurrency('INR')}
-            className={`px-2.5 py-1 text-xs font-bold rounded-md transition-all cursor-pointer ${
-              currency === 'INR'
-                ? 'bg-white text-blue-700 shadow-2xs'
-                : 'text-slate-500 hover:text-slate-900'
-            }`}
-          >
-            INR (₹)
-          </button>
+        {/* Currency Pill */}
+        <div className="flex items-center gap-1.5 px-3 py-1.5 bg-blue-50 border border-blue-200/80 rounded-lg text-blue-800 text-xs font-bold shrink-0">
+          <span className="material-symbols-outlined text-sm">currency_rupee</span>
+          <span>All Pricing in INR (₹)</span>
         </div>
       </div>
 

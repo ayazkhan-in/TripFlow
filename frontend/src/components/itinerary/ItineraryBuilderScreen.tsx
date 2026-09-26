@@ -358,15 +358,19 @@ export const ItineraryBuilderScreen: React.FC<ItineraryBuilderScreenProps> = ({
     setLastAIFeedback(null);
 
     try {
-      const result = await processNaturalLanguageChange(prompt, itinerary);
+      const result = await processNaturalLanguageChange(prompt, itinerary, activeDayNumber);
 
       if (result.success && result.updatedDays) {
+
         const updatedItinerary = {
           ...itinerary,
           days: result.updatedDays,
         };
         pushState(updatedItinerary, result.priceDelta);
         setLastAIFeedback(result.explanation);
+        setTimeout(() => {
+          setLastAIFeedback(null);
+        }, 5500);
         if (result.highlightDayNumber) {
           setActiveDayNumber(result.highlightDayNumber);
         }
@@ -692,7 +696,10 @@ export const ItineraryBuilderScreen: React.FC<ItineraryBuilderScreenProps> = ({
         onSubmitPrompt={handleNaturalLanguageChange}
         isLoading={isAILoading}
         lastFeedback={lastAIFeedback}
+        activeDayNumber={activeDayNumber}
+        destination={itinerary.destination}
       />
+
     </div>
   );
 };

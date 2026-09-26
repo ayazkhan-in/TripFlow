@@ -1,3 +1,4 @@
+// TripFlow Comprehensive Database Seeder - Verified Prisma Types
 import process from 'node:process';
 import { PrismaClient } from '@prisma/client';
 import bcrypt from 'bcryptjs';
