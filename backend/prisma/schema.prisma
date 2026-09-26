@@ -76,6 +76,7 @@ model User {
   vaultDocuments  VaultDocument[]
   savedJourneys   SavedJourney[]
   transactions    PaymentTransaction[]
+  assistantSessions AssistantChatSession[]
 }
 
 model TripItinerary {
@@ -366,4 +367,18 @@ model CalendarTourEvent {
   color           String
   pax             Int
 }
+
+model AssistantChatSession {
+  id              String          @id @default(uuid())
+  userId          String
+  title           String
+  destination     String
+  messages        Json
+  proposal        Json?
+  createdAt       DateTime        @default(now())
+  updatedAt       DateTime        @updatedAt
+
+  user            User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
 

@@ -96,7 +96,7 @@ export const PaymentsLedgerScreen: React.FC<PaymentsLedgerScreenProps> = ({ show
           <span className="text-[11px] font-medium text-slate-400 uppercase tracking-wider">
             Total Inbound Volume
           </span>
-          <div className="text-2xl font-bold text-slate-900 mt-1">$342,850</div>
+          <div className="text-2xl font-bold text-slate-900 mt-1">₹2,84,56,500</div>
           <div className="text-[11px] text-slate-400 mt-0.5">+18.4% this cycle</div>
         </div>
 
@@ -104,7 +104,7 @@ export const PaymentsLedgerScreen: React.FC<PaymentsLedgerScreenProps> = ({ show
           <span className="text-[11px] font-medium text-slate-400 uppercase tracking-wider">
             Supplier Disbursements
           </span>
-          <div className="text-2xl font-bold text-slate-900 mt-1">$218,400</div>
+          <div className="text-2xl font-bold text-slate-900 mt-1">₹1,81,27,200</div>
           <div className="text-[11px] text-slate-400 mt-0.5">Hotels, charters & fleets</div>
         </div>
 
@@ -112,7 +112,7 @@ export const PaymentsLedgerScreen: React.FC<PaymentsLedgerScreenProps> = ({ show
           <span className="text-[11px] font-medium text-slate-400 uppercase tracking-wider">
             Escrow Reserve
           </span>
-          <div className="text-2xl font-bold text-slate-900 mt-1">$84,200</div>
+          <div className="text-2xl font-bold text-slate-900 mt-1">₹69,88,600</div>
           <div className="text-[11px] text-slate-400 mt-0.5">Held for active tours</div>
         </div>
 

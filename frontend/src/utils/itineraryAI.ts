@@ -1,5 +1,6 @@
 import { CATALOG_ITEMS } from '../data/itineraryData';
 import { CatalogItem, ItineraryDay, ItineraryItem, TripItinerary } from '../types/itinerary';
+import { TripFlowApi } from '../services/api';
 
 export interface AIModificationResult {
   success: boolean;
@@ -12,7 +13,8 @@ export interface AIModificationResult {
 
 export async function processNaturalLanguageChange(
   prompt: string,
-  itinerary: TripItinerary
+  itinerary: TripItinerary,
+  activeDayNumber = 1
 ): Promise<AIModificationResult> {
   const trimmed = prompt.trim();
   if (!trimmed) {
@@ -23,46 +25,44 @@ export async function processNaturalLanguageChange(
     };
   }
 
-  // 1. Attempt server AI call if available
+  // 1. Call Backend Gemini AI Concierge
   try {
-    const res = await fetch('/api/itinerary-ai', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        prompt: trimmed,
-        currentItinerary: itinerary,
-        catalog: CATALOG_ITEMS,
-      }),
+    const data = await TripFlowApi.modifyItineraryWithAI({
+      prompt: trimmed,
+      currentItinerary: itinerary,
+      activeDayNumber,
+      destination: itinerary.destination || 'Global',
     });
 
-    if (res.ok) {
-      const data = await res.json();
-      if (data.success && Array.isArray(data.modifiedDays) && data.modifiedDays.length > 0) {
-        return {
-          success: true,
-          explanation: data.explanation || 'Updated your itinerary according to your request.',
-          updatedDays: data.modifiedDays,
-          highlightDayNumber: data.targetDayNumber || 1,
-        };
-      }
+    if (data && data.success && Array.isArray(data.modifiedDays) && data.modifiedDays.length > 0) {
+      return {
+        success: true,
+        explanation: data.explanation || 'Updated your itinerary according to your request.',
+        updatedDays: data.modifiedDays,
+        highlightDayNumber: data.targetDayNumber || activeDayNumber,
+        priceDelta: data.priceDelta,
+        highlightItemId: data.highlightItemId,
+      };
     }
   } catch (e) {
     console.warn('Backend AI endpoint unavailable, using smart local parser:', e);
   }
 
   // 2. Intelligent Local Natural Language Rule Engine (Runs offline & instant)
-  return applyLocalAIHeuristics(trimmed, itinerary);
+  return applyLocalAIHeuristics(trimmed, itinerary, activeDayNumber);
 }
 
 function applyLocalAIHeuristics(
   prompt: string,
-  itinerary: TripItinerary
+  itinerary: TripItinerary,
+  activeDayNumber = 1
 ): AIModificationResult {
   const lower = prompt.toLowerCase();
   const daysCopy: ItineraryDay[] = JSON.parse(JSON.stringify(itinerary.days));
 
-  // Helper to extract target day (defaulting to Day 1 or Day 2)
-  let targetDayNumber = 1;
+  // Helper to extract target day (defaulting to activeDayNumber or Day 1)
+  let targetDayNumber = activeDayNumber || 1;
+
   const dayMatch = lower.match(/day\s*(\d+)/i) || lower.match(/day-(\d+)/i);
   if (dayMatch) {
     const parsed = parseInt(dayMatch[1], 10);
@@ -101,7 +101,7 @@ function applyLocalAIHeuristics(
           catalogId: 'mel-tsukiji-sashimi',
           title: 'Artisanal Brunch & Market Exploration',
           category: 'meal',
-          price: 45,
+          price: 3800,
           time: '10:00 AM',
           duration: '1.5 hrs',
           location: 'Central Culinary Quarter',
@@ -115,7 +115,7 @@ function applyLocalAIHeuristics(
           catalogId: 'act-shibuya-sky',
           title: 'Sunset Panorama & Golden Hour Walk',
           category: 'activity',
-          price: 38,
+          price: 3200,
           time: '04:30 PM',
           duration: '2 hrs',
           location: 'Scenic Viewpoint Deck',
@@ -133,7 +133,7 @@ function applyLocalAIHeuristics(
       explanation: `✨ Added Day ${nextDayNum} to your itinerary with curated morning brunch and a sunset skyline experience!`,
       updatedDays: daysCopy,
       highlightDayNumber: nextDayNum,
-      priceDelta: 83,
+      priceDelta: 7000,
     };
   }
 
@@ -205,7 +205,7 @@ function applyLocalAIHeuristics(
 
       return {
         success: true,
-        explanation: `✨ Removed "${removed.title}" from Day ${targetDay.dayNumber}. Saved $${removed.price} on your trip total!`,
+        explanation: `✨ Removed "${removed.title}" from Day ${targetDay.dayNumber}. Saved ₹${removed.price.toLocaleString('en-IN')} on your trip total!`,
         updatedDays: daysCopy,
         highlightDayNumber: targetDay.dayNumber,
         priceDelta: -removed.price,
@@ -224,29 +224,29 @@ function applyLocalAIHeuristics(
     let replacedAny = false;
     let savings = 0;
 
-    // Replace high-end hotels ($850) with boutique chic ($320)
+    // Replace high-end hotels with boutique chic
     daysCopy.forEach(day => {
       day.items = day.items.map(item => {
-        if (item.category === 'hotel' && item.price > 500) {
+        if (item.category === 'hotel' && item.price > 25000) {
           replacedAny = true;
-          savings += item.price - 320;
+          savings += item.price - 14500;
           return {
             ...item,
-            title: 'TRUNK(HOTEL) Boutique Loft & Terrace',
-            price: 320,
-            description: 'Stylish eco-luxe boutique stay in Shibuya with terrace cocktails and walking proximity.',
+            title: 'Heritage Boutique Loft & Suites',
+            price: 14500,
+            description: 'Stylish eco-luxe boutique stay with terrace views and central walking proximity.',
             image: 'https://images.unsplash.com/photo-1590490360182-c33d57733427?auto=format&fit=crop&w=800&q=80',
             tags: ['Boutique Value', 'Design Hotel'],
           };
         }
-        if (item.category === 'meal' && item.price > 200) {
+        if (item.category === 'meal' && item.price > 12000) {
           replacedAny = true;
-          savings += item.price - 70;
+          savings += item.price - 4500;
           return {
             ...item,
-            title: 'Authentic Local Izakaya & Charcoal Yakitori',
-            price: 70,
-            description: 'Bustling neighborhood dining with skewers, crispy gyoza, and local draught beer.',
+            title: 'Authentic Local Specialty Dining',
+            price: 4500,
+            description: 'Bustling neighborhood culinary experience celebrated by locals.',
             image: 'https://images.unsplash.com/photo-1554502078-ef0fc409efce?auto=format&fit=crop&w=800&q=80',
             tags: ['Authentic', 'Great Value'],
           };
@@ -258,7 +258,7 @@ function applyLocalAIHeuristics(
     if (replacedAny) {
       return {
         success: true,
-        explanation: `✨ Optimized your itinerary for high value! Swapped ultra-luxury items for top-rated boutique alternatives, reducing your total trip cost by $${savings}.`,
+        explanation: `✨ Optimized your itinerary for high value! Swapped ultra-luxury items for top-rated boutique alternatives, reducing your total trip cost by ₹${savings.toLocaleString('en-IN')}.`,
         updatedDays: daysCopy,
         highlightDayNumber: targetDay.dayNumber,
         priceDelta: -savings,
@@ -266,9 +266,102 @@ function applyLocalAIHeuristics(
     }
   }
 
-  // ================= ACTION: ADD / INSERT MATCHING CATALOG ITEM =================
+  // ================= ACTION: ADD / INSERT DYNAMIC OR MATCHING ITEM =================
+  if (lower.startsWith('add') || lower.includes(' include ') || lower.includes('insert')) {
+    // Determine category
+    let category: 'meal' | 'activity' | 'transport' | 'hotel' | 'experience' = 'experience';
+    if (lower.includes('dinner') || lower.includes('lunch') || lower.includes('breakfast') || lower.includes('sushi') || lower.includes('restaurant') || lower.includes('food') || lower.includes('coffee') || lower.includes('tasting')) {
+      category = 'meal';
+    } else if (lower.includes('hotel') || lower.includes('stay') || lower.includes('resort') || lower.includes('suite') || lower.includes('villa')) {
+      category = 'hotel';
+    } else if (lower.includes('transfer') || lower.includes('flight') || lower.includes('train') || lower.includes('chauffeur') || lower.includes('car')) {
+      category = 'transport';
+    } else if (lower.includes('tour') || lower.includes('museum') || lower.includes('hike') || lower.includes('walk') || lower.includes('temple') || lower.includes('bath') || lower.includes('hamam')) {
+      category = 'activity';
+    }
+
+    // Extract price in INR
+    let price = category === 'hotel' ? 16500 : (category === 'meal' ? 5500 : (category === 'transport' ? 3500 : 4000));
+    const inrMatch = prompt.match(/₹\s*([\d,]+)/) || prompt.match(/(?:rs\.?|inr|rupees?)\s*([\d,]+)/i) || prompt.match(/([\d,]+)\s*(?:inr|rs|rupees?)/i);
+    const dollarMatch = prompt.match(/\$([\d,]+)/) || prompt.match(/([\d,]+)\s*(?:usd|dollars)/i);
+
+    if (inrMatch) {
+      price = parseInt(inrMatch[1].replace(/,/g, ''), 10);
+    } else if (dollarMatch) {
+      price = parseInt(dollarMatch[1].replace(/,/g, ''), 10) * 85;
+    }
+
+    // Extract time
+    let time = '02:30 PM';
+    const timeMatch = prompt.match(/(\d{1,2}(?::\d{2})?\s*(?:am|pm))/i);
+    if (timeMatch) {
+      time = timeMatch[1].toUpperCase();
+    } else if (lower.includes('morning') || lower.includes('breakfast')) {
+      time = '09:30 AM';
+    } else if (lower.includes('lunch') || lower.includes('afternoon')) {
+      time = '01:00 PM';
+    } else if (lower.includes('sunset') || lower.includes('evening')) {
+      time = '06:00 PM';
+    } else if (lower.includes('dinner') || lower.includes('night')) {
+      time = '08:00 PM';
+    }
+
+    // Extract clean title
+    let cleanTitle = prompt
+      .replace(/^add\s+/i, '')
+      .replace(/\s+on\s+day\s*\d+/i, '')
+      .replace(/\s+to\s+day\s*\d+/i, '')
+      .replace(/\s+at\s+\d{1,2}(?::\d{2})?\s*(?:am|pm)?/i, '')
+      .replace(/\s+with\s+[₹\$]?\d+.*$/i, '')
+      .replace(/\s*\([₹\$]?\d+.*\)/i, '')
+      .trim();
+
+    if (cleanTitle && cleanTitle.length > 2) {
+      cleanTitle = cleanTitle.charAt(0).toUpperCase() + cleanTitle.slice(1);
+
+      const isTurkey = (itinerary.destination || '').toLowerCase().includes('turkey');
+      const defaultImg = category === 'meal'
+        ? 'https://images.unsplash.com/photo-1544025162-d76694265947?auto=format&fit=crop&w=800&q=80'
+        : category === 'hotel'
+        ? (isTurkey ? 'https://images.unsplash.com/photo-1566073771259-6a8506099945?auto=format&fit=crop&w=800&q=80' : 'https://images.unsplash.com/photo-1582719478250-c89cae4dc85b?auto=format&fit=crop&w=800&q=80')
+        : category === 'transport'
+        ? 'https://images.unsplash.com/photo-1549317661-bd32c8ce0db2?auto=format&fit=crop&w=800&q=80'
+        : (isTurkey ? 'https://images.unsplash.com/photo-1524231757912-21f4fe3a7200?auto=format&fit=crop&w=800&q=80' : 'https://images.unsplash.com/photo-1503899036084-c55cdd92da26?auto=format&fit=crop&w=800&q=80');
+
+      const newItem: ItineraryItem = {
+        id: `ai-item-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+        catalogId: `custom-ai-${Date.now()}`,
+        title: cleanTitle,
+        category,
+        price,
+        time,
+        duration: category === 'meal' ? '1.5 hrs' : '2 hrs',
+        location: itinerary.destination || 'Global',
+        description: `Curated ${category} tailored directly from your request: "${prompt}".`,
+        image: defaultImg,
+        rating: 4.95,
+        tags: ['AI Added', category],
+        notes: `Added via AI Assistant prompt: "${prompt}"`,
+        transitToNext: { mode: 'car', duration: '15 min' },
+      };
+
+      targetDay.items = targetDay.items || [];
+      targetDay.items.push(newItem);
+
+      return {
+        success: true,
+        explanation: `✨ Added "${newItem.title}" to Day ${targetDay.dayNumber} at ${newItem.time} (₹${newItem.price.toLocaleString('en-IN')}). Trip price automatically updated!`,
+        updatedDays: daysCopy,
+        highlightDayNumber: targetDay.dayNumber,
+        highlightItemId: newItem.id,
+        priceDelta: newItem.price,
+      };
+    }
+  }
+
   // Find best catalog item based on keywords in prompt
   let bestMatch: CatalogItem | null = null;
+
 
   if (lower.includes('sunset') || lower.includes('shibuya') || lower.includes('observation')) {
     bestMatch = CATALOG_ITEMS.find(c => c.id === 'act-shibuya-sky') || null;
@@ -337,7 +430,7 @@ function applyLocalAIHeuristics(
 
     return {
       success: true,
-      explanation: `✨ Added "${newItem.title}" to Day ${targetDay.dayNumber} at ${newItem.time} ($${newItem.price}). Trip price automatically updated!`,
+      explanation: `✨ Added "${newItem.title}" to Day ${targetDay.dayNumber} at ${newItem.time} (₹${newItem.price.toLocaleString('en-IN')}). Trip price automatically updated!`,
       updatedDays: daysCopy,
       highlightDayNumber: targetDay.dayNumber,
       highlightItemId: newItem.id,
