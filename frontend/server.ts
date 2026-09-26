@@ -1,6 +1,7 @@
 import express from 'express';
 import { createServer as createViteServer } from 'vite';
 import path from 'path';
+import fs from 'fs';
 import dotenv from 'dotenv';
 import http from 'http';
 import { GoogleGenAI } from '@google/genai';
@@ -160,34 +161,72 @@ Do not wrap in markdown quotes if possible, output pure JSON.`;
   }
 });
 
-// Forward all /api/v1 calls to Backend on port 5001 (or custom BACKEND_PORT) using native stream pipe
-const BACKEND_PORT = Number(process.env.BACKEND_PORT) || 5001;
+// Forward all /api/v1 calls to Backend with auto-retry and multi-port resolution
+let activeBackendPort: number | null = null;
+
+function resolveBackendPort(): number {
+  if (activeBackendPort) return activeBackendPort;
+  if (process.env.BACKEND_PORT) return Number(process.env.BACKEND_PORT);
+
+  const candidatePaths = [
+    path.resolve(import.meta.dirname, '../backend/.env'),
+    path.resolve(process.cwd(), 'backend/.env'),
+    path.resolve(process.cwd(), '../backend/.env'),
+  ];
+
+  for (const envPath of candidatePaths) {
+    try {
+      if (fs.existsSync(envPath)) {
+        const match = fs.readFileSync(envPath, 'utf-8').match(/^PORT\s*=\s*(\d+)/m);
+        if (match && match[1]) {
+          return Number(match[1]);
+        }
+      }
+    } catch {
+      // continue
+    }
+  }
+
+  return 5000;
+}
 
 app.use('/api/v1', (req, res) => {
-  const options = {
-    hostname: '127.0.0.1',
-    port: BACKEND_PORT,
-    path: req.originalUrl,
-    method: req.method,
-    headers: {
-      ...req.headers,
-      host: `127.0.0.1:${BACKEND_PORT}`,
-    },
+  const tryProxy = (targetPort: number, canRetry: boolean) => {
+    const options = {
+      hostname: '127.0.0.1',
+      port: targetPort,
+      path: req.originalUrl,
+      method: req.method,
+      headers: {
+        ...req.headers,
+        host: `127.0.0.1:${targetPort}`,
+      },
+    };
+
+    const proxyReq = http.request(options, (proxyRes) => {
+      activeBackendPort = targetPort;
+      res.writeHead(proxyRes.statusCode || 500, proxyRes.headers);
+      proxyRes.pipe(res);
+    });
+
+    proxyReq.on('error', (err: any) => {
+      if (err.code === 'ECONNREFUSED' && canRetry) {
+        const fallbackPort = targetPort === 5000 ? 5001 : 5000;
+        console.warn(`[Proxy] Port ${targetPort} refused, attempting fallback to port ${fallbackPort}...`);
+        tryProxy(fallbackPort, false);
+        return;
+      }
+
+      console.error(`Proxy error to backend /api/v1 (port ${targetPort}):`, err?.message || err);
+      if (!res.headersSent) {
+        res.status(502).json({ error: 'Backend unreachable', details: err?.message });
+      }
+    });
+
+    req.pipe(proxyReq);
   };
 
-  const proxyReq = http.request(options, (proxyRes) => {
-    res.writeHead(proxyRes.statusCode || 500, proxyRes.headers);
-    proxyRes.pipe(res);
-  });
-
-  proxyReq.on('error', (err: any) => {
-    console.error('Proxy error to backend /api/v1:', err?.message || err);
-    if (!res.headersSent) {
-      res.status(502).json({ error: 'Backend unreachable', details: err?.message });
-    }
-  });
-
-  req.pipe(proxyReq);
+  tryProxy(resolveBackendPort(), true);
 });
 
 async function startServer() {
