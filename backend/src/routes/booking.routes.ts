@@ -147,6 +147,11 @@ router.post('/checkout', optionalAuth, async (req: AuthenticatedRequest, res: Re
               },
             })),
           },
+        },
+      });
+      itineraryId = savedItinerary.id;
+    }
+
     // Fetch user details for real personalization of booking and vault docs
     const currentUser = await prisma.user.findUnique({
       where: { id: userId },
