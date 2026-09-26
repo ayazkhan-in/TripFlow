@@ -2,6 +2,7 @@ import express from 'express';
 import { createServer as createViteServer } from 'vite';
 import path from 'path';
 import dotenv from 'dotenv';
+import http from 'http';
 import { GoogleGenAI } from '@google/genai';
 
 dotenv.config();
@@ -9,8 +10,6 @@ dotenv.config();
 const app = express();
 const PORT = Number(process.env.PORT) || 3000;
 
-// Support large payload for high-resolution document scans
-app.use(express.json({ limit: '25mb' }));
 
 // Initialize GoogleGenAI if key is present
 const apiKey = process.env.GEMINI_API_KEY;
@@ -30,7 +29,7 @@ if (apiKey) {
 
 
 // POST /api/classify-document
-app.post('/api/classify-document', async (req, res) => {
+app.post('/api/classify-document', express.json({ limit: '25mb' }), async (req, res) => {
   try {
     const { imageBase64, mimeType = 'image/jpeg', hint } = req.body;
 
@@ -110,7 +109,7 @@ Extract key fields accurately. Return a JSON object with this EXACT structure (v
 });
 
 // POST /api/itinerary-ai - Natural language modifications using Gemini
-app.post('/api/itinerary-ai', async (req, res) => {
+app.post('/api/itinerary-ai', express.json({ limit: '25mb' }), async (req, res) => {
   try {
     const { prompt, currentItinerary, catalog } = req.body;
 
@@ -159,6 +158,34 @@ Do not wrap in markdown quotes if possible, output pure JSON.`;
     console.error('Error in /api/itinerary-ai:', err?.message || err);
     return res.json({ fallback: true, error: err?.message });
   }
+});
+
+// Forward all /api/v1 calls to Backend on port 5000 using native stream pipe
+app.use('/api/v1', (req, res) => {
+  const options = {
+    hostname: '127.0.0.1',
+    port: 5000,
+    path: req.originalUrl,
+    method: req.method,
+    headers: {
+      ...req.headers,
+      host: '127.0.0.1:5000',
+    },
+  };
+
+  const proxyReq = http.request(options, (proxyRes) => {
+    res.writeHead(proxyRes.statusCode || 500, proxyRes.headers);
+    proxyRes.pipe(res);
+  });
+
+  proxyReq.on('error', (err: any) => {
+    console.error('Proxy error to backend /api/v1:', err?.message || err);
+    if (!res.headersSent) {
+      res.status(502).json({ error: 'Backend unreachable', details: err?.message });
+    }
+  });
+
+  req.pipe(proxyReq);
 });
 
 async function startServer() {

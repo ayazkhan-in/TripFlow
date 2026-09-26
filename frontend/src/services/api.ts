@@ -8,7 +8,32 @@ import { BookedTrip } from '../types/travel';
 import { VaultDocument } from '../types/vault';
 import { AIGenerateParams } from '../data/premadeItineraries';
 
-const API_BASE = '/api/v1';
+const getApiBase = (): string => {
+  if (typeof window !== 'undefined') {
+    if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
+      return 'http://localhost:5000/api/v1';
+    }
+  }
+  return '/api/v1';
+};
+
+const API_BASE = getApiBase();
+
+async function fetchWithTimeout(url: string, options: RequestInit = {}, timeoutMs = 8000): Promise<Response> {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), timeoutMs);
+  try {
+    const res = await fetch(url, { ...options, signal: controller.signal });
+    clearTimeout(timer);
+    return res;
+  } catch (err: any) {
+    clearTimeout(timer);
+    if (err.name === 'AbortError') {
+      throw new Error('Connection timed out. Please ensure the backend server is running on port 5000.');
+    }
+    throw err;
+  }
+}
 
 export class TripFlowApi {
   private static token: string | null = null;
@@ -55,7 +80,7 @@ export class TripFlowApi {
     agencyName?: string;
     agencyCode?: string;
   }): Promise<{ user: any; token: string }> {
-    const res = await fetch(`${API_BASE}/auth/register`, {
+    const res = await fetchWithTimeout(`${API_BASE}/auth/register`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(userData),
@@ -71,7 +96,7 @@ export class TripFlowApi {
   }
 
   static async login(email: string, password: string): Promise<{ user: any; token: string }> {
-    const res = await fetch(`${API_BASE}/auth/login`, {
+    const res = await fetchWithTimeout(`${API_BASE}/auth/login`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ email, password }),
@@ -90,9 +115,9 @@ export class TripFlowApi {
     const token = this.getAuthToken();
     if (!token) return null;
     try {
-      const res = await fetch(`${API_BASE}/auth/me`, {
+      const res = await fetchWithTimeout(`${API_BASE}/auth/me`, {
         headers: this.getHeaders(),
-      });
+      }, 5000);
       if (!res.ok) {
         if (res.status === 401 || res.status === 403) {
           this.setAuthToken(null);

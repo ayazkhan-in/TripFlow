@@ -15,8 +15,9 @@ interface AddSidebarProps {
   onToggleCollapse?: () => void;
 }
 
-const CATEGORY_TABS: Array<{ id: ItineraryCategory | 'all'; label: string; icon: string }> = [
+const CATEGORY_TABS: Array<{ id: ItineraryCategory | 'all' | 'ai_picks'; label: string; icon: string }> = [
   { id: 'all', label: 'All', icon: 'grid_view' },
+  { id: 'ai_picks', label: '✨ AI Picks', icon: 'auto_awesome' },
   { id: 'activity', label: 'Activities', icon: 'attractions' },
   { id: 'hotel', label: 'Hotels', icon: 'hotel' },
   { id: 'transport', label: 'Transport', icon: 'directions_transit' },
@@ -34,7 +35,7 @@ export const AddSidebar: React.FC<AddSidebarProps> = ({
   onToggleCollapse,
 }) => {
   const [catalogItems, setCatalogItems] = useState<CatalogItem[]>(CATALOG_ITEMS);
-  const [selectedCategory, setSelectedCategory] = useState<ItineraryCategory | 'all'>('all');
+  const [selectedCategory, setSelectedCategory] = useState<ItineraryCategory | 'all' | 'ai_picks'>('all');
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedDayForAdd, setSelectedDayForAdd] = useState<number>(activeDayNumber || 1);
 
@@ -58,11 +59,20 @@ export const AddSidebar: React.FC<AddSidebarProps> = ({
 
   const filteredItems = useMemo(() => {
     return catalogItems.filter(item => {
-      const matchesCategory = selectedCategory === 'all' || item.category === selectedCategory;
+      let matchesCategory = false;
+      if (selectedCategory === 'all') {
+        matchesCategory = true;
+      } else if (selectedCategory === 'ai_picks') {
+        matchesCategory = Boolean(item.tags?.some(t => t.includes('AI') || t.includes('Recommendation')));
+      } else {
+        matchesCategory = item.category === selectedCategory;
+      }
+
       const matchesSearch =
         !searchQuery ||
         item.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        item.location.toLowerCase().includes(searchQuery.toLowerCase());
+        item.location.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        item.tags?.some(t => t.toLowerCase().includes(searchQuery.toLowerCase()));
       return matchesCategory && matchesSearch;
     });
   }, [catalogItems, selectedCategory, searchQuery]);
@@ -212,6 +222,11 @@ export const AddSidebar: React.FC<AddSidebarProps> = ({
               {/* Bottom Row: Category & Duration on Left, Price in the BOTTOM-RIGHT Corner */}
               <div className="flex items-center justify-between text-[11px] pt-1 border-t border-neutral-100">
                 <div className="flex items-center gap-1.5 text-neutral-400 text-[10px]">
+                  {item.tags?.some(t => t.includes('AI')) && (
+                    <span className="text-[9px] font-bold text-emerald-700 bg-emerald-50 px-1 py-0.2 rounded border border-emerald-200/60">
+                      ✨ AI Pick
+                    </span>
+                  )}
                   <span className="capitalize">{item.category}</span>
                   <span>•</span>
                   <span>{item.duration}</span>

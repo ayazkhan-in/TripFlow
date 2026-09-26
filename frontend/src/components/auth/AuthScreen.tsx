@@ -31,30 +31,62 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({
     setErrorMessage(null);
     try {
       if (role === 'traveler') {
-        const res = await TripFlowApi.login('sarah.mehta@concierge.tripflow.io', 'password123');
-        onLogin({
-          id: res.user.id || 'user-sarah-1024',
-          name: res.user.name || 'Sarah Mehta',
-          email: res.user.email || 'sarah.mehta@concierge.tripflow.io',
-          role: 'traveler',
-          avatar: res.user.avatarUrl || USER_AVATAR,
-          membership: res.user.membershipTier || 'Concierge Elite Member',
-        });
+        let userObj = {
+          id: 'user-sarah-1024',
+          name: 'Sarah Mehta',
+          email: 'sarah.mehta@concierge.tripflow.io',
+          role: 'traveler' as const,
+          avatar: USER_AVATAR,
+          membership: 'Concierge Elite Member',
+        };
+        try {
+          const res = await TripFlowApi.login('sarah.mehta@concierge.tripflow.io', 'password123');
+          if (res?.user) {
+            userObj = {
+              id: res.user.id || userObj.id,
+              name: res.user.name || userObj.name,
+              email: res.user.email || userObj.email,
+              role: 'traveler',
+              avatar: res.user.avatarUrl || userObj.avatar,
+              membership: res.user.membershipTier || userObj.membership,
+            };
+          }
+        } catch (apiErr) {
+          console.warn('Backend login fallback to local persona:', apiErr);
+        }
+        onLogin(userObj);
       } else {
-        const res = await TripFlowApi.login('alex.vance@ops.tripflow.io', 'password123');
-        onLogin({
-          id: res.user.id || 'user-alex-007',
-          name: res.user.name || 'Alex Vance',
-          email: res.user.email || 'alex.vance@ops.tripflow.io',
-          role: 'operator',
-          avatar: res.user.avatarUrl || ALEX_DISPATCH_AVATAR,
-          membership: res.user.membershipTier || 'Chief Dispatch Controller',
-          agencyName: res.user.agencyName || 'Alpine & Beyond Expeditions',
-          agencyCode: res.user.agencyCode || 'OP-ALPS-2026',
-        });
+        let userObj = {
+          id: 'user-alex-007',
+          name: 'Alex Vance',
+          email: 'alex.vance@ops.tripflow.io',
+          role: 'operator' as const,
+          avatar: ALEX_DISPATCH_AVATAR,
+          membership: 'Chief Dispatch Controller',
+          agencyName: 'Alpine & Beyond Expeditions',
+          agencyCode: 'OP-ALPS-2026',
+        };
+        try {
+          const res = await TripFlowApi.login('alex.vance@ops.tripflow.io', 'password123');
+          if (res?.user) {
+            userObj = {
+              id: res.user.id || userObj.id,
+              name: res.user.name || userObj.name,
+              email: res.user.email || userObj.email,
+              role: 'operator',
+              avatar: res.user.avatarUrl || userObj.avatar,
+              membership: res.user.membershipTier || userObj.membership,
+              agencyName: res.user.agencyName || userObj.agencyName,
+              agencyCode: res.user.agencyCode || userObj.agencyCode,
+            };
+          }
+        } catch (apiErr) {
+          console.warn('Backend login fallback to local persona:', apiErr);
+        }
+        onLogin(userObj);
       }
     } catch (err: any) {
-      setErrorMessage(err.message || 'Demo login failed');
+      setErrorMessage(err?.message || 'Demo login failed');
     } finally {
       setIsLoading(false);
     }
@@ -191,6 +223,7 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({
               type="button"
               onClick={() => {
                 setAuthMode('signin');
+                setIsLoading(false);
                 setErrorMessage(null);
               }}
               className={`flex-1 py-2.5 text-xs font-bold rounded-xl transition-all cursor-pointer ${
@@ -205,6 +238,7 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({
               type="button"
               onClick={() => {
                 setAuthMode('signup');
+                setIsLoading(false);
                 setErrorMessage(null);
               }}
               className={`flex-1 py-2.5 text-xs font-bold rounded-xl transition-all cursor-pointer ${
@@ -219,6 +253,7 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({
               type="button"
               onClick={() => {
                 setAuthMode('quick');
+                setIsLoading(false);
                 setErrorMessage(null);
               }}
               className={`flex-1 py-2.5 text-xs font-bold rounded-xl transition-all cursor-pointer ${
