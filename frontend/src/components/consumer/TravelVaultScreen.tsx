@@ -5,6 +5,7 @@ import { INITIAL_VAULT_DOCUMENTS, EMERGENCY_CONTACTS } from '../../data/vaultDat
 import { DocumentScannerModal } from './DocumentScannerModal';
 import { TripFlowApi } from '../../services/api';
 import { BlurFadeCard } from '../ui/MotionComponents';
+import { Skeleton } from '../common/Skeleton';
 
 interface TravelVaultScreenProps {
   onOpenWhatsApp?: () => void;
@@ -56,12 +57,16 @@ export const TravelVaultScreen: React.FC<TravelVaultScreenProps> = ({
   const [newFileName, setNewFileName] = useState('');
 
   const [emergencyContacts, setEmergencyContacts] = useState(EMERGENCY_CONTACTS);
+  const [isLoadingContacts, setIsLoadingContacts] = useState<boolean>(true);
 
   useEffect(() => {
+    setIsLoadingContacts(true);
     TripFlowApi.getEmergencyContacts().then(contacts => {
       if (contacts && contacts.length > 0) {
         setEmergencyContacts(contacts);
       }
+    }).finally(() => {
+      setIsLoadingContacts(false);
     });
   }, []);
 

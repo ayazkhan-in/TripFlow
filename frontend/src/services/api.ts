@@ -149,6 +149,21 @@ export class TripFlowApi {
     }
   }
 
+  static async getDepartureCities(query?: string): Promise<any[]> {
+    try {
+      const url = query
+        ? `${API_BASE}/discover/cities?q=${encodeURIComponent(query)}`
+        : `${API_BASE}/discover/cities`;
+      const res = await fetch(url, { headers: this.getHeaders() });
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const data = await res.json();
+      return data.cities || [];
+    } catch (err) {
+      console.warn('API getDepartureCities fallback to local data:', err);
+      return [];
+    }
+  }
+
   static async generateAIItinerary(params: AIGenerateParams): Promise<TripItinerary | null> {
     try {
       const res = await fetch(`${API_BASE}/discover/ai-generate`, {
@@ -576,7 +591,13 @@ export class TripFlowApi {
         headers: this.getHeaders(),
         body: JSON.stringify({ prompt }),
       }, 10000);
-      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      if (!res.ok) {
+        if (res.status === 422) {
+          const errData = await res.json().catch(() => null);
+          return errData;
+        }
+        throw new Error(`HTTP ${res.status}`);
+      }
       const data = await res.json();
       return data;
     } catch (err) {
@@ -588,6 +609,7 @@ export class TripFlowApi {
   static async generateAssistantProposal(params: {
     prompt: string;
     destination?: string;
+    originCity?: string;
     days?: number;
     travelers?: number;
     answers?: Record<string, any>;

@@ -5,6 +5,7 @@ import { useOperator } from '../../context/OperatorContext';
 import { CreateTourPackageModal } from './CreateTourPackageModal';
 import { CustomizedBookingFulfillmentModal } from './CustomizedBookingFulfillmentModal';
 import { TripFlowApi } from '../../services/api';
+import { TableSkeleton } from '../common/Skeleton';
 
 interface BookingsInventoryScreenProps {
   onInspectTour: (tourId: string) => void;
@@ -26,8 +27,10 @@ export const BookingsInventoryScreen: React.FC<BookingsInventoryScreenProps> = (
   const [selectedBooking, setSelectedBooking] = useState<BookingItem | null>(null);
   const [customizedModalBooking, setCustomizedModalBooking] = useState<BookingItem | null>(null);
   const [isCreatePackageOpen, setIsCreatePackageOpen] = useState(false);
+  const [isLoading, setIsLoading] = useState<boolean>(true);
 
   useEffect(() => {
+    setIsLoading(true);
     TripFlowApi.getOperatorBookings().then(backendBookings => {
       if (backendBookings && backendBookings.length > 0) {
         setDbBookings(backendBookings.map((b: any) => ({
@@ -48,6 +51,8 @@ export const BookingsInventoryScreen: React.FC<BookingsInventoryScreenProps> = (
           bookedAt: new Date(b.bookedAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
         })));
       }
+    }).finally(() => {
+      setIsLoading(false);
     });
   }, []);
 
@@ -249,7 +254,10 @@ export const BookingsInventoryScreen: React.FC<BookingsInventoryScreenProps> = (
       </div>
 
       {/* Bookings Table Card */}
-      <div className="bg-white border border-slate-200/80 rounded-xl overflow-hidden shadow-xs">
+      {isLoading ? (
+        <TableSkeleton rows={5} columns={8} />
+      ) : (
+        <div className="bg-white border border-slate-200/80 rounded-xl overflow-hidden shadow-xs">
         <div className="overflow-x-auto">
           <table className="w-full text-left border-collapse text-xs">
             <thead>
@@ -401,6 +409,7 @@ export const BookingsInventoryScreen: React.FC<BookingsInventoryScreenProps> = (
           </table>
         </div>
       </div>
+      )}
 
       {/* Modal 1: Create Tour Package Modal */}
       <CreateTourPackageModal

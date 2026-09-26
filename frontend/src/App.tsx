@@ -154,6 +154,7 @@ function BookitApp() {
   // Unified End-to-End Traveler Trip & Itinerary State
   // Start with empty trips — populated from backend after login or after booking
   const [bookedTrips, setBookedTrips] = useState<BookedTrip[]>([]);
+  const [isTripsLoading, setIsTripsLoading] = useState<boolean>(true);
   const [activeBookedTripId, setActiveBookedTripId] = useState<string | null>(null);
   const [currentItinerary, setCurrentItinerary] = useState<TripItinerary>(PREMADE_KERALA_ITINERARY);
   const [modifyingTripId, setModifyingTripId] = useState<string | null>(null);
@@ -247,6 +248,7 @@ function BookitApp() {
       } catch (err) {
         console.error('Splash background initialization error:', err);
       } finally {
+        setIsTripsLoading(false);
         clearInterval(progressInterval);
 
         // Ensure minimum visual duration for smooth loading bar completion
@@ -311,6 +313,7 @@ function BookitApp() {
       navigateTo({ route: 'app', mode: 'consumer', consumerTab: 'home' });
 
       // Load their trips after login
+      setIsTripsLoading(true);
       TripFlowApi.getMyTrips().then(trips => {
         if (trips && trips.length > 0) {
           setBookedTrips(trips);
@@ -320,6 +323,8 @@ function BookitApp() {
           setBookedTrips([]);
           setActiveBookedTripId(null);
         }
+      }).finally(() => {
+        setIsTripsLoading(false);
       });
       TripFlowApi.getVaultDocuments().then(docs => {
         if (docs && docs.length > 0) setVaultDocuments(docs);
@@ -649,6 +654,7 @@ function BookitApp() {
                   <TripsAndBookingsScreen
                     initialView={consumerTab === 'bookings' ? 'bookings' : 'timeline'}
                     bookedTrips={bookedTrips}
+                    isLoadingTrips={isTripsLoading}
                     activeTripId={activeBookedTripId ?? undefined}
                     onSelectTrip={id => setActiveBookedTripId(id)}
                     onModifyTrip={handleModifyTrip}
@@ -666,6 +672,13 @@ function BookitApp() {
                     }
                     onOpenTripAssistant={() => setIsWhatsAppOpen(true)}
                     onNavigateTab={handleConsumerTabChange}
+                    onOpenItineraryInBuilder={(itinerary) => {
+                      setCurrentItinerary(itinerary);
+                      setModifyingTripId(null);
+                      navigateTo({ route: 'app', mode: 'consumer', consumerTab: 'builder' });
+                      showToast(`✨ Loaded "${itinerary.title}" in Itinerary Builder!`);
+                    }}
+                    onOpenPayment={(itinerary) => handleOpenPayment(itinerary, itinerary.totalPrice ?? 0)}
                     showToast={showToast}
                   />
                 )}

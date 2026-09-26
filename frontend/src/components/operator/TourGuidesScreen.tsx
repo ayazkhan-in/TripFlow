@@ -2,6 +2,7 @@ import React, { useState, useMemo, useEffect } from 'react';
 import { TourGuideStaffItem } from '../../types/travel';
 import { useOperator } from '../../context/OperatorContext';
 import { TripFlowApi } from '../../services/api';
+import { Skeleton } from '../common/Skeleton';
 
 interface TourGuidesScreenProps {
   showToast: (msg: string) => void;
@@ -10,6 +11,7 @@ interface TourGuidesScreenProps {
 export const TourGuidesScreen: React.FC<TourGuidesScreenProps> = ({ showToast }) => {
   const { guides: contextGuides } = useOperator();
   const [guides, setGuides] = useState<TourGuideStaffItem[]>(contextGuides || []);
+  const [isLoading, setIsLoading] = useState<boolean>(!contextGuides || contextGuides.length === 0);
   const [searchQuery, setSearchQuery] = useState('');
   const [roleFilter, setRoleFilter] = useState<string>('all');
   const [selectedGuide, setSelectedGuide] = useState<TourGuideStaffItem | null>(null);
@@ -23,6 +25,8 @@ export const TourGuidesScreen: React.FC<TourGuidesScreenProps> = ({ showToast })
           totalTours: Number(g.totalTours || 100),
         })));
       }
+    }).finally(() => {
+      setIsLoading(false);
     });
   }, []);
 
@@ -136,7 +140,25 @@ export const TourGuidesScreen: React.FC<TourGuidesScreenProps> = ({ showToast })
 
       {/* Staff Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 gap-4">
-        {filteredGuides.map(guide => (
+        {isLoading && guides.length === 0 ? (
+          [...Array(4)].map((_, i) => (
+            <div key={i} className="bg-white border border-slate-200/80 rounded-xl p-5 space-y-4">
+              <div className="flex items-start gap-3.5">
+                <Skeleton className="w-12 h-12 rounded-xl shrink-0" />
+                <div className="flex-1 space-y-1.5">
+                  <Skeleton className="h-4 w-32 rounded" />
+                  <Skeleton className="h-3 w-24 rounded" />
+                  <Skeleton className="h-3 w-40 rounded" />
+                </div>
+              </div>
+              <div className="flex justify-between items-center pt-3 border-t border-slate-100">
+                <Skeleton className="h-3 w-28 rounded" />
+                <Skeleton className="h-7 w-24 rounded-lg" />
+              </div>
+            </div>
+          ))
+        ) : (
+        filteredGuides.map(guide => (
           <div
             key={guide.id}
             className="bg-white border border-slate-200/80 hover:border-slate-300 rounded-xl p-5 transition-colors flex flex-col justify-between gap-4"
@@ -222,7 +244,8 @@ export const TourGuidesScreen: React.FC<TourGuidesScreenProps> = ({ showToast })
               </div>
             </div>
           </div>
-        ))}
+        ))
+        )}
       </div>
 
       {/* Profile Detail Modal */}

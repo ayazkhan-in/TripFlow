@@ -1,4 +1,5 @@
 import { CatalogItem, ItineraryCategory, ItineraryDay, ItineraryItem, RouteStop, TripItinerary } from '../types/itinerary';
+import { findValidDestination } from '../data/citiesData';
 
 export interface AIFlightOption {
   id: string;
@@ -54,6 +55,7 @@ export interface AIActivityOption extends CatalogItem {
 
 export interface AITripDetails {
   destination: string;
+  originCity?: string;
   country: string;
   days: number;
   startDate: string;
@@ -141,59 +143,22 @@ export function parseInitialPrompt(text: string): AITripDetails {
     interests.push('Historical Heritage', 'Gourmet Dining', 'Wellness & Relaxation');
   }
 
-  // Detect Destination & Country
-  let destination = 'Tokyo';
-  let country = 'Japan';
+  // Detect Destination & Country strictly with zero guesswork
+  const detectedDest = findValidDestination(text);
+  let destination = detectedDest ? detectedDest.name : '';
+  let country = detectedDest ? detectedDest.country : '';
 
-  if (lower.includes('tokyo') || lower.includes('japan') || lower.includes('kyoto') || lower.includes('osaka')) {
-    destination = 'Tokyo';
-    country = 'Japan';
-  } else if (lower.includes('kerala') || lower.includes('kochi') || lower.includes('cochin') || lower.includes('munnar') || lower.includes('alleppey')) {
-    destination = 'Kerala';
-    country = 'India';
-  } else if (lower.includes('rajasthan') || lower.includes('jaipur') || lower.includes('udaipur') || lower.includes('jodhpur')) {
-    destination = 'Rajasthan';
-    country = 'India';
-  } else if (lower.includes('goa') || lower.includes('panaji')) {
-    destination = 'Goa';
-    country = 'India';
-  } else if (lower.includes('dubai') || lower.includes('uae') || lower.includes('emirates')) {
-    destination = 'Dubai';
-    country = 'United Arab Emirates';
-  } else if (lower.includes('paris') || lower.includes('france')) {
-    destination = 'Paris';
-    country = 'France';
-  } else if (lower.includes('swiss') || lower.includes('switzerland') || lower.includes('alps') || lower.includes('zermatt')) {
-    destination = 'Swiss Alps';
-    country = 'Switzerland';
-  } else if (lower.includes('riyadh') || lower.includes('saudi')) {
-    destination = 'Riyadh';
-    country = 'Saudi Arabia';
-  } else if (lower.includes('new york') || lower.includes('nyc') || lower.includes('manhattan')) {
-    destination = 'New York';
-    country = 'United States';
-  } else if (lower.includes('seoul') || lower.includes('korea')) {
-    destination = 'Seoul';
-    country = 'South Korea';
-  } else if (lower.includes('bali') || lower.includes('indonesia')) {
-    destination = 'Bali';
-    country = 'Indonesia';
-  } else if (lower.includes('maldives')) {
-    destination = 'Maldives';
-    country = 'Maldives';
-  } else if (lower.includes('rome') || lower.includes('italy') || lower.includes('amalfi')) {
-    destination = 'Rome';
-    country = 'Italy';
-  } else {
-    // Try to extract capitalized destination from prompt
-    const matches = text.match(/(?:to|in|visit|explore|trip\s+to)\s+([A-Z][a-zA-Z\s]{2,20})/i);
-    if (matches && matches[1]) {
-      const candidate = matches[1].trim().split(/\s+/)[0];
-      if (candidate.length > 2) {
-        destination = candidate.charAt(0).toUpperCase() + candidate.slice(1).toLowerCase();
-        country = 'International';
-      }
-    }
+  if (!destination) {
+    // If not matched directly, check if text has a valid geographic destination or leave empty
+    destination = '';
+    country = '';
+  }
+
+  // Detect Origin/Departure city if specified in prompt (e.g. "from Mumbai", "departing from Delhi", etc.)
+  let originCity: string | undefined = undefined;
+  const originMatch = text.match(/(?:from|departing\s+from|flying\s+from|starting\s+from)\s+([A-Za-z\s()]+?)(?:\s+to|\s+for|\s+with|\s+in|\s*$)/i);
+  if (originMatch && originMatch[1]) {
+    originCity = originMatch[1].trim();
   }
 
   // Default start date: 20 days from now
@@ -203,6 +168,7 @@ export function parseInitialPrompt(text: string): AITripDetails {
 
   return {
     destination,
+    originCity,
     country,
     days,
     startDate,
@@ -1009,6 +975,20 @@ export function generateProposalFromDetails(details: AITripDetails): AIGenerated
     isIncluded: false,
   }));
 
+  // Customize flight origins if user specified an origin city
+  let customizedFlights = preset.flights;
+  if (details.originCity) {
+    const originIataMatch = details.originCity.match(/\(([A-Z]{3})\)/);
+    const originCode = originIataMatch ? originIataMatch[1] : 'BOM';
+    const originName = details.originCity.replace(/\s*\([A-Z]{3}\)/, '').trim() || details.originCity;
+
+    customizedFlights = preset.flights.map(fl => ({
+      ...fl,
+      origin: originName,
+      originCode: originCode,
+    }));
+  }
+
   return {
     id: `prop-${details.destination.toLowerCase()}-${Date.now()}`,
     title: preset.title,
@@ -1019,9 +999,11 @@ export function generateProposalFromDetails(details: AITripDetails): AIGenerated
     startDate: details.startDate,
     basePriceUSD: totalBasePrice,
     heroImage: preset.heroImage,
-    summary: preset.summary,
-    flights: preset.flights,
-    selectedFlightId: preset.flights[0].id,
+    summary: details.originCity
+      ? `A curated luxury journey departing from ${details.originCity} to ${details.destination}. ${preset.summary}`
+      : preset.summary,
+    flights: customizedFlights,
+    selectedFlightId: customizedFlights[0].id,
     hotels: preset.hotels,
     selectedHotelId: preset.hotels[0].id,
     transfers: preset.transfers,

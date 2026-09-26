@@ -20,7 +20,7 @@ if (apiKey) {
 }
 
 // Model cascade for high availability, sub-3s response, and zero 503 dropouts
-const CANDIDATE_MODELS = ['gemini-3.8-flash', 'gemini-2.5-flash'];
+const CANDIDATE_MODELS = ['gemini-3-flash-preview', 'gemini-3.1-pro-preview'];
 
 async function generateWithGeminiCascade(systemPrompt: string): Promise<string | null> {
   if (!aiClient) return null;
@@ -163,7 +163,7 @@ function getDestinationProfile(destination: string): DestinationProfile {
   };
 }
 
-function parseDestinationAndDays(text: string): { destination: string; days: number; travelers: number } {
+function parseDestinationAndDays(text: string): { destination: string | null; days: number; travelers: number; isInvalid: boolean; reason?: string } {
   const lower = text.toLowerCase();
   let days = 5;
   const daysMatch = lower.match(/(\d+)\s*(?:day|days|d)/);
@@ -183,7 +183,20 @@ function parseDestinationAndDays(text: string): { destination: string; days: num
     travelers = 4;
   }
 
-  let destination = 'Turkey';
+  // Nonsense/invalid keyword check
+  const INVALID_NONSENSE_KEYWORDS = [
+    'pizza', 'burger', 'food', 'biryani', 'chai', 'coffee', 'pasta', 'sandwich', 'ice cream', 'shawarma', 'sushi',
+    'arif', 'john', 'alex', 'peter', 'sarah', 'bob', 'tom', 'test', 'demo', 'fake', 'random', 'foo', 'bar', '123',
+    'car', 'laptop', 'phone', 'money', 'crypto', 'shoe', 'shirt', 'dog', 'cat', 'water', 'book',
+  ];
+  for (const bad of INVALID_NONSENSE_KEYWORDS) {
+    const regex = new RegExp(`\\b${bad}\\b`, 'i');
+    if (regex.test(lower)) {
+      return { destination: null, days, travelers, isInvalid: true, reason: `"${bad}" is not a recognized travel destination.` };
+    }
+  }
+
+  let destination: string | null = null;
   const destKeywords: Record<string, string> = {
     turkey: 'Turkey',
     istanbul: 'Turkey',
@@ -196,6 +209,8 @@ function parseDestinationAndDays(text: string): { destination: string; days: num
     rajasthan: 'Rajasthan, India',
     jaipur: 'Rajasthan, India',
     goa: 'Goa, India',
+    delhi: 'New Delhi, India',
+    'new delhi': 'New Delhi, India',
     switzerland: 'Switzerland',
     alps: 'Switzerland',
     france: 'France',
@@ -204,6 +219,18 @@ function parseDestinationAndDays(text: string): { destination: string; days: num
     rome: 'Italy',
     dubai: 'Dubai, UAE',
     uae: 'Dubai, UAE',
+    riyadh: 'Riyadh, Saudi Arabia',
+    saudi: 'Riyadh, Saudi Arabia',
+    'new york': 'New York, USA',
+    nyc: 'New York, USA',
+    london: 'London, UK',
+    singapore: 'Singapore',
+    bali: 'Bali, Indonesia',
+    thailand: 'Thailand',
+    bangkok: 'Bangkok, Thailand',
+    maldives: 'Maldives',
+    seoul: 'Seoul, South Korea',
+    mumbai: 'Mumbai, India',
   };
 
   for (const [key, val] of Object.entries(destKeywords)) {
@@ -213,7 +240,7 @@ function parseDestinationAndDays(text: string): { destination: string; days: num
     }
   }
 
-  return { destination, days, travelers };
+  return { destination, days, travelers, isInvalid: !destination, reason: !destination ? 'Could not identify a recognized travel destination city.' : undefined };
 }
 
 // ============================================================================
@@ -226,7 +253,17 @@ router.post('/clarify', async (req: AuthenticatedRequest, res: Response) => {
       return res.status(400).json({ error: 'Prompt is required' });
     }
 
-    const { destination, days, travelers } = parseDestinationAndDays(prompt);
+    const { destination, days, travelers, isInvalid, reason } = parseDestinationAndDays(prompt);
+
+    if (isInvalid || !destination) {
+      return res.status(422).json({
+        isValid: false,
+        error: 'INVALID_DESTINATION',
+        message: reason || 'Please enter a valid city or travel destination to plan your itinerary without guessing.',
+        suggestedCities: ['Tokyo', 'Turkey', 'Kerala', 'Rajasthan', 'Goa', 'New Delhi', 'Dubai', 'Paris', 'Swiss Alps', 'New York', 'Riyadh'],
+      });
+    }
+
     const profile = getDestinationProfile(destination);
 
     const baseSmartBudget = Math.round(days * 14000 * travelers);
@@ -339,7 +376,7 @@ Return ONLY valid JSON without markdown fences matching:
           if (Array.isArray(parsed.questions) && parsed.questions.length > 0) {
             questions = parsed.questions;
           }
-        } catch {}
+        } catch { }
       }
     }
 
@@ -364,6 +401,7 @@ router.post('/generate-proposal', async (req: AuthenticatedRequest, res: Respons
     const {
       prompt,
       destination = 'Turkey',
+      originCity = 'Mumbai (BOM)',
       days = 7,
       travelers = 2,
       answers = {},
@@ -371,8 +409,18 @@ router.post('/generate-proposal', async (req: AuthenticatedRequest, res: Respons
       targetBudgetUSD,
     } = req.body;
 
-    const budget = Number(targetBudgetINR || targetBudgetUSD) || Math.round(days * 28000 * travelers);
+    // Detect origin city from answers if provided (e.g. from questionnaire departure_city question)
+    const departureAnswer = answers?.departure_city;
+    const resolvedOrigin = (typeof departureAnswer === 'string' && departureAnswer.trim())
+      ? departureAnswer.trim()
+      : originCity;
+
     const profile = getDestinationProfile(destination);
+    const originIataMatch = resolvedOrigin.match(/\(([A-Z]{3})\)/);
+    const resolvedOriginCode = originIataMatch ? originIataMatch[1] : (profile.flights.recommended.originCode || 'BOM');
+    const resolvedOriginName = resolvedOrigin.replace(/\s*\([A-Z]{3}\)/, '').trim() || 'Mumbai';
+
+    const budget = Number(targetBudgetINR || targetBudgetUSD) || Math.round(days * 28000 * travelers);
     const nights = Math.max(1, days - 1);
 
     // Dynamic flight calculation calibrated to budget in INR
@@ -399,14 +447,14 @@ router.post('/generate-proposal', async (req: AuthenticatedRequest, res: Respons
       basePriceINR: budget,
       basePriceUSD: budget, // backward compatibility
       heroImage: profile.heroImage,
-      summary: `A bespoke ${days}-day itinerary through ${destination} crafted to match your target budget of ₹${budget.toLocaleString('en-IN')}. Featuring calibrated flight routes, 5-star landmark stays, and private transfers.`,
+      summary: `A bespoke ${days}-day itinerary from ${resolvedOriginName} (${resolvedOriginCode}) through ${destination} crafted to match your target budget of ₹${budget.toLocaleString('en-IN')}. Featuring calibrated flight routes, 5-star landmark stays, and private transfers.`,
       flights: [
         {
           id: 'fl-cheap-1',
           airline: profile.flights.cheaper.airline,
           flightNumber: profile.flights.cheaper.flightNumber,
-          origin: 'Origin City',
-          originCode: profile.flights.cheaper.originCode,
+          origin: resolvedOriginName,
+          originCode: resolvedOriginCode,
           destination,
           destCode: profile.flights.cheaper.destCode,
           departureTime: profile.flights.cheaper.depTime,
@@ -426,8 +474,8 @@ router.post('/generate-proposal', async (req: AuthenticatedRequest, res: Respons
           id: 'fl-rec-1',
           airline: profile.flights.recommended.airline,
           flightNumber: profile.flights.recommended.flightNumber,
-          origin: 'Origin City',
-          originCode: profile.flights.recommended.originCode,
+          origin: resolvedOriginName,
+          originCode: resolvedOriginCode,
           destination,
           destCode: profile.flights.recommended.destCode,
           departureTime: profile.flights.recommended.depTime,
@@ -447,8 +495,8 @@ router.post('/generate-proposal', async (req: AuthenticatedRequest, res: Respons
           id: 'fl-lux-1',
           airline: profile.flights.luxury.airline,
           flightNumber: profile.flights.luxury.flightNumber,
-          origin: 'Origin City',
-          originCode: profile.flights.luxury.originCode,
+          origin: resolvedOriginName,
+          originCode: resolvedOriginCode,
           destination,
           destCode: profile.flights.luxury.destCode,
           departureTime: profile.flights.luxury.depTime,
@@ -579,7 +627,7 @@ Return a STRICT JSON object without markdown fences matching the proposal schema
           if (parsed && parsed.flights && parsed.hotels) {
             return res.json({ success: true, proposal: parsed });
           }
-        } catch {}
+        } catch { }
       }
     }
 
@@ -607,15 +655,26 @@ router.get('/sessions', optionalAuth, async (req: AuthenticatedRequest, res: Res
       orderBy: { updatedAt: 'desc' },
     });
 
-    const sessions = dbSessions.map((s: any) => ({
-      id: s.id,
-      title: s.title,
-      destination: s.destination,
-      updatedAt: s.updatedAt.toISOString(),
-      messages: s.messages as any,
-      proposal: s.proposal as any,
-    }));
+    const seenTitleKeys = new Set<string>();
+    const sessions: any[] = [];
 
+    for (const s of dbSessions) {
+      const normTitle = (s.title || '').trim().toLowerCase();
+      const normDest = (s.destination || '').trim().toLowerCase();
+      const titleKey = normTitle !== 'new trip conversation' ? `${normTitle}_${normDest}` : s.id;
+
+      if (!seenTitleKeys.has(titleKey)) {
+        seenTitleKeys.add(titleKey);
+        sessions.push({
+          id: s.id,
+          title: s.title,
+          destination: s.destination,
+          updatedAt: s.updatedAt.toISOString(),
+          messages: s.messages as any,
+          proposal: s.proposal as any,
+        });
+      }
+    }
 
     res.json({ success: true, count: sessions.length, sessions });
   } catch (err: any) {
@@ -780,54 +839,54 @@ function applyItineraryMutation(
       subtitle: `Extended Day in ${destination}`,
       items: parsed.newItem
         ? [
-            {
-              id: `item-ai-${Date.now()}-1`,
-              catalogId: `custom-ai-${Date.now()}`,
-              title: parsed.newItem.title,
-              category: parsed.newItem.category || 'experience',
-              price: Number(parsed.newItem.price) || 5000,
-              time: parsed.newItem.time || '10:30 AM',
-              duration: parsed.newItem.duration || '2.5 hrs',
-              location: destination,
-              description: parsed.newItem.description || 'Curated journey highlight.',
-              image: getDefaultImageForCategory(parsed.newItem.category, destination),
-              rating: 4.92,
-              tags: ['Custom Day', destination],
-              transitToNext: { mode: 'car', duration: '15 min' },
-            },
-          ]
+          {
+            id: `item-ai-${Date.now()}-1`,
+            catalogId: `custom-ai-${Date.now()}`,
+            title: parsed.newItem.title,
+            category: parsed.newItem.category || 'experience',
+            price: Number(parsed.newItem.price) || 5000,
+            time: parsed.newItem.time || '10:30 AM',
+            duration: parsed.newItem.duration || '2.5 hrs',
+            location: destination,
+            description: parsed.newItem.description || 'Curated journey highlight.',
+            image: getDefaultImageForCategory(parsed.newItem.category, destination),
+            rating: 4.92,
+            tags: ['Custom Day', destination],
+            transitToNext: { mode: 'car', duration: '15 min' },
+          },
+        ]
         : [
-            {
-              id: `item-ai-${Date.now()}-1`,
-              catalogId: `custom-ai-${Date.now()}`,
-              title: `${destination} Landmark Highlights & Artisan Walk`,
-              category: 'activity',
-              price: 3800,
-              time: '10:00 AM',
-              duration: '2.5 hrs',
-              location: destination,
-              description: 'Guided cultural immersion through historic monuments and scenic vistas.',
-              image: getDefaultImageForCategory('activity', destination),
-              rating: 4.93,
-              tags: ['Culture', 'Highlights'],
-              transitToNext: { mode: 'car', duration: '15 min' },
-            },
-            {
-              id: `item-ai-${Date.now()}-2`,
-              catalogId: `custom-ai-${Date.now()}-2`,
-              title: 'Curated Sunset Dinner & Local Gastronomy',
-              category: 'meal',
-              price: 5500,
-              time: '07:30 PM',
-              duration: '2 hrs',
-              location: destination,
-              description: 'Exquisite regional delicacies with panoramic evening ambience.',
-              image: getDefaultImageForCategory('meal', destination),
-              rating: 4.96,
-              tags: ['Dining', 'Sunset'],
-              transitToNext: { mode: 'car', duration: '15 min' },
-            },
-          ],
+          {
+            id: `item-ai-${Date.now()}-1`,
+            catalogId: `custom-ai-${Date.now()}`,
+            title: `${destination} Landmark Highlights & Artisan Walk`,
+            category: 'activity',
+            price: 3800,
+            time: '10:00 AM',
+            duration: '2.5 hrs',
+            location: destination,
+            description: 'Guided cultural immersion through historic monuments and scenic vistas.',
+            image: getDefaultImageForCategory('activity', destination),
+            rating: 4.93,
+            tags: ['Culture', 'Highlights'],
+            transitToNext: { mode: 'car', duration: '15 min' },
+          },
+          {
+            id: `item-ai-${Date.now()}-2`,
+            catalogId: `custom-ai-${Date.now()}-2`,
+            title: 'Curated Sunset Dinner & Local Gastronomy',
+            category: 'meal',
+            price: 5500,
+            time: '07:30 PM',
+            duration: '2 hrs',
+            location: destination,
+            description: 'Exquisite regional delicacies with panoramic evening ambience.',
+            image: getDefaultImageForCategory('meal', destination),
+            rating: 4.96,
+            tags: ['Dining', 'Sunset'],
+            transitToNext: { mode: 'car', duration: '15 min' },
+          },
+        ],
     };
 
     daysCopy.push(newDay);
@@ -1063,10 +1122,10 @@ Traveler Request: "${trimmedPrompt}"
 
 Current Days Summary:
 ${JSON.stringify(daysCopy.map((d: any) => ({
-  dayNumber: d.dayNumber,
-  title: d.title,
-  items: d.items?.map((i: any) => ({ id: i.id, title: i.title, time: i.time, price: i.price, category: i.category }))
-})))}
+      dayNumber: d.dayNumber,
+      title: d.title,
+      items: d.items?.map((i: any) => ({ id: i.id, title: i.title, time: i.time, price: i.price, category: i.category }))
+    })))}
 
 Interpret the user's intent:
 1. "add_item": Adding an item to a day (specify targetDayNumber [defaults to ${activeDayNumber} if unspecified], title, category ['meal' | 'activity' | 'transport' | 'hotel' | 'experience'], time, duration, price in INR (Indian Rupees - ₹, e.g. 5000 for dinner, 3500 for activity, 16000 for hotel night), location, description, tags, transitToNext).
@@ -1106,7 +1165,7 @@ Return a STRICT JSON object without markdown fences matching this schema:
       if (jsonMatch) {
         try {
           parsed = JSON.parse(jsonMatch[0]);
-        } catch {}
+        } catch { }
       }
     }
 

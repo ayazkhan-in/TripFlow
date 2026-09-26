@@ -30,7 +30,17 @@ router.get('/my-trips', optionalAuth, async (req: AuthenticatedRequest, res: Res
       },
     });
 
-    res.json({ success: true, count: bookedTrips.length, trips: bookedTrips });
+    const seenTitles = new Set<string>();
+    const uniqueTrips = [];
+    for (const t of bookedTrips) {
+      const key = `${(t.destination || '').toLowerCase()}_${(t.title || '').toLowerCase()}`;
+      if (!seenTitles.has(key)) {
+        seenTitles.add(key);
+        uniqueTrips.push(t);
+      }
+    }
+
+    res.json({ success: true, count: uniqueTrips.length, trips: uniqueTrips });
   } catch (err: any) {
     console.error('Error fetching booked trips:', err);
     res.status(500).json({ error: err.message });

@@ -2,6 +2,7 @@ import React, { useState, useMemo, useEffect } from 'react';
 import { VendorSupplyItem } from '../../types/travel';
 import { useOperator } from '../../context/OperatorContext';
 import { TripFlowApi } from '../../services/api';
+import { Skeleton } from '../common/Skeleton';
 
 interface VendorsSupplyScreenProps {
   showToast: (msg: string) => void;
@@ -10,6 +11,7 @@ interface VendorsSupplyScreenProps {
 export const VendorsSupplyScreen: React.FC<VendorsSupplyScreenProps> = ({ showToast }) => {
   const { vendors: contextVendors, addVendor } = useOperator();
   const [vendors, setVendors] = useState<VendorSupplyItem[]>(contextVendors || []);
+  const [isLoading, setIsLoading] = useState<boolean>(!contextVendors || contextVendors.length === 0);
   const [searchQuery, setSearchQuery] = useState('');
   const [categoryFilter, setCategoryFilter] = useState<string>('all');
   const [isAddVendorOpen, setIsAddVendorOpen] = useState(false);
@@ -29,6 +31,8 @@ export const VendorsSupplyScreen: React.FC<VendorsSupplyScreenProps> = ({ showTo
             : v.contractRenewal || 'Dec 2027',
         })));
       }
+    }).finally(() => {
+      setIsLoading(false);
     });
   }, []);
 
@@ -171,7 +175,26 @@ export const VendorsSupplyScreen: React.FC<VendorsSupplyScreenProps> = ({ showTo
 
       {/* Partner Directory Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-        {filteredVendors.map(vendor => (
+        {isLoading && vendors.length === 0 ? (
+          [...Array(6)].map((_, i) => (
+            <div key={i} className="bg-white border border-slate-200/80 rounded-xl p-5 space-y-4">
+              <div className="flex justify-between items-start">
+                <div className="space-y-1.5 flex-1">
+                  <Skeleton className="h-3 w-16 rounded" />
+                  <Skeleton className="h-4 w-36 rounded" />
+                  <Skeleton className="h-3 w-24 rounded" />
+                </div>
+                <Skeleton className="h-4 w-12 rounded" />
+              </div>
+              <Skeleton className="h-16 w-full rounded-lg" />
+              <div className="flex justify-between pt-2 border-t border-slate-100">
+                <Skeleton className="h-3 w-20 rounded" />
+                <Skeleton className="h-3 w-16 rounded" />
+              </div>
+            </div>
+          ))
+        ) : (
+        filteredVendors.map(vendor => (
           <div
             key={vendor.id}
             className="bg-white border border-slate-200/80 hover:border-slate-300 rounded-xl p-5 flex flex-col justify-between gap-4 transition-colors"
@@ -230,7 +253,8 @@ export const VendorsSupplyScreen: React.FC<VendorsSupplyScreenProps> = ({ showTo
               </button>
             </div>
           </div>
-        ))}
+        ))
+        )}
       </div>
 
       {/* Add Partner Modal */}

@@ -11,6 +11,7 @@ import { CardDetailOverlay } from './CardDetailOverlay';
 import { CustomItemModal } from './CustomItemModal';
 import { FloatingTripTotal } from './FloatingTripTotal';
 import { AIAssistantInput } from './AIAssistantInput';
+import { Skeleton, SkeletonText } from '../common/Skeleton';
 
 interface ItineraryBuilderScreenProps {
   initialItinerary?: TripItinerary;
@@ -588,6 +589,39 @@ export const ItineraryBuilderScreen: React.FC<ItineraryBuilderScreenProps> = ({
         activeDayNumber={activeDayNumber}
         destination={itinerary.destination}
       />
+
+      {/* AI Re-calibrating Skeleton Overlay */}
+      {isAILoading && (
+        <div className="absolute inset-0 bg-slate-900/25 backdrop-blur-[2px] z-50 flex items-center justify-center pointer-events-none transition-all duration-300">
+          <div className="bg-white/95 backdrop-blur-md rounded-2xl p-6 shadow-2xl border border-slate-200/80 max-w-md w-full mx-4 space-y-4 animate-in fade-in zoom-in-95 duration-200">
+            <div className="flex items-center gap-3">
+              <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-indigo-500/20 to-blue-500/20 flex items-center justify-center text-indigo-600 font-bold text-sm shadow-xs border border-indigo-100">
+                ✦
+              </div>
+              <div className="flex-1 space-y-1.5">
+                <Skeleton className="h-4 w-48 rounded" />
+                <Skeleton className="h-3 w-32 rounded" />
+              </div>
+            </div>
+            <div className="space-y-3 pt-2">
+              <div className="flex gap-3 items-center p-3 rounded-xl bg-slate-50 border border-slate-100">
+                <Skeleton className="w-10 h-10 rounded-xl flex-shrink-0" />
+                <div className="flex-1 space-y-2">
+                  <Skeleton className="h-3.5 w-3/4 rounded" />
+                  <Skeleton className="h-2.5 w-1/2 rounded" />
+                </div>
+              </div>
+              <div className="flex gap-3 items-center p-3 rounded-xl bg-slate-50 border border-slate-100">
+                <Skeleton className="w-10 h-10 rounded-xl flex-shrink-0" />
+                <div className="flex-1 space-y-2">
+                  <Skeleton className="h-3.5 w-4/5 rounded" />
+                  <Skeleton className="h-2.5 w-2/5 rounded" />
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* 5. MODALS & OVERLAYS */}
       <RouteMapModal

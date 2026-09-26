@@ -12,6 +12,7 @@ import { OperatorTab } from '../../types/travel';
 import { formatCurrency } from '../../utils/pricing';
 import { TripFlowApi } from '../../services/api';
 import { useOperator } from '../../context/OperatorContext';
+import { TableSkeleton } from '../common/Skeleton';
 
 interface TravelerBookingsManagerScreenProps {
   activeTab: OperatorTab;
@@ -43,8 +44,10 @@ export const TravelerBookingsManagerScreen: React.FC<TravelerBookingsManagerScre
   const [selectedTicket, setSelectedTicket] = useState<OperatorFlightTicket | null>(null);
   const [selectedStay, setSelectedStay] = useState<OperatorStayBooking | null>(null);
   const [copiedId, setCopiedId] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState<boolean>(true);
 
   useEffect(() => {
+    setIsLoading(true);
     TripFlowApi.getOperatorBookings().then(bookings => {
       if (bookings && bookings.length > 0) {
         const dynamicFlights: OperatorFlightTicket[] = bookings.map((b: any) => ({
@@ -106,6 +109,8 @@ export const TravelerBookingsManagerScreen: React.FC<TravelerBookingsManagerScre
         }));
         setTransfers(dynamicTransfers);
       }
+    }).finally(() => {
+      setIsLoading(false);
     });
   }, []);
 
@@ -379,7 +384,9 @@ export const TravelerBookingsManagerScreen: React.FC<TravelerBookingsManagerScre
 
             {/* Flight Tickets List */}
             <div className="space-y-2.5">
-              {filteredFlights.length === 0 ? (
+              {isLoading ? (
+                <TableSkeleton rows={4} columns={5} />
+              ) : filteredFlights.length === 0 ? (
                 <div className="bg-white rounded-xl border border-slate-200 p-12 text-center">
                   <h3 className="text-sm font-medium text-slate-700">No flight tickets found</h3>
                   <p className="text-xs text-slate-400 mt-1">Try clearing your search query.</p>
@@ -545,7 +552,15 @@ export const TravelerBookingsManagerScreen: React.FC<TravelerBookingsManagerScre
             </div>
 
             <div className="space-y-2.5">
-              {filteredStays.map(stay => (
+              {isLoading ? (
+                <TableSkeleton rows={4} columns={5} />
+              ) : filteredStays.length === 0 ? (
+                <div className="bg-white rounded-xl border border-slate-200 p-12 text-center">
+                  <h3 className="text-sm font-medium text-slate-700">No hotel stays found</h3>
+                  <p className="text-xs text-slate-400 mt-1">Try clearing your search query.</p>
+                </div>
+              ) : (
+                filteredStays.map(stay => (
                 <div
                   key={stay.id}
                   className="bg-white rounded-xl border border-slate-200/80 hover:border-slate-300 transition-colors p-4"
@@ -619,7 +634,7 @@ export const TravelerBookingsManagerScreen: React.FC<TravelerBookingsManagerScre
                     </div>
                   </div>
                 </div>
-              ))}
+              )))}
             </div>
           </div>
         )}
@@ -663,7 +678,15 @@ export const TravelerBookingsManagerScreen: React.FC<TravelerBookingsManagerScre
             </div>
 
             <div className="space-y-2.5">
-              {filteredTransfers.map(tr => (
+              {isLoading ? (
+                <TableSkeleton rows={4} columns={5} />
+              ) : filteredTransfers.length === 0 ? (
+                <div className="bg-white rounded-xl border border-slate-200 p-12 text-center">
+                  <h3 className="text-sm font-medium text-slate-700">No transfers found</h3>
+                  <p className="text-xs text-slate-400 mt-1">Try clearing your search query.</p>
+                </div>
+              ) : (
+                filteredTransfers.map(tr => (
                 <div
                   key={tr.id}
                   className="bg-white rounded-xl border border-slate-200/80 hover:border-slate-300 transition-colors p-4"
@@ -723,7 +746,7 @@ export const TravelerBookingsManagerScreen: React.FC<TravelerBookingsManagerScre
                     </div>
                   </div>
                 </div>
-              ))}
+              )))}
             </div>
           </div>
         )}

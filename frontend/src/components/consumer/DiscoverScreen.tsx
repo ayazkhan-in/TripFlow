@@ -24,9 +24,11 @@ import {
 import { addCustomCatalogItems } from '../../data/itineraryData';
 import { formatCurrency } from '../../utils/pricing';
 import { USER_AVATAR } from '../../data/mockData';
+import { DEPARTURE_CITIES, DepartureCity, findValidDestination, VALID_DESTINATIONS, TravelDestination } from '../../data/citiesData';
 import { LuxuryCard } from '../common/LuxuryCard';
 import { getPackageAmenities } from '../../data/operatorPackagesData';
 import { WordByWordBlurText, BlurFadeCard } from '../ui/MotionComponents';
+import { ProposalDeckSkeleton, PackageCardSkeleton } from '../common/Skeleton';
 
 interface DiscoverScreenProps {
   onNavigateTab: (tab: ConsumerTab) => void;
@@ -368,9 +370,39 @@ export const DiscoverScreen: React.FC<DiscoverScreenProps> = ({
   // Main natural language input state
   const [naturalLanguageInput, setNaturalLanguageInput] = useState<string>('');
   const [isBuilding, setIsBuilding] = useState<boolean>(false);
-  const [planningFor, setPlanningFor] = useState<'you' | 'someone_else'>('you');
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const curatedSectionRef = useRef<HTMLDivElement>(null);
+
+  // Departure / Starting City Dropdown State
+  const [citiesList, setCitiesList] = useState<DepartureCity[]>(DEPARTURE_CITIES);
+  const [selectedCity, setSelectedCity] = useState<DepartureCity>(DEPARTURE_CITIES[0]); // Default: Mumbai (BOM)
+  const [isCityDropdownOpen, setIsCityDropdownOpen] = useState<boolean>(false);
+  const [citySearchQuery, setCitySearchQuery] = useState<string>('');
+  const cityDropdownRef = useRef<HTMLDivElement>(null);
+  const citySearchInputRef = useRef<HTMLInputElement>(null);
+
+  // Fetch updated cities from backend API if available
+  useEffect(() => {
+    TripFlowApi.getDepartureCities().then(apiCities => {
+      if (apiCities && Array.isArray(apiCities) && apiCities.length > 0) {
+        setCitiesList(apiCities);
+      }
+    }).catch(() => {
+      // Fallback to local DEPARTURE_CITIES
+    });
+  }, []);
+
+  // Filter departure cities based on search
+  const filteredDepartureCities = useMemo(() => {
+    const q = citySearchQuery.trim().toLowerCase();
+    if (!q) return citiesList;
+    return citiesList.filter(
+      c =>
+        c.name.toLowerCase().includes(q) ||
+        c.iataCode.toLowerCase().includes(q) ||
+        c.country.toLowerCase().includes(q)
+    );
+  }, [citiesList, citySearchQuery]);
 
   // AI Interactive Concierge State
   const [aiStage, setAiStage] = useState<'idle' | 'questions' | 'generating' | 'proposal'>('idle');
@@ -389,6 +421,17 @@ export const DiscoverScreen: React.FC<DiscoverScreenProps> = ({
   const [selectedTransferId, setSelectedTransferId] = useState<string>('');
   const [selectedExtraActivityIds, setSelectedExtraActivityIds] = useState<string[]>([]);
   const [activeAlternativeDrawer, setActiveAlternativeDrawer] = useState<'none' | 'flight' | 'hotel' | 'transfer'>('none');
+
+  // Invalid Destination Modal State (stops processing and displays real-time popup)
+  const [invalidPromptModal, setInvalidPromptModal] = useState<{
+    isOpen: boolean;
+    rawInput: string;
+    message: string;
+  }>({
+    isOpen: false,
+    rawInput: '',
+    message: '',
+  });
 
   // Typewriter effect state for input placeholder
   const [typewriterSuffixIndex, setTypewriterSuffixIndex] = useState<number>(0);
@@ -460,6 +503,9 @@ export const DiscoverScreen: React.FC<DiscoverScreenProps> = ({
       if (datePickerRef.current && !datePickerRef.current.contains(e.target as Node)) {
         setIsDatePickerOpen(false);
       }
+      if (cityDropdownRef.current && !cityDropdownRef.current.contains(e.target as Node)) {
+        setIsCityDropdownOpen(false);
+      }
     };
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
@@ -514,9 +560,29 @@ export const DiscoverScreen: React.FC<DiscoverScreenProps> = ({
       textareaRef.current?.focus();
       return;
     }
-    const finalPrompt = planningFor === 'someone_else'
-      ? `${raw} (Note: Planning this journey for someone else)`
-      : raw;
+
+    // STRICT VALIDATION: Ensure user input references a valid travel destination without guessing
+    const validDest = findValidDestination(raw);
+    if (!validDest) {
+      // Trigger real-time alert popup and stop processing immediately
+      setInvalidPromptModal({
+        isOpen: true,
+        rawInput: raw,
+        message: `We couldn't find a valid travel destination for "${raw}". Please specify a city or region you want to visit so our AI can plan without guessing.`,
+      });
+      return;
+    }
+
+    const originLabel = `${selectedCity.name} (${selectedCity.iataCode})`;
+    const finalPrompt = `${raw} (Departing from ${originLabel})`;
+
+    // Also update aiDetails originCity & destination
+    setAiDetails(prev => ({
+      ...prev,
+      destination: validDest.name,
+      country: validDest.country,
+      originCity: originLabel,
+    }));
 
     // Instantly navigate to the AI Assistant page with the prompt
     if (onOpenAssistantWithPrompt) {
@@ -528,8 +594,10 @@ export const DiscoverScreen: React.FC<DiscoverScreenProps> = ({
 
   // Dynamic Packages loaded from live PostgreSQL backend
   const [packages, setPackages] = useState<OperatorCuratedPackage[]>(OPERATOR_PACKAGES);
+  const [isPackagesLoading, setIsPackagesLoading] = useState<boolean>(true);
 
   useEffect(() => {
+    setIsPackagesLoading(true);
     TripFlowApi.getPremadeTrips().then(trips => {
       if (trips && trips.length > 0) {
         const mapped: OperatorCuratedPackage[] = trips.map(t => {
@@ -571,6 +639,8 @@ export const DiscoverScreen: React.FC<DiscoverScreenProps> = ({
         });
         setPackages(mapped);
       }
+    }).finally(() => {
+      setIsPackagesLoading(false);
     });
   }, []);
 
@@ -580,7 +650,11 @@ export const DiscoverScreen: React.FC<DiscoverScreenProps> = ({
     setAiStage('generating');
     setTimeout(() => {
       setIsBuilding(false);
-      const proposal = generateProposalFromDetails(aiDetails);
+      const originLabel = `${selectedCity.name} (${selectedCity.iataCode})`;
+      const proposal = generateProposalFromDetails({
+        ...aiDetails,
+        originCity: aiDetails.originCity || originLabel,
+      });
       setAiProposal(proposal);
       setSelectedFlightId(proposal.selectedFlightId);
       setSelectedHotelId(proposal.selectedHotelId);
@@ -872,8 +946,8 @@ export const DiscoverScreen: React.FC<DiscoverScreenProps> = ({
                   )}
                 </div>
 
-                {/* User Identity & For You / For Someone Else Toggle */}
-                <div className="flex flex-wrap items-center justify-between gap-3 pt-4 px-1">
+                {/* User Identity & Searchable Departure City Dropdown */}
+                <div className="flex flex-wrap items-center justify-between gap-3 pt-3.5 px-1 relative">
                   {/* User Profile Info */}
                   <div className="flex items-center gap-2.5">
                     <img
@@ -884,36 +958,130 @@ export const DiscoverScreen: React.FC<DiscoverScreenProps> = ({
                     <div className="flex items-center gap-1.5 text-xs">
                       <span className="font-semibold text-slate-800">{userName}</span>
                       <span className="text-slate-300">•</span>
-                      <span className="text-slate-500 font-normal">
-                        {planningFor === 'you' ? 'Planning for yourself' : 'Planning for someone else'}
-                      </span>
+                      <span className="text-slate-500 font-normal">Trip Planner</span>
                     </div>
                   </div>
 
-                  {/* Toggle: For you / For someone else */}
-                  <div className="flex items-center bg-[#F1F3F6] p-1 rounded-full border border-slate-200/70 text-xs">
+                  {/* Searchable Departure City Dropdown */}
+                  <div className="relative" ref={cityDropdownRef}>
                     <button
                       type="button"
-                      onClick={() => setPlanningFor('you')}
-                      className={`px-3.5 py-1 rounded-full transition-all cursor-pointer ${
-                        planningFor === 'you'
-                          ? 'bg-white text-slate-900 font-semibold shadow-2xs'
-                          : 'text-slate-500 hover:text-slate-800 font-medium'
-                      }`}
+                      id="departure-city-picker-button"
+                      onClick={() => {
+                        setIsCityDropdownOpen(!isCityDropdownOpen);
+                        setTimeout(() => citySearchInputRef.current?.focus(), 50);
+                      }}
+                      className="flex items-center gap-2 bg-[#F1F3F6] hover:bg-[#EAECEF] px-3.5 py-1.5 rounded-full border border-slate-200/80 text-xs transition-all cursor-pointer shadow-2xs hover:border-slate-300 active:scale-98"
+                      title="Select starting city for flight & itinerary routing"
                     >
-                      For you
+                      <span className="material-symbols-outlined text-sm text-blue-600">flight_takeoff</span>
+                      <span className="text-slate-500 font-medium">Starting from:</span>
+                      <span className="font-bold text-slate-900 flex items-center gap-1">
+                        <span>{selectedCity.flag}</span>
+                        <span>{selectedCity.name}</span>
+                        <span className="text-[11px] font-semibold text-slate-500">({selectedCity.iataCode})</span>
+                      </span>
+                      <span className="material-symbols-outlined text-sm text-slate-400">
+                        {isCityDropdownOpen ? 'expand_less' : 'expand_more'}
+                      </span>
                     </button>
-                    <button
-                      type="button"
-                      onClick={() => setPlanningFor('someone_else')}
-                      className={`px-3.5 py-1 rounded-full transition-all cursor-pointer ${
-                        planningFor === 'someone_else'
-                          ? 'bg-white text-slate-900 font-semibold shadow-2xs'
-                          : 'text-slate-500 hover:text-slate-800 font-medium'
-                      }`}
-                    >
-                      For someone else
-                    </button>
+
+                    {/* Dropdown Popover */}
+                    {isCityDropdownOpen && (
+                      <div className="absolute right-0 bottom-full mb-2 w-80 sm:w-96 max-h-[380px] bg-white rounded-2xl shadow-2xl border border-slate-200/90 z-50 overflow-hidden flex flex-col animate-in fade-in zoom-in-95 duration-150">
+                        {/* Dropdown Header & Search Bar */}
+                        <div className="p-3 bg-slate-50/80 border-b border-slate-100">
+                          <div className="flex items-center justify-between mb-2">
+                            <span className="text-xs font-bold text-slate-800 flex items-center gap-1.5">
+                              <span className="material-symbols-outlined text-sm text-blue-600">travel_explore</span>
+                              Departure City / Airport
+                            </span>
+                            <span className="text-[10px] text-slate-600 bg-slate-200/60 px-2 py-0.5 rounded-full font-medium">
+                              {filteredDepartureCities.length} hubs
+                            </span>
+                          </div>
+                          <div className="relative">
+                            <span className="material-symbols-outlined absolute left-2.5 top-1/2 -translate-y-1/2 text-sm text-slate-400">
+                              search
+                            </span>
+                            <input
+                              ref={citySearchInputRef}
+                              type="text"
+                              value={citySearchQuery}
+                              onChange={e => setCitySearchQuery(e.target.value)}
+                              placeholder="Search city, airport code (e.g. BOM, DXB)..."
+                              className="w-full bg-white text-xs pl-8 pr-7 py-2 rounded-xl border border-slate-200 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
+                            />
+                            {citySearchQuery && (
+                              <button
+                                type="button"
+                                onClick={() => setCitySearchQuery('')}
+                                className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 text-xs p-1"
+                              >
+                                ✕
+                              </button>
+                            )}
+                          </div>
+                        </div>
+
+                        {/* Cities List */}
+                        <div className="overflow-y-auto max-h-[280px] p-1.5 divide-y divide-slate-50">
+                          {filteredDepartureCities.length === 0 ? (
+                            <div className="p-6 text-center text-xs text-slate-600">
+                              <span className="material-symbols-outlined text-2xl text-slate-500 mb-1">location_off</span>
+                              <p className="font-semibold text-slate-700">No matching cities found</p>
+                              <p className="text-[11px] mt-0.5 text-slate-600">Try searching for an airport code like BOM, DEL, or DXB</p>
+                            </div>
+                          ) : (
+                            filteredDepartureCities.map(city => {
+                              const isSelected = selectedCity.id === city.id;
+                              return (
+                                <button
+                                  key={city.id}
+                                  type="button"
+                                  onClick={() => {
+                                    setSelectedCity(city);
+                                    setIsCityDropdownOpen(false);
+                                    setCitySearchQuery('');
+                                  }}
+                                  className={`w-full px-3 py-2 rounded-xl flex items-center justify-between text-left transition-all cursor-pointer ${
+                                    isSelected
+                                      ? 'bg-blue-50/80 text-blue-900 font-semibold'
+                                      : 'hover:bg-slate-50 text-slate-700'
+                                  }`}
+                                >
+                                  <div className="flex items-center gap-2.5">
+                                    <span className="text-base shrink-0">{city.flag}</span>
+                                    <div>
+                                      <div className="text-xs font-semibold flex items-center gap-1.5">
+                                        <span>{city.name}</span>
+                                        <span className="text-[10px] font-mono bg-slate-100 text-slate-600 px-1.5 py-0.5 rounded font-bold">
+                                          {city.iataCode}
+                                        </span>
+                                      </div>
+                                      <div className="text-[10px] text-slate-600">
+                                        {city.country} • {city.region}
+                                      </div>
+                                    </div>
+                                  </div>
+
+                                  {isSelected && (
+                                    <span className="material-symbols-outlined text-sm text-blue-600">
+                                      check_circle
+                                    </span>
+                                  )}
+                                </button>
+                              );
+                            })
+                          )}
+                        </div>
+
+                        {/* Dropdown Footer Tip */}
+                        <div className="p-2 bg-slate-50 border-t border-slate-100 text-[10px] text-slate-600 text-center">
+                          AI will calibrate round-trip flights & routes starting from your selected city.
+                        </div>
+                      </div>
+                    )}
                   </div>
                 </div>
               </>
@@ -1141,20 +1309,19 @@ export const DiscoverScreen: React.FC<DiscoverScreenProps> = ({
             {/* STAGE 2: GENERATING ANIMATION                           */}
             {/* ======================================================= */}
             {aiStage === 'generating' && (
-              <div className="py-12 flex flex-col items-center justify-center text-center space-y-4 animate-in fade-in duration-300">
-                <div className="w-12 h-12 rounded-2xl bg-slate-900 text-amber-400 flex items-center justify-center shadow-md animate-bounce">
-                  <span className="material-symbols-outlined text-2xl">auto_awesome</span>
+              <div className="space-y-4 animate-in fade-in duration-300">
+                <div className="flex items-center justify-between p-3.5 rounded-2xl bg-slate-900 text-white shadow-xs">
+                  <div className="flex items-center gap-2.5">
+                    <span className="material-symbols-outlined text-amber-400 text-lg animate-spin">auto_awesome</span>
+                    <div>
+                      <h4 className="text-xs font-bold">Synthesizing Your Bespoke Itinerary</h4>
+                      <p className="text-[11px] text-slate-400">
+                        Matching flight availability, boutique suites & private chauffeurs in <span className="text-white font-semibold">{aiDetails.destination}</span>...
+                      </p>
+                    </div>
+                  </div>
                 </div>
-                <div>
-                  <h3 className="text-base font-bold text-slate-900">Synthesizing Your Bespoke Itinerary</h3>
-                  <p className="text-xs text-slate-500 mt-1">
-                    Matching flight availability, boutique suites & private chauffeurs in{' '}
-                    <span className="font-semibold text-slate-700">{aiDetails.destination}</span>...
-                  </p>
-                </div>
-                <div className="w-48 h-1.5 bg-slate-100 rounded-full overflow-hidden">
-                  <div className="h-full bg-slate-900 rounded-full animate-pulse w-3/4" />
-                </div>
+                <ProposalDeckSkeleton destination={aiDetails.destination} />
               </div>
             )}
 
@@ -2139,7 +2306,15 @@ export const DiscoverScreen: React.FC<DiscoverScreenProps> = ({
         {/* ----------------------------------------------------------- */}
         {/* OPERATOR CURATED PACKAGES GRID                              */}
         {/* ----------------------------------------------------------- */}
-        {filteredPackages.length > 0 ? (
+        {isPackagesLoading ? (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 justify-items-center w-full">
+            {[1, 2, 3].map(i => (
+              <div key={i} className="w-full max-w-[340px]">
+                <PackageCardSkeleton />
+              </div>
+            ))}
+          </div>
+        ) : filteredPackages.length > 0 ? (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 justify-items-center">
             {filteredPackages.map((pkg, idx) => (
               <LuxuryCard
@@ -2200,6 +2375,77 @@ export const DiscoverScreen: React.FC<DiscoverScreenProps> = ({
           </div>
         )}
       </section>
+
+      {/* ============================================================= */}
+      {/* REAL-TIME INVALID DESTINATION ALERT POPUP MODAL               */}
+      {/* ============================================================= */}
+      {invalidPromptModal.isOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs animate-in fade-in duration-200">
+          <div className="bg-white rounded-3xl max-w-md w-full p-6 shadow-2xl border border-slate-200 text-center relative overflow-hidden animate-in zoom-in-95 duration-200">
+            {/* Top decorative amber badge */}
+            <div className="w-14 h-14 rounded-2xl bg-amber-50 text-amber-600 border border-amber-200 flex items-center justify-center mx-auto mb-4 shadow-sm">
+              <span className="material-symbols-outlined text-3xl">wrong_location</span>
+            </div>
+
+            <h3 className="text-lg font-bold text-slate-900 tracking-tight mb-2">
+              Destination Required
+            </h3>
+            
+            <p className="text-xs text-slate-600 leading-relaxed mb-5">
+              {invalidPromptModal.message}
+            </p>
+
+            {/* Quick suggested destinations list */}
+            <div className="text-left bg-slate-50 border border-slate-200/80 rounded-2xl p-3.5 mb-5">
+              <span className="text-[10px] font-bold uppercase tracking-wider text-slate-500 block mb-2">
+                Popular Valid Destinations (Click to Plan):
+              </span>
+              <div className="flex flex-wrap gap-1.5">
+                {[
+                  { name: 'Tokyo', flag: '🇯🇵' },
+                  { name: 'Turkey', flag: '🇹🇷' },
+                  { name: 'Dubai', flag: '🇦🇪' },
+                  { name: 'Paris', flag: '🇫🇷' },
+                  { name: 'Kerala', flag: '🌴' },
+                  { name: 'Rajasthan', flag: '🏰' },
+                  { name: 'Goa', flag: '🏖️' },
+                  { name: 'New Delhi', flag: '🇮🇳' },
+                  { name: 'Swiss Alps', flag: '🇨🇭' },
+                ].map((dest, idx) => (
+                  <button
+                    key={idx}
+                    type="button"
+                    onClick={() => {
+                      const newPrompt = `5 days in ${dest.name} with curated luxury stays and experiences`;
+                      setNaturalLanguageInput(newPrompt);
+                      setInvalidPromptModal({ isOpen: false, rawInput: '', message: '' });
+                      handleStartAI(newPrompt);
+                    }}
+                    className="px-2.5 py-1 rounded-lg bg-white hover:bg-blue-50 border border-slate-200 hover:border-blue-300 text-xs font-semibold text-slate-700 hover:text-blue-700 shadow-2xs transition-all cursor-pointer flex items-center gap-1 active:scale-95"
+                  >
+                    <span>{dest.flag}</span>
+                    <span>{dest.name}</span>
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Action buttons */}
+            <div className="flex items-center gap-2.5">
+              <button
+                type="button"
+                onClick={() => {
+                  setInvalidPromptModal({ isOpen: false, rawInput: '', message: '' });
+                  textareaRef.current?.focus();
+                }}
+                className="flex-1 py-2.5 rounded-xl bg-slate-900 hover:bg-black text-white text-xs font-bold transition-all shadow-sm cursor-pointer active:scale-95"
+              >
+                Change Destination
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

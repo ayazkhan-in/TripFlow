@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { TourCohortItem } from '../../types/travel';
 import { useOperator } from '../../context/OperatorContext';
 import { TripFlowApi } from '../../services/api';
+import { Skeleton } from '../common/Skeleton';
 
 interface TourCohortsScreenProps {
   onInspectTour: (tourId: string) => void;
@@ -14,6 +15,7 @@ export const TourCohortsScreen: React.FC<TourCohortsScreenProps> = ({
 }) => {
   const { cohorts: contextCohorts } = useOperator();
   const [cohorts, setCohorts] = useState<TourCohortItem[]>(contextCohorts || []);
+  const [isLoading, setIsLoading] = useState<boolean>(!contextCohorts || contextCohorts.length === 0);
   const [selectedCohort, setSelectedCohort] = useState<TourCohortItem | null>(null);
   const [broadcastMessage, setBroadcastMessage] = useState('');
   const [isBroadcastOpen, setIsBroadcastOpen] = useState(false);
@@ -26,6 +28,8 @@ export const TourCohortsScreen: React.FC<TourCohortsScreenProps> = ({
           leadGuide: c.leadGuide?.name || 'Rohan Deshmukh',
         })));
       }
+    }).finally(() => {
+      setIsLoading(false);
     });
   }, []);
 
@@ -97,7 +101,31 @@ export const TourCohortsScreen: React.FC<TourCohortsScreenProps> = ({
 
       {/* Cohorts List */}
       <div className="space-y-3">
-        {cohorts.map(cohort => (
+        {isLoading && cohorts.length === 0 ? (
+          [...Array(3)].map((_, i) => (
+            <div key={i} className="bg-white border border-slate-200/80 rounded-xl p-5 space-y-4">
+              <div className="flex justify-between items-center">
+                <div className="space-y-2">
+                  <div className="flex items-center gap-2">
+                    <Skeleton className="h-3 w-20 rounded" />
+                    <Skeleton className="h-4 w-40 rounded" />
+                  </div>
+                  <Skeleton className="h-3 w-56 rounded" />
+                </div>
+                <div className="flex gap-2">
+                  <Skeleton className="h-8 w-24 rounded-lg" />
+                  <Skeleton className="h-8 w-28 rounded-lg" />
+                </div>
+              </div>
+              <Skeleton className="h-2 w-full rounded-full" />
+              <div className="flex justify-between">
+                <Skeleton className="h-3 w-28 rounded" />
+                <Skeleton className="h-3 w-36 rounded" />
+              </div>
+            </div>
+          ))
+        ) : (
+        cohorts.map(cohort => (
           <div
             key={cohort.id}
             className="bg-white border border-slate-200/80 hover:border-slate-300 rounded-xl p-5 transition-colors space-y-4"
@@ -185,7 +213,8 @@ export const TourCohortsScreen: React.FC<TourCohortsScreenProps> = ({
               </div>
             </div>
           </div>
-        ))}
+        ))
+        )}
       </div>
 
       {/* Broadcast Modal */}

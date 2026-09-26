@@ -3,14 +3,16 @@ import { PaymentLedgerItem } from '../../types/travel';
 import { formatCurrency } from '../../utils/pricing';
 import { useOperator } from '../../context/OperatorContext';
 import { TripFlowApi } from '../../services/api';
+import { TableSkeleton } from '../common/Skeleton';
 
 interface PaymentsLedgerScreenProps {
   showToast: (msg: string) => void;
 }
 
 export const PaymentsLedgerScreen: React.FC<PaymentsLedgerScreenProps> = ({ showToast }) => {
-  const { payments: contextPayments } = useOperator();
+  const { payments: contextPayments, isLoadingData } = useOperator();
   const [payments, setPayments] = useState<PaymentLedgerItem[]>(contextPayments || []);
+  const [isLoading, setIsLoading] = useState<boolean>(!contextPayments || contextPayments.length === 0);
   const [searchQuery, setSearchQuery] = useState('');
   const [typeFilter, setTypeFilter] = useState<'all' | 'inbound' | 'disbursement'>('all');
   const [statusFilter, setStatusFilter] = useState<'all' | 'Settled' | 'Processing'>('all');
@@ -33,6 +35,8 @@ export const PaymentsLedgerScreen: React.FC<PaymentsLedgerScreenProps> = ({ show
           description: t.description,
         })));
       }
+    }).finally(() => {
+      setIsLoading(false);
     });
   }, []);
 
@@ -177,7 +181,10 @@ export const PaymentsLedgerScreen: React.FC<PaymentsLedgerScreenProps> = ({ show
       </div>
 
       {/* Ledger Table Card */}
-      <div className="bg-white border border-slate-200/80 rounded-xl overflow-hidden">
+      {isLoading ? (
+        <TableSkeleton rows={7} cols={9} />
+      ) : (
+        <div className="bg-white border border-slate-200/80 rounded-xl overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full text-left border-collapse text-xs">
             <thead>
@@ -269,6 +276,7 @@ export const PaymentsLedgerScreen: React.FC<PaymentsLedgerScreenProps> = ({ show
           </table>
         </div>
       </div>
+      )}
 
       {/* Transaction Details Modal */}
       {selectedTxn && (

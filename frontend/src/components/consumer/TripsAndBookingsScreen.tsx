@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { BookedTrip, TimelineEvent, ConsumerTab } from '../../types/travel';
 import {
@@ -12,11 +12,42 @@ import {
 } from '../../data/mockData';
 import { LuxuryCard } from '../common/LuxuryCard';
 import { BlurFadeCard } from '../ui/MotionComponents';
+import { TripFlowApi } from '../../services/api';
+import { TripItinerary, ItineraryDay, ItineraryItem } from '../../types/itinerary';
+import { Skeleton } from '../common/Skeleton';
+
+interface AssistantSession {
+  id: string;
+  title?: string;
+  destination?: string;
+  updatedAt?: string;
+  proposal?: any;
+  messages?: any[];
+}
+
+type TripFilter = 'all' | 'purchased' | 'ai_plan';
+
+interface SelectableTrip {
+  id: string;
+  source: 'purchased' | 'ai_plan';
+  title: string;
+  destination: string;
+  dates: string;
+  duration: string;
+  travelers: number;
+  totalPrice?: number;
+  currency?: string;
+  heroImage?: string;
+  status?: string;
+  bookedTripRef?: BookedTrip;
+  sessionRef?: AssistantSession;
+}
 
 interface TripsAndBookingsScreenProps {
   initialView?: 'timeline' | 'bookings';
   isDisruptionResolved: boolean;
   bookedTrips?: BookedTrip[];
+  isLoadingTrips?: boolean;
   activeTripId?: string;
   onSelectTrip?: (tripId: string) => void;
   onModifyTrip?: (trip: BookedTrip) => void;
@@ -28,6 +59,8 @@ interface TripsAndBookingsScreenProps {
   onOpenTripAssistant: () => void;
   onNavigateTab?: (tab: ConsumerTab) => void;
   showToast?: (message: string) => void;
+  onOpenItineraryInBuilder?: (itinerary: TripItinerary) => void;
+  onOpenPayment?: (itinerary: TripItinerary) => void;
 }
 
 // Days 3 to 6 rich events data for comprehensive itinerary exploration
@@ -243,10 +276,973 @@ const DAY6_EVENTS: TimelineEvent[] = [
   },
 ];
 
+// ─────────────────────────────────────────────────────────────
+// AiItineraryAddPanel — lets users manually pick & add items
+// from an AI itinerary into the Itinerary Builder. No buy CTA.
+// ─────────────────────────────────────────────────────────────
+interface AiItineraryAddPanelProps {
+  proposal: any;
+  session?: AssistantSession | null;
+  onOpenItineraryInBuilder?: (itinerary: TripItinerary) => void;
+  onNavigateTab?: (tab: string) => void;
+  showToast?: (msg: string) => void;
+}
+
+interface NormalizedFlight {
+  id: string;
+  key: string;
+  airline: string;
+  flightNumber: string;
+  originCode: string;
+  destCode: string;
+  depTime: string;
+  arrTime: string;
+  duration: string;
+  stops: string;
+  price: number;
+  label: string;
+  badge: string;
+  isAiAdded?: boolean;
+}
+
+interface NormalizedHotel {
+  id: string;
+  key: string;
+  name: string;
+  roomType: string;
+  location: string;
+  image: string;
+  rating: number;
+  reviews: number;
+  perks: string[];
+  pricePerNight: number;
+  label: string;
+  badge: string;
+  isAiAdded?: boolean;
+}
+
+const DEST_AIRPORT_CODES: Record<string, { code: string; name: string }> = {
+  goa: { code: 'GOI', name: 'Goa Dabolim / Mopa' },
+  kerala: { code: 'COK', name: 'Kochi Cochin' },
+  turkey: { code: 'IST', name: 'Istanbul Airport' },
+  istanbul: { code: 'IST', name: 'Istanbul Airport' },
+  japan: { code: 'HND', name: 'Tokyo Haneda' },
+  tokyo: { code: 'HND', name: 'Tokyo Haneda' },
+  dubai: { code: 'DXB', name: 'Dubai International' },
+  paris: { code: 'CDG', name: 'Paris Charles de Gaulle' },
+  bali: { code: 'DPS', name: 'Bali Ngurah Rai' },
+  maldives: { code: 'MLE', name: 'Male International' },
+};
+
+function getDestCode(dest: string): string {
+  const lower = (dest || '').toLowerCase();
+  for (const [k, v] of Object.entries(DEST_AIRPORT_CODES)) {
+    if (lower.includes(k)) return v.code;
+  }
+  return dest.slice(0, 3).toUpperCase() || 'DEL';
+}
+
+function getInitialFlights(p: any, dest: string): NormalizedFlight[] {
+  const destCode = getDestCode(dest);
+  const flights: NormalizedFlight[] = [];
+
+  if (p?.flights) {
+    if (Array.isArray(p.flights)) {
+      p.flights.forEach((f: any, idx: number) => {
+        flights.push({
+          id: f.id || `flt-${idx}`,
+          key: f.id || f.type || `flt-${idx}`,
+          airline: f.airline || 'Air India / IndiGo',
+          flightNumber: f.flightNumber || `6E-${200 + idx}`,
+          originCode: f.originCode || 'BOM',
+          destCode: f.destCode || destCode,
+          depTime: f.depTime || f.departureTime || '07:30 AM',
+          arrTime: f.arrTime || f.arrivalTime || '09:45 AM',
+          duration: f.duration || '2h 15m',
+          stops: f.stops || 'Non-stop Direct',
+          price: f.priceINR || f.priceUSD || f.price || (idx === 0 ? 5400 : idx === 1 ? 7800 : 14200),
+          label: f.label || (idx === 0 ? 'Budget' : idx === 1 ? 'Recommended' : 'Luxury'),
+          badge: f.badge || (idx === 1 ? '⭐ AI Pick' : idx === 2 ? 'Premium' : 'Best Value'),
+        });
+      });
+    } else if (typeof p.flights === 'object') {
+      const keys = ['cheaper', 'recommended', 'luxury'] as const;
+      keys.forEach((key, idx) => {
+        const f = p.flights[key];
+        if (f) {
+          flights.push({
+            id: `flt-${key}`,
+            key,
+            airline: f.airline || (key === 'cheaper' ? 'IndiGo / Akasa Air' : key === 'recommended' ? 'Vistara / Air India' : 'Vistara Business Class'),
+            flightNumber: f.flightNumber || (key === 'cheaper' ? '6E-412' : key === 'recommended' ? 'UK-819' : 'UK-819 (Biz)'),
+            originCode: f.originCode || 'BOM',
+            destCode: f.destCode || destCode,
+            depTime: f.depTime || (key === 'cheaper' ? '05:45 AM' : key === 'recommended' ? '08:30 AM' : '10:00 AM'),
+            arrTime: f.arrTime || (key === 'cheaper' ? '07:30 AM' : key === 'recommended' ? '10:15 AM' : '11:45 AM'),
+            duration: f.duration || '1h 45m',
+            stops: f.stops || 'Non-Stop Direct',
+            price: f.priceINR || (key === 'cheaper' ? 5200 : key === 'recommended' ? 7600 : 15800),
+            label: key === 'cheaper' ? 'Budget' : key === 'recommended' ? 'Recommended' : 'Luxury',
+            badge: key === 'recommended' ? '⭐ AI Pick' : key === 'luxury' ? 'Premium' : 'Best Value',
+          });
+        }
+      });
+    }
+  }
+
+  if (flights.length === 0) {
+    flights.push(
+      {
+        id: 'flt-cheaper',
+        key: 'cheaper',
+        airline: 'IndiGo Airlines',
+        flightNumber: '6E-512',
+        originCode: 'BOM',
+        destCode,
+        depTime: '06:00 AM',
+        arrTime: '07:25 AM',
+        duration: '1h 25m',
+        stops: 'Non-stop Direct',
+        price: 4900,
+        label: 'Budget',
+        badge: 'Best Value',
+      },
+      {
+        id: 'flt-recommended',
+        key: 'recommended',
+        airline: 'Vistara Prime',
+        flightNumber: 'UK-825',
+        originCode: 'BOM',
+        destCode,
+        depTime: '09:15 AM',
+        arrTime: '10:40 AM',
+        duration: '1h 25m',
+        stops: 'Non-stop Direct',
+        price: 7400,
+        label: 'Recommended',
+        badge: '⭐ AI Pick',
+      },
+      {
+        id: 'flt-luxury',
+        key: 'luxury',
+        airline: 'Air India Business Suite',
+        flightNumber: 'AI-680',
+        originCode: 'BOM',
+        destCode,
+        depTime: '11:30 AM',
+        arrTime: '01:00 PM',
+        duration: '1h 30m',
+        stops: 'Non-stop Direct',
+        price: 16500,
+        label: 'Luxury',
+        badge: 'Premium',
+      }
+    );
+  }
+
+  return flights;
+}
+
+function getInitialHotels(p: any, dest: string): NormalizedHotel[] {
+  const hotels: NormalizedHotel[] = [];
+  const defaultImgs = [
+    'https://images.unsplash.com/photo-1566073771259-6a8506099945?auto=format&fit=crop&w=800&q=80',
+    'https://images.unsplash.com/photo-1542314831-068cd1dbfeeb?auto=format&fit=crop&w=800&q=80',
+    'https://images.unsplash.com/photo-1582719478250-c89cae4dc85b?auto=format&fit=crop&w=800&q=80',
+  ];
+
+  if (p?.hotels) {
+    if (Array.isArray(p.hotels)) {
+      p.hotels.forEach((h: any, idx: number) => {
+        hotels.push({
+          id: h.id || `htl-${idx}`,
+          key: h.id || h.type || `htl-${idx}`,
+          name: h.name || `${dest} Boutique Resort`,
+          roomType: h.roomType || 'Deluxe Room with Balcony',
+          location: h.location || dest,
+          image: h.image || defaultImgs[idx % defaultImgs.length],
+          rating: h.rating || 4.9,
+          reviews: h.reviewsCount || h.reviews || 380,
+          perks: h.perks || ['Artisan Breakfast', 'Complimentary WiFi', 'Pool Access'],
+          pricePerNight: h.pricePerNightINR || h.pricePerNightUSD || h.price || (idx === 0 ? 8500 : idx === 1 ? 16500 : 28000),
+          label: h.label || (idx === 0 ? 'Budget Stay' : idx === 1 ? 'Recommended' : 'Luxury Suite'),
+          badge: h.badge || (idx === 1 ? '⭐ AI Pick' : idx === 2 ? 'Ultra Premium' : 'Best Price'),
+        });
+      });
+    } else if (typeof p.hotels === 'object') {
+      const keys = ['cheaper', 'recommended', 'luxury'] as const;
+      keys.forEach((key, idx) => {
+        const h = p.hotels[key];
+        if (h) {
+          hotels.push({
+            id: `htl-${key}`,
+            key,
+            name: h.name || `${dest} Heritage Stay`,
+            roomType: h.roomType || 'Heritage Sea Suite',
+            location: h.location || dest,
+            image: h.image || defaultImgs[idx % defaultImgs.length],
+            rating: h.rating || (key === 'luxury' ? 4.98 : key === 'recommended' ? 4.95 : 4.86),
+            reviews: h.reviews || (key === 'recommended' ? 720 : 410),
+            perks: h.perks || ['Breakfast Included', 'Ocean View', 'Infinity Pool Access'],
+            pricePerNight: h.pricePerNightINR || (key === 'cheaper' ? 9500 : key === 'recommended' ? 18500 : 34000),
+            label: key === 'cheaper' ? 'Budget Stay' : key === 'recommended' ? 'Recommended' : 'Luxury Suite',
+            badge: key === 'recommended' ? '⭐ AI Pick' : key === 'luxury' ? 'Ultra Premium' : 'Best Price',
+          });
+        }
+      });
+    }
+  }
+
+  if (hotels.length === 0) {
+    hotels.push(
+      {
+        id: 'htl-cheaper',
+        key: 'cheaper',
+        name: `${dest} Heritage Portuguese Villa`,
+        roomType: 'Heritage Balcony King Suite',
+        location: `Central ${dest} Old Quarter`,
+        image: defaultImgs[0],
+        rating: 4.88,
+        reviews: 320,
+        perks: ['Authentic Architecture', 'Artisan Breakfast', 'Boutique Courtyard'],
+        pricePerNight: 9500,
+        label: 'Budget Stay',
+        badge: 'Best Price',
+      },
+      {
+        id: 'htl-recommended',
+        key: 'recommended',
+        name: `Taj Exotica / The Leela ${dest}`,
+        roomType: 'Sunset Ocean-Facing Luxury Suite',
+        location: `Scenic Waterfront, ${dest}`,
+        image: defaultImgs[1],
+        rating: 4.97,
+        reviews: 890,
+        perks: ['Direct Beach Access', 'Infinity Pool', 'VIP Welcome Drinks', 'Gourmet Breakfast'],
+        pricePerNight: 21500,
+        label: 'Recommended',
+        badge: '⭐ AI Pick',
+      },
+      {
+        id: 'htl-luxury',
+        key: 'luxury',
+        name: `W / Ahilya By The Sea ${dest}`,
+        roomType: 'Presidential Oceanfront Plunge Pool Villa',
+        location: `Secluded Coastal Sanctuary, ${dest}`,
+        image: defaultImgs[2],
+        rating: 4.99,
+        reviews: 640,
+        perks: ['24/7 Dedicated Butler', 'Private Heated Pool', 'VIP Fast-Track Clearance'],
+        pricePerNight: 38000,
+        label: 'Luxury Suite',
+        badge: 'Ultra Premium',
+      }
+    );
+  }
+
+  return hotels;
+}
+
+function generateMoreFlights(dest: string, currentOffset: number): NormalizedFlight[] {
+  const destCode = getDestCode(dest);
+  return [
+    {
+      id: `flt-ai-add-1-${currentOffset}`,
+      key: `ai_flight_1_${currentOffset}`,
+      airline: 'Vistara Early Express',
+      flightNumber: 'UK-851',
+      originCode: 'BOM',
+      destCode,
+      depTime: '06:30 AM',
+      arrTime: '07:45 AM',
+      duration: '1h 15m',
+      stops: 'Non-stop Sunrise',
+      price: 6400,
+      label: 'Early Sunrise',
+      badge: '🌅 Early Slot',
+      isAiAdded: true,
+    },
+    {
+      id: `flt-ai-add-2-${currentOffset}`,
+      key: `ai_flight_2_${currentOffset}`,
+      airline: 'Air India Direct Premier',
+      flightNumber: 'AI-673',
+      originCode: 'DEL',
+      destCode,
+      depTime: '11:15 AM',
+      arrTime: '01:50 PM',
+      duration: '2h 35m',
+      stops: 'Non-stop Direct',
+      price: 8200,
+      label: 'Mid-Day Direct',
+      badge: '✈️ Hot Meal',
+      isAiAdded: true,
+    },
+    {
+      id: `flt-ai-add-3-${currentOffset}`,
+      key: `ai_flight_3_${currentOffset}`,
+      airline: 'IndiGo Stretch XL',
+      flightNumber: '6E-5124',
+      originCode: 'BOM',
+      destCode,
+      depTime: '04:15 PM',
+      arrTime: '05:35 PM',
+      duration: '1h 20m',
+      stops: 'Priority XL Legroom',
+      price: 7100,
+      label: 'Executive Flex',
+      badge: '💺 Extra Legroom',
+      isAiAdded: true,
+    },
+    {
+      id: `flt-ai-add-4-${currentOffset}`,
+      key: `ai_flight_4_${currentOffset}`,
+      airline: 'Akasa Air Late Night Saver',
+      flightNumber: 'QP-1309',
+      originCode: 'BLR',
+      destCode,
+      depTime: '09:30 PM',
+      arrTime: '10:45 PM',
+      duration: '1h 15m',
+      stops: 'Non-stop Moonlight',
+      price: 4300,
+      label: 'Evening Saver',
+      badge: '🌙 Best Rate',
+      isAiAdded: true,
+    },
+  ];
+}
+
+function generateMoreHotels(dest: string, currentOffset: number): NormalizedHotel[] {
+  return [
+    {
+      id: `htl-ai-add-1-${currentOffset}`,
+      key: `ai_hotel_1_${currentOffset}`,
+      name: `Ahilya by the Sea & Coastal Villa`,
+      roomType: 'Portuguese Ocean Villa with Plunge Pool',
+      location: `Dolphin Bay, ${dest}`,
+      image: 'https://images.unsplash.com/photo-1582719478250-c89cae4dc85b?auto=format&fit=crop&w=800&q=80',
+      rating: 4.98,
+      reviews: 510,
+      perks: ['Private Plunge Pool', 'Sea-Facing Verandah', 'Personal Chef On-Call'],
+      pricePerNight: 24500,
+      label: 'Heritage Villa',
+      badge: '🌊 Oceanfront',
+      isAiAdded: true,
+    },
+    {
+      id: `htl-ai-add-2-${currentOffset}`,
+      key: `ai_hotel_2_${currentOffset}`,
+      name: `W Luxury Beachfront Resort`,
+      roomType: 'Marvelous Sea View Suite & VIP Access',
+      location: `Vagator Coastal Bluff, ${dest}`,
+      image: 'https://images.unsplash.com/photo-1542314831-068cd1dbfeeb?auto=format&fit=crop&w=800&q=80',
+      rating: 4.96,
+      reviews: 820,
+      perks: ['Rockpool VIP Cabana', 'Direct Beach Trail', 'Complimentary Champagne'],
+      pricePerNight: 28000,
+      label: 'Beach Luxury',
+      badge: '🍸 VIP Cabana',
+      isAiAdded: true,
+    },
+    {
+      id: `htl-ai-add-3-${currentOffset}`,
+      key: `ai_hotel_3_${currentOffset}`,
+      name: `Alila Diwa & Serene Sanctuary`,
+      roomType: 'Diwa Club Luxury Pavilion with Paddy View',
+      location: `Majorda Serene Fields, ${dest}`,
+      image: 'https://images.unsplash.com/photo-1566073771259-6a8506099945?auto=format&fit=crop&w=800&q=80',
+      rating: 4.94,
+      reviews: 670,
+      perks: ['Infinity Paddy Pool', 'Chai Bazaar High Tea', 'Spa Alila Access'],
+      pricePerNight: 17800,
+      label: 'Serene Resort',
+      badge: '🌿 Green Oasis',
+      isAiAdded: true,
+    },
+    {
+      id: `htl-ai-add-4-${currentOffset}`,
+      key: `ai_hotel_4_${currentOffset}`,
+      name: `The Postcard Boutique Sanctuary`,
+      roomType: 'Signature Presidential Suite',
+      location: `Cavelossim Beachfront, ${dest}`,
+      image: 'https://images.unsplash.com/photo-1571896349842-33c89424de2d?auto=format&fit=crop&w=800&q=80',
+      rating: 4.99,
+      reviews: 430,
+      perks: ['Anytime 24/7 Check-in', 'Bespoke Dining', 'Private Garden Trail'],
+      pricePerNight: 21500,
+      label: 'Boutique Hideaway',
+      badge: '✨ Ultra Private',
+      isAiAdded: true,
+    },
+  ];
+}
+
+const AiItineraryAddPanel: React.FC<AiItineraryAddPanelProps> = ({
+  proposal: p,
+  session,
+  onOpenItineraryInBuilder,
+  onNavigateTab,
+  showToast,
+}) => {
+  const destName = session?.destination || p?.destination || 'Goa';
+
+  // Flight & Hotel options state (allows adding more in-place with AI)
+  const [flights, setFlights] = React.useState<NormalizedFlight[]>(() => getInitialFlights(p, destName));
+  const [hotels, setHotels] = React.useState<NormalizedHotel[]>(() => getInitialHotels(p, destName));
+
+  const [selectedFlight, setSelectedFlight] = React.useState<string | null>(null);
+  const [selectedHotel, setSelectedHotel] = React.useState<string | null>(null);
+  const [selectedExps, setSelectedExps] = React.useState<Set<number>>(new Set());
+
+  // AI Refine state
+  const [isRefining, setIsRefining] = React.useState(false);
+  const [hasRefined, setHasRefined] = React.useState(false);
+
+  const totalAdded =
+    (selectedFlight ? 1 : 0) +
+    (selectedHotel ? 1 : 0) +
+    selectedExps.size;
+
+  const toggleExp = (idx: number) => {
+    setSelectedExps(prev => {
+      const next = new Set(prev);
+      if (next.has(idx)) next.delete(idx); else next.add(idx);
+      return next;
+    });
+  };
+
+  // In-place AI Refinement: adds new flights & hotels right here without navigating away
+  const handleRefineWithAI = () => {
+    setIsRefining(true);
+    setTimeout(() => {
+      const moreFlights = generateMoreFlights(destName, flights.length);
+      const moreHotels = generateMoreHotels(destName, hotels.length);
+      setFlights(prev => [...prev, ...moreFlights]);
+      setHotels(prev => [...prev, ...moreHotels]);
+      setIsRefining(false);
+      setHasRefined(true);
+      showToast?.(`✨ AI added ${moreFlights.length} flight routes & ${moreHotels.length} hotel options for ${destName}!`);
+    }, 600);
+  };
+
+  // Open in Builder: constructs full valid TripItinerary and passes to builder
+  const handleOpenInBuilder = () => {
+    const chosenFlight = flights.find(f => f.key === selectedFlight) || flights[0];
+    const chosenHotel = hotels.find(h => h.key === selectedHotel) || hotels[0];
+    const daysCount = p?.days || (Array.isArray(p?.daysPlan) && p.daysPlan.length) || 5;
+
+    let totalPrice = 0;
+    if (chosenFlight) totalPrice += chosenFlight.price * (p?.travelers || 2);
+    if (chosenHotel) totalPrice += chosenHotel.pricePerNight * daysCount;
+
+    const days: ItineraryDay[] = [];
+
+    for (let d = 1; d <= daysCount; d++) {
+      const dayPlan = (p?.daysPlan && p.daysPlan[d - 1]) || null;
+      const items: ItineraryItem[] = [];
+
+      // Day 1: Flight
+      if (d === 1 && chosenFlight) {
+        items.push({
+          id: `item-flight-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+          title: `${chosenFlight.airline} (${chosenFlight.originCode} ➔ ${chosenFlight.destCode})`,
+          category: 'transport',
+          price: chosenFlight.price,
+          time: chosenFlight.depTime,
+          duration: chosenFlight.duration,
+          location: `${chosenFlight.originCode} International Airport`,
+          description: `Flight ${chosenFlight.flightNumber} · ${chosenFlight.stops}. ${chosenFlight.badge}`,
+          image: 'https://images.unsplash.com/photo-1544620347-c4fd4a3d5957?auto=format&fit=crop&w=800&q=80',
+          rating: 4.9,
+          tags: [chosenFlight.airline, 'Flight Included'],
+        });
+      }
+
+      // Every Day: Hotel stay
+      if (chosenHotel) {
+        items.push({
+          id: `item-hotel-d${d}-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+          title: `${chosenHotel.name} (${chosenHotel.roomType})`,
+          category: 'hotel',
+          price: chosenHotel.pricePerNight,
+          time: d === 1 ? '03:00 PM' : '08:00 AM',
+          duration: 'Overnight',
+          location: chosenHotel.location,
+          description: `${chosenHotel.label}. Perks: ${chosenHotel.perks.join(' · ')}`,
+          image: chosenHotel.image,
+          rating: chosenHotel.rating,
+          reviewsCount: chosenHotel.reviews,
+          tags: ['Luxury Stay', ...chosenHotel.perks.slice(0, 2)],
+        });
+      }
+
+      // Highlights for this day
+      if (dayPlan?.highlights && Array.isArray(dayPlan.highlights)) {
+        dayPlan.highlights.forEach((h: any, hIdx: number) => {
+          const titleStr = typeof h === 'string' ? h : h.title;
+          const actPrice = hIdx === 0 ? 3000 : 4500;
+          items.push({
+            id: `item-act-d${d}-${hIdx}-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+            title: titleStr,
+            category: hIdx === 0 ? 'activity' : 'meal',
+            price: actPrice,
+            time: hIdx === 0 ? '11:00 AM' : '01:30 PM',
+            duration: '2 hrs',
+            location: destName,
+            description: `Curated highlight: ${titleStr}. VIP access arranged through your Bookit concierge.`,
+            image: p?.heroImage || 'https://images.unsplash.com/photo-1512343879784-a960bf40e7f2?auto=format&fit=crop&w=1600&q=80',
+            rating: 4.92,
+            tags: ['AI Curated Highlight'],
+          });
+          totalPrice += actPrice;
+        });
+      }
+
+      // Any selected experiences assigned to this day
+      if (Array.isArray(p?.highlights)) {
+        p.highlights.forEach((exp: any, expIdx: number) => {
+          if (selectedExps.has(expIdx)) {
+            const assignedDay = exp.suggestedDayNumber || ((expIdx % daysCount) + 1);
+            if (assignedDay === d) {
+              const expPrice = exp.price || 3500;
+              items.push({
+                id: `item-exp-${expIdx}-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+                title: exp.title,
+                category: (exp.category as any) || 'experience',
+                price: expPrice,
+                time: '04:30 PM',
+                duration: '2.5 hrs',
+                location: exp.location || destName,
+                description: exp.desc || exp.title,
+                image: exp.image || p?.heroImage,
+                rating: 4.95,
+                tags: ['Selected Experience'],
+              });
+              totalPrice += expPrice;
+            }
+          }
+        });
+      }
+
+      days.push({
+        id: `day-${destName.toLowerCase().replace(/[^a-z0-9]/g, '')}-${d}`,
+        dayNumber: d,
+        date: `Day ${d}`,
+        title: dayPlan?.title || `Day ${d} in ${destName}`,
+        subtitle: dayPlan?.title || 'Curated Discoveries',
+        items,
+      });
+    }
+
+    const compiledItinerary: TripItinerary = {
+      id: `trip-ai-${session?.id || 'gen'}-${Date.now()}`,
+      title: session?.title || p?.title || `${destName} AI Journey`,
+      destination: destName,
+      country: p?.country || 'India',
+      dates: p?.dates || `${daysCount} Days · Bespoke AI Journey`,
+      startDate: new Date().toISOString().split('T')[0],
+      travelers: p?.travelers || 2,
+      currency: 'INR',
+      totalPrice,
+      heroImage: p?.heroImage || 'https://images.unsplash.com/photo-1512343879784-a960bf40e7f2?auto=format&fit=crop&w=1600&q=80',
+      days,
+    };
+
+    if (onOpenItineraryInBuilder) {
+      onOpenItineraryInBuilder(compiledItinerary);
+      showToast?.(`✨ Loaded "${compiledItinerary.title}" in Itinerary Builder!`);
+    } else {
+      onNavigateTab?.('builder');
+    }
+  };
+
+  return (
+    <div className="space-y-8">
+      {/* ── Info banner ── */}
+      <div className="flex items-start gap-3 bg-violet-50 border border-violet-200 rounded-2xl px-4 py-3">
+        <span className="material-symbols-outlined text-violet-500 text-[20px] shrink-0 mt-0.5">info</span>
+        <div className="flex-1 min-w-0">
+          <p className="text-xs text-violet-800 leading-relaxed">
+            <strong>Pick what you want.</strong> Select your preferred flight, hotel, and experiences below, or click <strong>Refine with AI</strong> to add more options in-place. Then click <strong>Open in Builder</strong> to customize dates, activities &amp; save.
+          </p>
+        </div>
+      </div>
+
+      {/* ── Flights ── */}
+      <section className="space-y-4">
+        <div className="flex items-center justify-between gap-4">
+          <div className="flex items-center gap-2">
+            <div className="w-8 h-8 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center shrink-0">
+              <span className="material-symbols-outlined text-[18px]">flight_takeoff</span>
+            </div>
+            <div>
+              <h3 className="text-base font-extrabold text-slate-900 leading-tight">Flight Options</h3>
+              <p className="text-[11px] text-slate-400">Select one flight to add to your plan ({flights.length} options available)</p>
+            </div>
+          </div>
+          <button
+            type="button"
+            onClick={handleRefineWithAI}
+            disabled={isRefining}
+            className="px-3 py-1.5 rounded-xl border border-indigo-200 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 shrink-0"
+          >
+            <span className={`material-symbols-outlined text-[15px] ${isRefining ? 'animate-spin' : ''}`}>
+              {isRefining ? 'sync' : 'auto_awesome'}
+            </span>
+            {isRefining ? 'Finding routes…' : '+ Add More Flight Options'}
+          </button>
+        </div>
+
+        {isRefining && (
+          <div className="p-3 bg-indigo-50/70 border border-indigo-200 rounded-2xl flex items-center gap-2.5 text-xs text-indigo-800 animate-pulse">
+            <span className="material-symbols-outlined text-indigo-600 text-[18px] animate-spin">auto_awesome</span>
+            <span>AI is querying live airline schedules, early bird routes and prime slots for {destName}…</span>
+          </div>
+        )}
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+          {flights.map((f) => {
+            const isSelected = selectedFlight === f.key;
+            return (
+              <div
+                key={f.id}
+                onClick={() => setSelectedFlight(isSelected ? null : f.key)}
+                className={`bg-white rounded-2xl border p-4 space-y-3 cursor-pointer transition-all select-none relative ${
+                  isSelected
+                    ? 'border-emerald-500 ring-2 ring-emerald-200 shadow-md'
+                    : f.key === 'recommended'
+                    ? 'border-indigo-300 shadow-sm hover:border-indigo-400'
+                    : 'border-slate-200 hover:border-slate-300'
+                }`}
+              >
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-1.5">
+                    <span className={`text-xs font-bold ${isSelected ? 'text-emerald-700' : f.key === 'recommended' ? 'text-indigo-700' : 'text-slate-700'}`}>{f.label}</span>
+                    {f.isAiAdded && (
+                      <span className="text-[10px] px-1.5 py-0.2 rounded-full font-bold bg-purple-100 text-purple-700 border border-purple-200 flex items-center gap-0.5">
+                        <span className="material-symbols-outlined text-[10px]">auto_awesome</span>AI
+                      </span>
+                    )}
+                  </div>
+                  <div className="flex items-center gap-1.5">
+                    <span className={`text-[10px] px-2 py-0.5 rounded-full font-bold border ${f.key === 'recommended' ? 'bg-indigo-50 text-indigo-700 border-indigo-200' : 'bg-slate-100 text-slate-600 border-slate-200'}`}>{f.badge}</span>
+                    <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center transition-all ${isSelected ? 'bg-emerald-500 border-emerald-500' : 'border-slate-300'}`}>
+                      {isSelected && <span className="material-symbols-outlined text-white text-[13px]">check</span>}
+                    </div>
+                  </div>
+                </div>
+                <div>
+                  <p className="font-bold text-slate-900 text-sm leading-tight">{f.airline}</p>
+                  <p className="text-xs text-slate-500 font-mono mt-0.5">{f.flightNumber}</p>
+                </div>
+                <div className="flex items-center justify-between text-xs">
+                  <div className="text-center">
+                    <p className="font-extrabold text-slate-900 text-base">{f.originCode}</p>
+                    <p className="text-slate-500">{f.depTime}</p>
+                  </div>
+                  <div className="flex-1 mx-2 text-center">
+                    <div className="relative flex items-center">
+                      <div className="flex-1 h-px bg-slate-200" />
+                      <span className="material-symbols-outlined text-[14px] text-slate-400 mx-1">flight</span>
+                      <div className="flex-1 h-px bg-slate-200" />
+                    </div>
+                    <p className="text-[10px] text-slate-400 mt-0.5">{f.duration}</p>
+                    <p className="text-[10px] text-slate-400">{f.stops}</p>
+                  </div>
+                  <div className="text-center">
+                    <p className="font-extrabold text-slate-900 text-base">{f.destCode}</p>
+                    <p className="text-slate-500">{f.arrTime}</p>
+                  </div>
+                </div>
+                <div className="flex items-center justify-between pt-1">
+                  <span className="text-xs font-extrabold text-slate-900">₹{f.price.toLocaleString('en-IN')}<span className="text-[10px] font-normal text-slate-400 ml-0.5">/pax</span></span>
+                  <button
+                    type="button"
+                    onClick={e => { e.stopPropagation(); setSelectedFlight(isSelected ? null : f.key); }}
+                    className={`py-1 px-3 rounded-xl text-xs font-bold flex items-center justify-center gap-1 transition-all cursor-pointer ${
+                      isSelected
+                        ? 'bg-emerald-50 text-emerald-700 border border-emerald-300'
+                        : 'bg-slate-50 text-slate-700 border border-slate-200 hover:bg-indigo-50 hover:text-indigo-700 hover:border-indigo-300'
+                    }`}
+                  >
+                    <span className="material-symbols-outlined text-[14px]">{isSelected ? 'check_circle' : 'add_circle'}</span>
+                    {isSelected ? 'Selected' : 'Select'}
+                  </button>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </section>
+
+      {/* ── Hotels ── */}
+      <section className="space-y-4">
+        <div className="flex items-center justify-between gap-4">
+          <div className="flex items-center gap-2">
+            <div className="w-8 h-8 rounded-xl bg-purple-50 text-purple-600 flex items-center justify-center shrink-0">
+              <span className="material-symbols-outlined text-[18px]">hotel</span>
+            </div>
+            <div>
+              <h3 className="text-base font-extrabold text-slate-900 leading-tight">Hotel Options</h3>
+              <p className="text-[11px] text-slate-400">Select one hotel to add to your plan ({hotels.length} options available)</p>
+            </div>
+          </div>
+          <button
+            type="button"
+            onClick={handleRefineWithAI}
+            disabled={isRefining}
+            className="px-3 py-1.5 rounded-xl border border-purple-200 bg-purple-50 hover:bg-purple-100 text-purple-700 text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 shrink-0"
+          >
+            <span className={`material-symbols-outlined text-[15px] ${isRefining ? 'animate-spin' : ''}`}>
+              {isRefining ? 'sync' : 'auto_awesome'}
+            </span>
+            {isRefining ? 'Searching stays…' : '+ Add More Hotel Options'}
+          </button>
+        </div>
+
+        {isRefining && (
+          <div className="p-3 bg-purple-50/70 border border-purple-200 rounded-2xl flex items-center gap-2.5 text-xs text-purple-800 animate-pulse">
+            <span className="material-symbols-outlined text-purple-600 text-[18px] animate-spin">auto_awesome</span>
+            <span>AI is curating private villas, beachfront hideaways &amp; heritage estates in {destName}…</span>
+          </div>
+        )}
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+          {hotels.map((h) => {
+            const isSelected = selectedHotel === h.key;
+            return (
+              <div
+                key={h.id}
+                onClick={() => setSelectedHotel(isSelected ? null : h.key)}
+                className={`bg-white rounded-2xl border overflow-hidden cursor-pointer transition-all select-none relative flex flex-col ${
+                  isSelected
+                    ? 'border-emerald-500 ring-2 ring-emerald-200 shadow-md'
+                    : h.key === 'recommended'
+                    ? 'border-purple-300 shadow-sm hover:border-purple-400'
+                    : 'border-slate-200 hover:border-slate-300'
+                }`}
+              >
+                {h.image && (
+                  <div className="h-36 overflow-hidden relative">
+                    <img src={h.image} alt={h.name} className="w-full h-full object-cover object-center" />
+                    <div className="absolute inset-0 bg-gradient-to-t from-slate-900/60 via-transparent to-transparent" />
+                    <div className="absolute top-2 left-2 flex items-center gap-1">
+                      <span className={`text-[10px] px-2 py-0.5 rounded-full font-bold shadow-xs ${h.key === 'recommended' ? 'bg-purple-600 text-white' : 'bg-slate-800/90 text-white'}`}>{h.badge}</span>
+                      {h.isAiAdded && (
+                        <span className="text-[10px] px-1.5 py-0.5 rounded-full font-bold bg-violet-600 text-white shadow-xs flex items-center gap-0.5">
+                          <span className="material-symbols-outlined text-[10px]">auto_awesome</span>AI Pick
+                        </span>
+                      )}
+                    </div>
+                    {isSelected && (
+                      <div className="absolute top-2 right-2 w-6 h-6 rounded-full bg-emerald-500 flex items-center justify-center shadow">
+                        <span className="material-symbols-outlined text-white text-[14px]">check</span>
+                      </div>
+                    )}
+                  </div>
+                )}
+                <div className="p-4 space-y-2 flex-1 flex flex-col justify-between">
+                  <div className="space-y-1.5">
+                    <div className="flex items-start justify-between gap-2">
+                      <div>
+                        <p className="font-bold text-slate-900 text-sm leading-tight">{h.name}</p>
+                        <p className="text-xs text-slate-500">{h.roomType}</p>
+                      </div>
+                      {h.rating && (
+                        <span className="flex items-center gap-0.5 text-amber-600 text-xs font-bold shrink-0">
+                          <span className="material-symbols-outlined text-[13px]">star</span>
+                          {h.rating}
+                        </span>
+                      )}
+                    </div>
+                    <p className="text-[11px] text-slate-500 flex items-center gap-1">
+                      <span className="material-symbols-outlined text-[12px]">location_on</span>
+                      {h.location}
+                    </p>
+                    {Array.isArray(h.perks) && h.perks.length > 0 && (
+                      <div className="flex flex-wrap gap-1 pt-0.5">
+                        {h.perks.slice(0, 3).map((perk: string, pi: number) => (
+                          <span key={pi} className="text-[10px] bg-slate-50 border border-slate-200 text-slate-600 px-1.5 py-0.5 rounded-md">{perk}</span>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                  <div className="pt-2 flex items-center justify-between border-t border-slate-100">
+                    <div>
+                      <p className="text-xs font-extrabold text-slate-900">₹{h.pricePerNight.toLocaleString('en-IN')}</p>
+                      <p className="text-[10px] text-slate-400">per night</p>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={e => { e.stopPropagation(); setSelectedHotel(isSelected ? null : h.key); }}
+                      className={`py-1.5 px-3 rounded-xl text-xs font-bold flex items-center justify-center gap-1 transition-all cursor-pointer ${
+                        isSelected
+                          ? 'bg-emerald-50 text-emerald-700 border border-emerald-300'
+                          : 'bg-slate-50 text-slate-700 border border-slate-200 hover:bg-purple-50 hover:text-purple-700 hover:border-purple-300'
+                      }`}
+                    >
+                      <span className="material-symbols-outlined text-[14px]">{isSelected ? 'check_circle' : 'add_circle'}</span>
+                      {isSelected ? 'Selected' : 'Select'}
+                    </button>
+                  </div>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </section>
+
+      {/* ── Curated Experiences ── */}
+      {Array.isArray(p?.highlights) && p.highlights.length > 0 && (
+        <section className="space-y-4">
+          <div className="flex items-center gap-2">
+            <div className="w-8 h-8 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center shrink-0">
+              <span className="material-symbols-outlined text-[18px]">explore</span>
+            </div>
+            <div>
+              <h3 className="text-base font-extrabold text-slate-900 leading-tight">Curated Experiences</h3>
+              <p className="text-[11px] text-slate-400">Add as many as you like to enrich your days</p>
+            </div>
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            {p.highlights.map((exp: any, idx: number) => {
+              const isAdded = selectedExps.has(idx);
+              const catColors: Record<string, string> = {
+                experience: 'bg-blue-50 text-blue-700 border-blue-200',
+                activity:   'bg-emerald-50 text-emerald-700 border-emerald-200',
+                meal:       'bg-amber-50 text-amber-700 border-amber-200',
+                transfer:   'bg-sky-50 text-sky-700 border-sky-200',
+              };
+              const catColor = catColors[exp.category] || 'bg-slate-50 text-slate-700 border-slate-200';
+              return (
+                <div
+                  key={idx}
+                  onClick={() => toggleExp(idx)}
+                  className={`bg-white rounded-2xl border p-4 transition-all cursor-pointer select-none flex items-start gap-4 ${
+                    isAdded ? 'border-emerald-400 ring-1 ring-emerald-200 shadow-sm' : 'border-slate-200 hover:border-slate-300'
+                  }`}
+                >
+                  <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 border transition-all ${isAdded ? 'bg-emerald-50 text-emerald-600 border-emerald-300' : catColor}`}>
+                    <span className="material-symbols-outlined text-[18px]">{isAdded ? 'check_circle' : (exp.icon || 'star')}</span>
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-start justify-between gap-2">
+                      <h4 className="font-bold text-slate-900 text-sm leading-tight">{exp.title}</h4>
+                      <div className="flex items-center gap-2 shrink-0">
+                        {exp.price > 0 && (
+                          <span className="text-xs font-extrabold text-emerald-700">₹{exp.price.toLocaleString('en-IN')}</span>
+                        )}
+                        <div className={`w-5 h-5 rounded-md border-2 flex items-center justify-center transition-all ${isAdded ? 'bg-emerald-500 border-emerald-500' : 'border-slate-300'}`}>
+                          {isAdded && <span className="material-symbols-outlined text-white text-[12px]">check</span>}
+                        </div>
+                      </div>
+                    </div>
+                    <p className="text-xs text-slate-500 mt-1 leading-relaxed">{exp.desc}</p>
+                    {exp.location && (
+                      <p className="text-[11px] text-slate-400 flex items-center gap-0.5 mt-1.5">
+                        <span className="material-symbols-outlined text-[11px]">location_on</span>
+                        {exp.location}
+                      </p>
+                    )}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </section>
+      )}
+
+      {/* ── Day-by-Day Timeline (read-only reference) ── */}
+      {Array.isArray(p?.daysPlan) && p.daysPlan.length > 0 && (
+        <section className="space-y-4">
+          <div className="flex items-center gap-2">
+            <div className="w-8 h-8 rounded-xl bg-slate-100 text-slate-600 flex items-center justify-center shrink-0">
+              <span className="material-symbols-outlined text-[18px]">timeline</span>
+            </div>
+            <div>
+              <h3 className="text-base font-extrabold text-slate-900 leading-tight">Day-by-Day Plan</h3>
+              <p className="text-[11px] text-slate-400">Reference guide — loaded automatically when opened in Builder</p>
+            </div>
+          </div>
+          <div className="relative border-l-2 border-violet-200 ml-5 space-y-5">
+            {p.daysPlan.map((day: any, idx: number) => (
+              <div key={idx} className="relative pl-8">
+                <div className="absolute -left-[21px] top-3 w-10 h-10 rounded-full bg-violet-600 text-white flex items-center justify-center font-extrabold text-sm border-2 border-white shadow-md">
+                  {day.dayNumber || idx + 1}
+                </div>
+                <div className="bg-white rounded-2xl border border-slate-200 p-4 sm:p-5">
+                  <h4 className="font-extrabold text-slate-900 text-sm sm:text-base leading-tight">{day.title}</h4>
+                  {Array.isArray(day.highlights) && day.highlights.length > 0 && (
+                    <ul className="mt-3 space-y-2">
+                      {day.highlights.map((h: string, hi: number) => (
+                        <li key={hi} className="flex items-start gap-2.5 text-xs text-slate-600">
+                          <span className="material-symbols-outlined text-[14px] text-violet-400 mt-0.5 shrink-0">check_circle</span>
+                          <span className="leading-relaxed">{h}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                </div>
+              </div>
+            ))}
+          </div>
+        </section>
+      )}
+
+      {/* ── Sticky bottom: Open in Builder & Refine with AI — NO buy button ── */}
+      <div className="sticky bottom-4 z-20 pb-2">
+        <div className={`backdrop-blur-md border rounded-2xl shadow-xl px-4 py-3 flex flex-col sm:flex-row items-center gap-3 justify-between transition-all ${totalAdded > 0 ? 'bg-emerald-50/95 border-emerald-300' : 'bg-white/95 border-slate-200'}`}>
+          <div className="text-center sm:text-left">
+            {totalAdded > 0 ? (
+              <>
+                <p className="text-sm font-extrabold text-emerald-800">{totalAdded} preference{totalAdded !== 1 ? 's' : ''} selected</p>
+                <p className="text-xs text-emerald-600">Click &ldquo;Open in Builder&rdquo; to customize dates, arrange items &amp; finalize itinerary</p>
+              </>
+            ) : (
+              <>
+                <p className="text-sm font-extrabold text-slate-900">Pick your preferences above</p>
+                <p className="text-xs text-slate-500">Select flight, hotel &amp; experiences — or refine with AI for more options</p>
+              </>
+            )}
+          </div>
+          <div className="flex items-center gap-2 shrink-0">
+            <button
+              type="button"
+              onClick={handleRefineWithAI}
+              disabled={isRefining}
+              className="px-4 py-2 rounded-xl border border-purple-200 bg-purple-50 hover:bg-purple-100 text-purple-700 text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 shadow-2xs"
+            >
+              <span className={`material-symbols-outlined text-[15px] ${isRefining ? 'animate-spin' : ''}`}>
+                {isRefining ? 'sync' : 'auto_awesome'}
+              </span>
+              {isRefining ? 'Refining…' : hasRefined ? 'Add More Options' : 'Refine with AI'}
+            </button>
+            <button
+              type="button"
+              id="ai-plan-open-builder"
+              onClick={handleOpenInBuilder}
+              className={`px-5 py-2 rounded-xl text-xs font-extrabold transition-all cursor-pointer shadow-sm flex items-center gap-1.5 ${
+                totalAdded > 0
+                  ? 'bg-emerald-600 hover:bg-emerald-700 text-white'
+                  : 'bg-slate-900 hover:bg-slate-700 text-white'
+              }`}
+            >
+              <span className="material-symbols-outlined text-[15px]">edit_calendar</span>
+              Open in Builder
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
 export const TripsAndBookingsScreen: React.FC<TripsAndBookingsScreenProps> = ({
   initialView = 'timeline',
   isDisruptionResolved,
   bookedTrips,
+  isLoadingTrips,
   activeTripId,
   onSelectTrip,
   onModifyTrip,
@@ -258,8 +1254,121 @@ export const TripsAndBookingsScreen: React.FC<TripsAndBookingsScreenProps> = ({
   onOpenTripAssistant,
   onNavigateTab,
   showToast = () => {},
+  onOpenItineraryInBuilder,
+  onOpenPayment,
 }) => {
-  const currentTrip = (bookedTrips && bookedTrips.find(t => t.id === activeTripId)) || (bookedTrips && bookedTrips[0]);
+  // ──────────────────────────────────────────────────────────────────────
+  // TRIP SELECTION HUB STATE
+  // ──────────────────────────────────────────────────────────────────────
+  // null = show the hub (trip picker), string = show detail for that trip
+  const [selectedTripInHub, setSelectedTripInHub] = useState<string | null>(null);
+  const [tripFilter, setTripFilter] = useState<TripFilter>('all');
+  const [tripSearch, setTripSearch] = useState('');
+  const [aiSessions, setAiSessions] = useState<AssistantSession[]>([]);
+  const [aiSessionsLoading, setAiSessionsLoading] = useState(true);
+
+  const isTripsLoading = Boolean(isLoadingTrips) || aiSessionsLoading;
+
+  const isFilterLoading = useMemo(() => {
+    if (tripFilter === 'ai_plan') return aiSessionsLoading;
+    if (tripFilter === 'purchased') return Boolean(isLoadingTrips);
+    return isTripsLoading;
+  }, [tripFilter, aiSessionsLoading, isLoadingTrips, isTripsLoading]);
+
+  // Fetch AI sessions on mount
+  useEffect(() => {
+    let cancelled = false;
+    setAiSessionsLoading(true);
+    TripFlowApi.getAssistantSessions()
+      .then(sessions => {
+        if (!cancelled) {
+          // Only sessions that have a destination (meaningful trip plans)
+          const withDestination = sessions.filter((s: any) => s.destination && s.destination.trim().length > 0);
+          setAiSessions(withDestination);
+        }
+      })
+      .catch(() => {
+        if (!cancelled) setAiSessions([]);
+      })
+      .finally(() => {
+        if (!cancelled) setAiSessionsLoading(false);
+      });
+    return () => { cancelled = true; };
+  }, []);
+
+  // Build unified selectable trips list
+  const allSelectableTrips = useMemo((): SelectableTrip[] => {
+    const trips: SelectableTrip[] = [];
+
+    // Purchased / Confirmed trips
+    if (bookedTrips) {
+      for (const bt of bookedTrips) {
+        trips.push({
+          id: bt.id,
+          source: 'purchased',
+          title: bt.title,
+          destination: bt.destination,
+          dates: bt.dates,
+          duration: bt.duration,
+          travelers: bt.travelers,
+          totalPrice: bt.totalPrice,
+          currency: bt.currency,
+          heroImage: bt.heroImage,
+          status: bt.status,
+          bookedTripRef: bt,
+        });
+      }
+    }
+
+    // AI-crafted itinerary sessions (de-duplicate by destination+title)
+    const seenAiKeys = new Set<string>();
+    for (const s of aiSessions) {
+      const key = `${(s.title || '').toLowerCase()}_${(s.destination || '').toLowerCase()}`;
+      if (!seenAiKeys.has(key)) {
+        seenAiKeys.add(key);
+        trips.push({
+          id: `ai_${s.id}`,
+          source: 'ai_plan',
+          title: s.title || `${s.destination} Journey`,
+          destination: s.destination || 'Unknown',
+          dates: s.updatedAt ? new Date(s.updatedAt).toLocaleDateString('en-IN', { month: 'short', year: 'numeric' }) : 'AI Plan',
+          duration: '',
+          travelers: 2,
+          heroImage: undefined,
+          status: 'AI Plan',
+          sessionRef: s,
+        });
+      }
+    }
+
+    return trips;
+  }, [bookedTrips, aiSessions]);
+
+  // Filtered trips for hub view
+  const filteredTrips = useMemo(() => {
+    let result = allSelectableTrips;
+    if (tripFilter === 'purchased') result = result.filter(t => t.source === 'purchased');
+    if (tripFilter === 'ai_plan') result = result.filter(t => t.source === 'ai_plan');
+    if (tripSearch.trim()) {
+      const q = tripSearch.toLowerCase();
+      result = result.filter(t =>
+        t.destination.toLowerCase().includes(q) ||
+        t.title.toLowerCase().includes(q)
+      );
+    }
+    return result;
+  }, [allSelectableTrips, tripFilter, tripSearch]);
+
+  // Determine current trip from hub selection or activeTripId
+  const resolvedTripId = selectedTripInHub ?? activeTripId;
+  const currentTrip =
+    (bookedTrips && bookedTrips.find(t => t.id === resolvedTripId)) ||
+    (bookedTrips && !selectedTripInHub ? undefined : undefined);
+
+  // If hub selection points to an AI trip, grab it
+  const currentAiSession = selectedTripInHub?.startsWith('ai_')
+    ? aiSessions.find(s => `ai_${s.id}` === selectedTripInHub)
+    : null;
 
   const flightInfo = currentTrip?.flightDetails || {
     airline: 'IndiGo Airlines',
@@ -550,6 +1659,325 @@ export const TripsAndBookingsScreen: React.FC<TripsAndBookingsScreenProps> = ({
     );
   };
 
+  // ──────────────────────────────────────────────────────────────────────
+  // TRIP SELECTION HUB — shown when no trip is selected
+  // ──────────────────────────────────────────────────────────────────────
+  if (selectedTripInHub === null) {
+    const DESTINATION_IMAGES: Record<string, string> = {
+      kerala: 'https://images.unsplash.com/photo-1602216056096-3b40cc0c9944?auto=format&fit=crop&w=800&q=80',
+      goa: 'https://images.unsplash.com/photo-1512343879784-a960bf40e7f2?auto=format&fit=crop&w=800&q=80',
+      turkey: 'https://images.unsplash.com/photo-1541432901042-2d8bd64b4a9b?auto=format&fit=crop&w=800&q=80',
+      istanbul: 'https://images.unsplash.com/photo-1541432901042-2d8bd64b4a9b?auto=format&fit=crop&w=800&q=80',
+      japan: 'https://images.unsplash.com/photo-1503899036084-c55cdd92da26?auto=format&fit=crop&w=800&q=80',
+      tokyo: 'https://images.unsplash.com/photo-1503899036084-c55cdd92da26?auto=format&fit=crop&w=800&q=80',
+      maldives: 'https://images.unsplash.com/photo-1514282401047-d79a71a590e8?auto=format&fit=crop&w=800&q=80',
+      bali: 'https://images.unsplash.com/photo-1537996194471-e657df975ab4?auto=format&fit=crop&w=800&q=80',
+      paris: 'https://images.unsplash.com/photo-1502602898657-3e91760cbb34?auto=format&fit=crop&w=800&q=80',
+      dubai: 'https://images.unsplash.com/photo-1512453979798-5ea266f8880c?auto=format&fit=crop&w=800&q=80',
+    };
+
+    const getHeroImage = (trip: SelectableTrip) => {
+      if (trip.heroImage) return trip.heroImage;
+      const dest = trip.destination.toLowerCase();
+      for (const [key, url] of Object.entries(DESTINATION_IMAGES)) {
+        if (dest.includes(key)) return url;
+      }
+      return 'https://images.unsplash.com/photo-1488646953014-85cb44e25828?auto=format&fit=crop&w=800&q=80';
+    };
+
+    return (
+      <div className="w-full min-h-screen bg-slate-50">
+        {/* ── Hub Header ── */}
+        <section className="bg-white border-b border-slate-200 px-4 sm:px-6 py-5 sticky top-14 z-30 shadow-2xs">
+          <div className="max-w-[1280px] mx-auto space-y-4">
+            {/* Title row */}
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+              <div>
+                <h1 className="text-xl sm:text-2xl font-extrabold text-slate-900 tracking-tight">My Journeys</h1>
+                {isFilterLoading ? (
+                  <div className="flex items-center gap-2 mt-1">
+                    <span className="w-2 h-2 rounded-full bg-blue-500 animate-ping" />
+                    <span className="text-xs text-slate-400 font-medium">Loading your journeys &amp; AI plans…</span>
+                  </div>
+                ) : (
+                  <p className="text-xs text-slate-500 mt-0.5">
+                    {allSelectableTrips.length} trip{allSelectableTrips.length !== 1 ? 's' : ''} — select one to view full details &amp; bookings
+                  </p>
+                )}
+              </div>
+              {/* Search */}
+              <div className="relative w-full sm:w-64">
+                <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-[18px]">search</span>
+                <input
+                  id="trip-hub-search"
+                  type="text"
+                  value={tripSearch}
+                  onChange={e => setTripSearch(e.target.value)}
+                  placeholder="Search destination…"
+                  className="w-full pl-9 pr-4 py-2 text-xs rounded-xl border border-slate-200 bg-slate-50 focus:outline-none focus:ring-2 focus:ring-blue-400/40 focus:border-blue-400 transition-all"
+                />
+              </div>
+            </div>
+            {/* Filter tabs */}
+            <div className="flex items-center gap-2 flex-wrap">
+              {(['all', 'purchased', 'ai_plan'] as TripFilter[]).map(f => {
+                const labels: Record<TripFilter, string> = {
+                  all: 'All Journeys',
+                  purchased: '✓ Purchased & Confirmed',
+                  ai_plan: '✦ AI-Crafted Plans',
+                };
+                const counts: Record<TripFilter, number> = {
+                  all: allSelectableTrips.length,
+                  purchased: allSelectableTrips.filter(t => t.source === 'purchased').length,
+                  ai_plan: allSelectableTrips.filter(t => t.source === 'ai_plan').length,
+                };
+                const isTabLoading = f === 'ai_plan' ? aiSessionsLoading : f === 'purchased' ? Boolean(isLoadingTrips) : isTripsLoading;
+                return (
+                  <button
+                    key={f}
+                    type="button"
+                    onClick={() => setTripFilter(f)}
+                    className={`px-3.5 py-1.5 rounded-full text-xs font-semibold border transition-all cursor-pointer ${
+                      tripFilter === f
+                        ? f === 'ai_plan'
+                          ? 'bg-violet-600 text-white border-violet-600 shadow-xs'
+                          : f === 'purchased'
+                          ? 'bg-emerald-600 text-white border-emerald-600 shadow-xs'
+                          : 'bg-slate-900 text-white border-slate-900 shadow-xs'
+                        : 'bg-white text-slate-600 border-slate-200 hover:border-slate-400'
+                    }`}
+                  >
+                    {labels[f]}
+                    <span className={`ml-1.5 ${
+                      tripFilter === f ? 'text-white/80' : 'text-slate-400'
+                    } font-normal`}>
+                      {isTabLoading && counts[f] === 0 ? '…' : `(${counts[f]})`}
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        </section>
+
+        {/* ── Trip Cards Grid ── */}
+        <main className="max-w-[1280px] mx-auto px-4 sm:px-6 lg:px-8 py-8 pb-24">
+          {isFilterLoading ? (
+            /* Premium Trip Cards Loading Skeleton */
+            <div className="space-y-4">
+              <div className="flex items-center justify-between text-xs text-slate-400 pb-1">
+                <div className="flex items-center gap-2">
+                  <span className="material-symbols-outlined text-[16px] text-blue-500 animate-spin">sync</span>
+                  <span className="font-semibold text-slate-600">Loading your journeys and AI-crafted itineraries…</span>
+                </div>
+                <span className="hidden sm:inline text-slate-400">Syncing with travel vault &amp; concierge</span>
+              </div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+                {[1, 2, 3, 4, 5, 6].map(i => (
+                  <div
+                    key={i}
+                    className="bg-white rounded-2xl overflow-hidden border border-slate-200 shadow-xs flex flex-col"
+                  >
+                    {/* Hero image placeholder with shimmer */}
+                    <div className="relative h-44 bg-slate-100 overflow-hidden flex-shrink-0">
+                      <Skeleton className="w-full h-full rounded-none" />
+                      {/* Shimmering Badge */}
+                      <div className="absolute top-3 left-3">
+                        <Skeleton className="w-28 h-6 rounded-full bg-slate-200/90" />
+                      </div>
+                      {/* Shimmering Title Overlay */}
+                      <div className="absolute bottom-3 left-3 right-3 space-y-1.5">
+                        <Skeleton className="w-3/4 h-5 rounded-lg bg-slate-300/80" />
+                        <Skeleton className="w-1/3 h-3.5 rounded bg-slate-300/60" />
+                      </div>
+                    </div>
+
+                    {/* Card body skeleton */}
+                    <div className="p-4 flex flex-col gap-3.5 flex-1 justify-between">
+                      {/* Metadata row: dates, duration, travelers */}
+                      <div className="flex items-center gap-3 flex-wrap">
+                        <div className="flex items-center gap-1.5">
+                          <Skeleton className="w-3.5 h-3.5 rounded-full" />
+                          <Skeleton className="w-20 h-3 rounded" />
+                        </div>
+                        <div className="flex items-center gap-1.5">
+                          <Skeleton className="w-3.5 h-3.5 rounded-full" />
+                          <Skeleton className="w-14 h-3 rounded" />
+                        </div>
+                        <div className="flex items-center gap-1.5">
+                          <Skeleton className="w-3.5 h-3.5 rounded-full" />
+                          <Skeleton className="w-16 h-3 rounded" />
+                        </div>
+                      </div>
+
+                      {/* Pricing placeholder */}
+                      <div className="space-y-1">
+                        <Skeleton className="w-28 h-5 rounded" />
+                      </div>
+
+                      {/* Full-width CTA button placeholder */}
+                      <Skeleton className="w-full h-10 rounded-xl" />
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          ) : filteredTrips.length === 0 ? (
+            <div className="text-center py-20 space-y-4">
+              <div className="w-16 h-16 rounded-2xl bg-blue-50 text-blue-400 mx-auto flex items-center justify-center">
+                <span className="material-symbols-outlined text-3xl">luggage</span>
+              </div>
+              <div>
+                <h3 className="text-lg font-bold text-slate-800">No trips found</h3>
+                <p className="text-sm text-slate-500 mt-1">
+                  {tripSearch ? 'Try a different search term.' : 'Start planning your next adventure!'}
+                </p>
+              </div>
+              <div className="flex items-center justify-center gap-3 pt-2">
+                <button
+                  type="button"
+                  onClick={() => onNavigateTab?.('discover')}
+                  className="px-5 py-2.5 rounded-full bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold transition-all shadow-xs cursor-pointer flex items-center gap-2"
+                >
+                  <span className="material-symbols-outlined text-sm">explore</span>
+                  Browse Circuits
+                </button>
+                <button
+                  type="button"
+                  onClick={() => onNavigateTab?.('assistant')}
+                  className="px-5 py-2.5 rounded-full bg-violet-600 hover:bg-violet-700 text-white text-xs font-bold transition-all shadow-xs cursor-pointer flex items-center gap-2"
+                >
+                  <span className="material-symbols-outlined text-sm">auto_awesome</span>
+                  Plan with AI
+                </button>
+              </div>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+              {filteredTrips.map(trip => {
+                const isPurchased = trip.source === 'purchased';
+                const heroImg = getHeroImage(trip);
+                return (
+                  <div
+                    key={trip.id}
+                    className="group relative bg-white rounded-2xl overflow-hidden border border-slate-200 hover:border-blue-400/60 shadow-xs hover:shadow-md transition-all duration-200 flex flex-col"
+                  >
+                    {/* Hero image */}
+                    <div className="relative h-44 overflow-hidden flex-shrink-0">
+                      <img
+                        src={heroImg}
+                        alt={trip.title}
+                        className="w-full h-full object-cover object-center transition-transform duration-500 group-hover:scale-105"
+                      />
+                      <div className="absolute inset-0 bg-gradient-to-t from-slate-950/70 via-slate-950/20 to-transparent" />
+                      {/* Source badge */}
+                      <div className={`absolute top-3 left-3 px-2.5 py-1 rounded-full text-[11px] font-bold flex items-center gap-1.5 ${
+                        isPurchased
+                          ? 'bg-emerald-500/90 text-white'
+                          : 'bg-violet-600/90 text-white'
+                      }`}>
+                        <span className="material-symbols-outlined text-[13px]">
+                          {isPurchased ? 'verified' : 'auto_awesome'}
+                        </span>
+                        {isPurchased ? 'Confirmed Booking' : 'AI-Crafted Plan'}
+                      </div>
+                      {/* Destination overlay */}
+                      <div className="absolute bottom-3 left-3 right-3">
+                        <h3 className="text-white font-bold text-base leading-tight drop-shadow">
+                          {trip.title}
+                        </h3>
+                        <p className="text-white/80 text-xs mt-0.5">{trip.destination}</p>
+                      </div>
+                    </div>
+
+                    {/* Card body */}
+                    <div className="p-4 flex flex-col gap-3 flex-1">
+                      <div className="flex items-center gap-3 text-xs text-slate-500 flex-wrap">
+                        <span className="flex items-center gap-1">
+                          <span className="material-symbols-outlined text-[14px] text-slate-400">calendar_today</span>
+                          {trip.dates}
+                        </span>
+                        {trip.duration && (
+                          <span className="flex items-center gap-1">
+                            <span className="material-symbols-outlined text-[14px] text-slate-400">schedule</span>
+                            {trip.duration.split('·')[0].trim()}
+                          </span>
+                        )}
+                        <span className="flex items-center gap-1">
+                          <span className="material-symbols-outlined text-[14px] text-slate-400">group</span>
+                          {trip.travelers} Travelers
+                        </span>
+                      </div>
+
+                      {trip.totalPrice && trip.totalPrice > 0 && (
+                        <div className="text-sm font-extrabold text-slate-900">
+                          ₹{trip.totalPrice.toLocaleString('en-IN')}
+                          <span className="text-xs font-normal text-slate-400 ml-1">total</span>
+                        </div>
+                      )}
+
+
+
+                      {/* Primary CTA */}
+                      <button
+                        type="button"
+                        id={`select-trip-${trip.id}`}
+                        onClick={() => {
+                          if (isPurchased && trip.bookedTripRef) {
+                            onSelectTrip?.(trip.bookedTripRef.id);
+                            setSelectedTripInHub(trip.bookedTripRef.id);
+                          } else {
+                            // For AI trips, open the detail view (AI plan mode)
+                            setSelectedTripInHub(trip.id);
+                          }
+                        }}
+                        className={`w-full py-2.5 rounded-xl text-xs font-bold flex items-center justify-center gap-2 transition-all cursor-pointer shadow-xs ${
+                          isPurchased
+                            ? 'bg-slate-900 hover:bg-slate-700 text-white'
+                            : 'bg-slate-100 hover:bg-slate-200 text-slate-800 border border-slate-200'
+                        }`}
+                      >
+                        <span className="material-symbols-outlined text-[15px]">
+                          {isPurchased ? 'open_in_new' : 'visibility'}
+                        </span>
+                        {isPurchased ? 'View Trip & Bookings →' : 'View AI Itinerary →'}
+                      </button>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+
+          {/* Start Planning CTA at bottom if has trips */}
+          {filteredTrips.length > 0 && (
+            <div className="mt-10 text-center">
+              <div className="inline-flex items-center gap-4 bg-white border border-slate-200 rounded-2xl px-6 py-4 shadow-xs">
+                <div className="w-10 h-10 rounded-xl bg-violet-50 text-violet-600 flex items-center justify-center">
+                  <span className="material-symbols-outlined text-xl">auto_awesome</span>
+                </div>
+                <div className="text-left">
+                  <p className="text-sm font-bold text-slate-900">Plan a new journey</p>
+                  <p className="text-xs text-slate-500">Let AI craft your perfect itinerary</p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => onNavigateTab?.('assistant')}
+                  className="px-4 py-2 rounded-full bg-violet-600 hover:bg-violet-700 text-white text-xs font-bold transition-all cursor-pointer shadow-xs"
+                >
+                  Start Planning
+                </button>
+              </div>
+            </div>
+          )}
+        </main>
+      </div>
+    );
+  }
+
+  // ──────────────────────────────────────────────────────────────────────
+  // DETAIL VIEW — show when a trip is selected
+  // ──────────────────────────────────────────────────────────────────────
   return (
     <div className="w-full">
       {/* ------------------------------------------------------------- */}
@@ -560,12 +1988,29 @@ export const TripsAndBookingsScreen: React.FC<TripsAndBookingsScreenProps> = ({
           <div className="space-y-1 text-left min-w-0">
             {/* Breadcrumb & Inline Trip Switcher */}
             <div className="flex items-center gap-2 text-xs text-slate-500 flex-wrap">
-              <span className="font-medium text-slate-400">Trips & Bookings</span>
+              {/* Back to hub button */}
+              <button
+                id="back-to-all-trips"
+                type="button"
+                onClick={() => setSelectedTripInHub(null)}
+                className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-slate-100 hover:bg-slate-200 border border-slate-200 text-slate-700 font-semibold text-xs transition-all cursor-pointer hover:border-slate-400"
+              >
+                <span className="material-symbols-outlined text-[14px]">arrow_back</span>
+                All My Trips
+              </button>
               {currentTrip ? (
                 <>
                   <span className="text-slate-300">/</span>
                   <span className="text-slate-700 font-semibold">
                     {currentTrip.destination}
+                  </span>
+                </>
+              ) : currentAiSession ? (
+                <>
+                  <span className="text-slate-300">/</span>
+                  <span className="text-violet-700 font-semibold flex items-center gap-1">
+                    <span className="material-symbols-outlined text-[13px]">auto_awesome</span>
+                    {currentAiSession.destination || 'AI Plan'}
                   </span>
                 </>
               ) : null}
@@ -708,6 +2153,130 @@ export const TripsAndBookingsScreen: React.FC<TripsAndBookingsScreenProps> = ({
       {/* VIEW 1: ACTIVE TIMELINE VIEW */}
       {activeSection === 'timeline' && (
         !currentTrip ? (
+          currentAiSession ? (
+            /* AI Itinerary Full Detail View */
+            <main className="max-w-[1280px] w-full mx-auto px-4 sm:px-6 lg:px-8 py-8 pb-24 space-y-8 animate-in fade-in duration-200">
+              {(() => {
+                const p = currentAiSession.proposal;
+                const DEST_IMAGES: Record<string, string> = {
+                  kerala: 'https://images.unsplash.com/photo-1602216056096-3b40cc0c9944?auto=format&fit=crop&w=1600&q=80',
+                  goa: 'https://images.unsplash.com/photo-1512343879784-a960bf40e7f2?auto=format&fit=crop&w=1600&q=80',
+                  turkey: 'https://images.unsplash.com/photo-1524231757912-21f4fe3a7200?auto=format&fit=crop&w=1600&q=80',
+                  istanbul: 'https://images.unsplash.com/photo-1524231757912-21f4fe3a7200?auto=format&fit=crop&w=1600&q=80',
+                  japan: 'https://images.unsplash.com/photo-1503899036084-c55cdd92da26?auto=format&fit=crop&w=1600&q=80',
+                  tokyo: 'https://images.unsplash.com/photo-1503899036084-c55cdd92da26?auto=format&fit=crop&w=1600&q=80',
+                  maldives: 'https://images.unsplash.com/photo-1514282401047-d79a71a590e8?auto=format&fit=crop&w=1600&q=80',
+                  bali: 'https://images.unsplash.com/photo-1537996194471-e657df975ab4?auto=format&fit=crop&w=1600&q=80',
+                  paris: 'https://images.unsplash.com/photo-1502602898657-3e91760cbb34?auto=format&fit=crop&w=1600&q=80',
+                  dubai: 'https://images.unsplash.com/photo-1512453979798-5ea266f8880c?auto=format&fit=crop&w=1600&q=80',
+                };
+                const dest = (currentAiSession.destination || '').toLowerCase();
+                let heroImg = 'https://images.unsplash.com/photo-1488646953014-85cb44e25828?auto=format&fit=crop&w=1600&q=80';
+                for (const [k, v] of Object.entries(DEST_IMAGES)) {
+                  if (dest.includes(k)) { heroImg = v; break; }
+                }
+                if (p?.heroImage) heroImg = p.heroImage;
+
+                return (
+                  <>
+                    {/* ── Hero Banner ── */}
+                    <div className="relative rounded-3xl overflow-hidden min-h-[280px] sm:min-h-[340px] shadow-lg group">
+                      <img src={heroImg} alt={currentAiSession.title || dest} className="absolute inset-0 w-full h-full object-cover object-center transition-transform duration-700 group-hover:scale-[1.02]" />
+                      <div className="absolute inset-0 bg-gradient-to-t from-slate-950/90 via-slate-950/40 to-transparent" />
+                      <div className="absolute inset-0 bg-gradient-to-r from-slate-950/60 via-transparent to-transparent" />
+                      <div className="relative h-full flex flex-col justify-end p-6 sm:p-8 min-h-[280px] sm:min-h-[340px]">
+                        <div className="absolute top-5 left-5">
+                          <span className="px-3 py-1.5 rounded-full bg-violet-600/80 backdrop-blur text-white text-xs font-bold flex items-center gap-1.5 border border-violet-400/30">
+                            <span className="material-symbols-outlined text-[13px]">auto_awesome</span>
+                            AI-Crafted Itinerary
+                          </span>
+                        </div>
+                        <div className="space-y-2">
+                          <p className="text-violet-300 text-xs font-semibold uppercase tracking-widest">Your AI Travel Plan</p>
+                          <h2 className="text-white text-2xl sm:text-3xl font-extrabold tracking-tight leading-tight drop-shadow">
+                            {currentAiSession.title || `${currentAiSession.destination} Journey`}
+                          </h2>
+                          <p className="text-white/70 text-sm">{currentAiSession.destination}</p>
+                          {p?.daysPlan && (
+                            <div className="flex items-center gap-3 pt-1 flex-wrap">
+                              <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/10 border border-white/20 text-white text-xs font-semibold">
+                                <span className="material-symbols-outlined text-[13px]">calendar_month</span>
+                                {p.daysPlan.length} Days
+                              </span>
+                              {p.flights?.recommended && (
+                                <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/10 border border-white/20 text-white text-xs font-semibold">
+                                  <span className="material-symbols-outlined text-[13px]">flight_takeoff</span>
+                                  {p.flights.recommended.stops || 'Direct'}
+                                </span>
+                              )}
+                              {p.hotels?.recommended && (
+                                <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/10 border border-white/20 text-white text-xs font-semibold">
+                                  <span className="material-symbols-outlined text-[13px]">hotel</span>
+                                  {p.hotels.recommended.name?.split('+')[0]?.trim() || 'Luxury Hotel'}
+                                </span>
+                              )}
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+
+                    {!p ? (
+                      /* No proposal fallback */
+                      <div className="text-center py-12 space-y-4 bg-white rounded-2xl border border-slate-200">
+                        <div className="w-14 h-14 rounded-2xl bg-violet-50 text-violet-400 mx-auto flex items-center justify-center">
+                          <span className="material-symbols-outlined text-2xl">auto_awesome</span>
+                        </div>
+                        <div className="space-y-1">
+                          <p className="font-bold text-slate-900">No detailed plan yet</p>
+                          <p className="text-sm text-slate-500">Continue your conversation with the AI Assistant to generate a full itinerary.</p>
+                        </div>
+                        <button type="button" onClick={() => onNavigateTab?.('assistant')} className="px-5 py-2.5 rounded-full bg-violet-600 hover:bg-violet-700 text-white text-xs font-bold transition-all cursor-pointer">
+                          Continue in AI Assistant
+                        </button>
+                      </div>
+                    ) : (
+                      <AiItineraryAddPanel
+                        proposal={p}
+                        session={currentAiSession}
+                        onOpenItineraryInBuilder={onOpenItineraryInBuilder}
+                        onNavigateTab={onNavigateTab as ((tab: string) => void) | undefined}
+                        showToast={showToast}
+                      />
+                    )}
+                  </>
+                );
+              })()}
+            </main>
+          ) : isTripsLoading ? (
+            /* Active Timeline Loading Skeleton */
+            <main className="max-w-[1280px] w-full mx-auto px-4 sm:px-6 lg:px-8 py-8 md:py-10 pb-24 md:pb-12 space-y-8 animate-in fade-in duration-200">
+              <div className="relative rounded-3xl overflow-hidden min-h-[280px] sm:min-h-[320px] bg-slate-100 border border-slate-200 shadow-sm flex flex-col justify-end p-6 sm:p-8">
+                <Skeleton className="absolute inset-0 w-full h-full rounded-none" />
+                <div className="relative space-y-3 z-10">
+                  <Skeleton className="w-28 h-6 rounded-full bg-slate-300/80" />
+                  <Skeleton className="w-3/5 h-8 rounded-xl bg-slate-300/80" />
+                  <Skeleton className="w-1/3 h-4 rounded bg-slate-300/60" />
+                </div>
+              </div>
+              <div className="space-y-4 max-w-3xl">
+                <div className="flex items-center gap-2">
+                  <span className="material-symbols-outlined text-blue-500 animate-spin text-[16px]">sync</span>
+                  <span className="text-xs font-semibold text-slate-500">Loading timeline events and bookings…</span>
+                </div>
+                {[1, 2, 3].map(idx => (
+                  <div key={idx} className="bg-white p-5 rounded-2xl border border-slate-200 space-y-3 shadow-xs">
+                    <div className="flex items-center justify-between">
+                      <Skeleton className="w-32 h-4 rounded" />
+                      <Skeleton className="w-20 h-5 rounded-full" />
+                    </div>
+                    <Skeleton className="w-2/3 h-5 rounded" />
+                    <Skeleton className="w-full h-3.5 rounded" />
+                  </div>
+                ))}
+              </div>
+            </main>
+          ) : (
           <main className="max-w-[1280px] w-full mx-auto px-4 sm:px-6 lg:px-8 py-12 md:py-16 text-center space-y-6 animate-in fade-in duration-200">
             <div className="max-w-md mx-auto p-8 rounded-3xl bg-white border border-slate-200/80 shadow-sm space-y-5">
               <div className="w-16 h-16 rounded-2xl bg-blue-50 text-blue-600 mx-auto flex items-center justify-center border border-blue-100 shadow-2xs">
@@ -741,6 +2310,7 @@ export const TripsAndBookingsScreen: React.FC<TripsAndBookingsScreenProps> = ({
               </div>
             </div>
           </main>
+          )
         ) : (
         <main className="max-w-[1280px] w-full mx-auto px-4 sm:px-6 lg:px-8 py-8 md:py-10 pb-24 md:pb-12 text-left space-y-8 animate-in fade-in duration-200">
           {/* Hero Banner: Luxury Visual with Live Status */}

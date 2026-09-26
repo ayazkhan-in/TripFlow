@@ -593,6 +593,7 @@ export const ALL_PREMADE_ITINERARIES: TripItinerary[] = [
 
 export interface AIGenerateParams {
   destination: string;
+  originCity?: string;
   subLocations?: string;
   days: number;
   dates: string;

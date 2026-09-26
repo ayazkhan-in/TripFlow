@@ -84,6 +84,7 @@ interface OperatorContextType {
   pendingCustomizedCount: number;
   highlightedBookingId: string | null;
   setHighlightedBookingId: (id: string | null) => void;
+  isLoadingData: boolean;
 }
 
 const OperatorContext = createContext<OperatorContextType | undefined>(undefined);
@@ -218,15 +219,16 @@ export const OperatorProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   });
 
   const [highlightedBookingId, setHighlightedBookingId] = useState<string | null>(null);
+  const [isLoadingData, setIsLoadingData] = useState<boolean>(true);
 
   // Fetch operator-isolated data from backend
   useEffect(() => {
+    setIsLoadingData(true);
     TripFlowApi.getMe().then(user => {
       const isOperator = user?.role?.toUpperCase() === 'OPERATOR';
       const isAlexDemo = !user || user.id === 'user-alex-007';
 
-      // Load cohorts
-      TripFlowApi.getTourCohorts().then(backendCohorts => {
+      const pCohorts = TripFlowApi.getTourCohorts().then(backendCohorts => {
         if (backendCohorts) {
           if (backendCohorts.length > 0) {
             setCohorts(backendCohorts.map((c: any) => ({
@@ -252,7 +254,7 @@ export const OperatorProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       });
 
       // Load guides
-      TripFlowApi.getTourGuides().then(backendGuides => {
+      const pGuides = TripFlowApi.getTourGuides().then(backendGuides => {
         if (backendGuides) {
           if (backendGuides.length > 0) {
             setGuides(backendGuides.map((g: any) => ({
@@ -275,7 +277,7 @@ export const OperatorProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       });
 
       // Load vendors
-      TripFlowApi.getVendors().then(backendVendors => {
+      const pVendors = TripFlowApi.getVendors().then(backendVendors => {
         if (backendVendors) {
           if (backendVendors.length > 0) {
             setVendors(backendVendors.map((v: any) => ({
@@ -293,7 +295,7 @@ export const OperatorProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       });
 
       // Load payments ledger
-      TripFlowApi.getPaymentsLedger().then(backendTransactions => {
+      const pPayments = TripFlowApi.getPaymentsLedger().then(backendTransactions => {
         if (backendTransactions) {
           if (backendTransactions.length > 0) {
             setPayments(backendTransactions.map((t: any) => ({
@@ -316,7 +318,7 @@ export const OperatorProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       });
 
       // Load calendar events
-      TripFlowApi.getCalendarEvents().then(backendEvents => {
+      const pCalendar = TripFlowApi.getCalendarEvents().then(backendEvents => {
         if (backendEvents) {
           if (backendEvents.length > 0) {
             setCalendarEvents(backendEvents.map((e: any) => ({
@@ -345,6 +347,12 @@ export const OperatorProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         setTransferBookings([]);
         setActivityBookings([]);
       }
+
+      Promise.allSettled([pCohorts, pGuides, pVendors, pPayments, pCalendar]).finally(() => {
+        setIsLoadingData(false);
+      });
+    }).catch(() => {
+      setIsLoadingData(false);
     });
   }, []);
 
@@ -803,6 +811,7 @@ export const OperatorProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         pendingCustomizedCount,
         highlightedBookingId,
         setHighlightedBookingId,
+        isLoadingData,
       }}
     >
       {children}

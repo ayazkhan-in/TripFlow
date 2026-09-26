@@ -4,6 +4,7 @@ import { formatINR } from '../../utils/pricing';
 import { OperatorCuratedPackage, getPackageAmenities } from '../../data/operatorPackagesData';
 import { CreateTourPackageModal } from './CreateTourPackageModal';
 import { LuxuryCard } from '../common/LuxuryCard';
+import { PackageCardSkeleton, TableSkeleton } from '../common/Skeleton';
 
 interface OperatorPackagesScreenProps {
   showToast: (msg: string) => void;
@@ -130,7 +131,7 @@ export const OperatorPackagesScreen: React.FC<OperatorPackagesScreenProps> = ({
   onNavigateToDiscover,
   onOpenCreatePackageModal,
 }) => {
-  const { packages, createPackage, packageBookings, pendingCustomizedCount } = useOperator();
+  const { packages, createPackage, packageBookings, pendingCustomizedCount, isLoadingData } = useOperator();
 
   const [activeSubTab, setActiveSubTab] = useState<'catalog' | 'studio' | 'insights'>('catalog');
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -588,6 +589,9 @@ export const OperatorPackagesScreen: React.FC<OperatorPackagesScreenProps> = ({
 
           {/* VIEW: TABLE LAYOUT */}
           {viewLayout === 'table' && (
+            isLoadingData && packages.length === 0 ? (
+              <TableSkeleton rows={6} cols={7} />
+            ) : (
             <div className="bg-white rounded-2xl border border-slate-200 overflow-hidden shadow-xs">
               <table className="w-full text-left text-xs">
                 <thead className="bg-slate-50 border-b border-slate-200 text-slate-500 font-bold uppercase tracking-wider text-[10px]">
@@ -654,6 +658,7 @@ export const OperatorPackagesScreen: React.FC<OperatorPackagesScreenProps> = ({
                 </tbody>
               </table>
             </div>
+            )
           )}
         </div>
       )}
