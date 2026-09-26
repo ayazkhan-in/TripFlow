@@ -44,22 +44,26 @@ export const OpsCommandHub: React.FC<OpsCommandHubProps> = ({
   useEffect(() => {
     TripFlowApi.getDisruptionAlerts().then(backendAlerts => {
       if (backendAlerts && backendAlerts.length > 0) {
-        setDisruptions(backendAlerts.map((a: any, idx: number) => {
-          const fallback = INITIAL_DISRUPTIONS[idx % INITIAL_DISRUPTIONS.length] || INITIAL_DISRUPTIONS[0];
-          return {
-            ...fallback,
-            id: a.id,
-            tourId: a.cohortId || fallback.tourId,
-            tourName: a.tourTitle || fallback.tourName,
-            severity: (a.severity === 'critical' || a.severity === 'high') ? a.severity : 'moderate',
-            severityLabel: a.severity === 'critical' ? 'Critical Disruption' : a.severity === 'high' ? 'High Impact' : 'Moderate Advisory',
-            rootCauseTitle: a.title || fallback.rootCauseTitle,
-            rootCauseDetail: a.description || fallback.rootCauseDetail,
-            aiRecommendation: a.actionSuggested || fallback.aiRecommendation,
-            actionText: a.isResolved ? 'Resolved' : fallback.actionText,
-            status: (a.isResolved ? 'resolved' : 'open') as 'open' | 'resolved',
-          };
-        }));
+        setDisruptions(prev => {
+          const next = [...prev];
+          backendAlerts.forEach((a: any, idx: number) => {
+            const fallback = INITIAL_DISRUPTIONS[idx] || INITIAL_DISRUPTIONS[0];
+            next[idx] = {
+              ...fallback,
+              id: a.id,
+              tourId: a.cohortId || fallback.tourId,
+              tourName: a.tourTitle || fallback.tourName,
+              severity: (a.severity === 'critical' || a.severity === 'high') ? a.severity : 'moderate',
+              severityLabel: a.severity === 'critical' ? 'Critical Disruption' : a.severity === 'high' ? 'High Impact' : 'Moderate Advisory',
+              rootCauseTitle: a.title || fallback.rootCauseTitle,
+              rootCauseDetail: a.description || fallback.rootCauseDetail,
+              aiRecommendation: a.actionSuggested || fallback.aiRecommendation,
+              actionText: a.isResolved ? 'Resolved' : fallback.actionText,
+              status: (a.isResolved ? 'resolved' : 'open') as 'open' | 'resolved',
+            };
+          });
+          return next;
+        });
       }
     });
   }, []);
@@ -413,6 +417,7 @@ export const OpsCommandHub: React.FC<OpsCommandHubProps> = ({
             </div>
 
             {/* Card 1: Critical Flight Delay (Tour #1024) */}
+            {disruptions[0] && (
             <article
               className={`bg-white border rounded-xl p-4 shadow-xs relative overflow-hidden transition-all ${
                 disruptions[0].status === 'resolved'
@@ -536,8 +541,10 @@ export const OpsCommandHub: React.FC<OpsCommandHubProps> = ({
                 </div>
               </div>
             </article>
+            )}
 
             {/* Card 2: High Urgency Hotel Outage (Tour #1081) */}
+            {disruptions[1] && (
             <article
               className={`bg-white border rounded-xl p-4 shadow-xs relative overflow-hidden transition-all ${
                 disruptions[1].status === 'resolved'
@@ -669,8 +676,10 @@ export const OpsCommandHub: React.FC<OpsCommandHubProps> = ({
                 </div>
               </div>
             </article>
+            )}
 
             {/* Card 3: Moderate Chauffeur Delay (Tour #1042) */}
+            {disruptions[2] && (
             <article
               className={`bg-white border rounded-xl p-4 shadow-xs relative overflow-hidden transition-all ${
                 disruptions[2].status === 'resolved'
@@ -785,6 +794,7 @@ export const OpsCommandHub: React.FC<OpsCommandHubProps> = ({
                 </div>
               </div>
             </article>
+            )}
           </section>
 
           {/* Right: Auxiliary Radar & Real-Time Event Stream (5 Cols) */}

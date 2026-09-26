@@ -852,6 +852,20 @@ async function main() {
     },
   });
 
+  await prisma.disruptionAlert.create({
+    data: {
+      cohortId: cohort2.id,
+      tourTitle: 'Goa Coastal & Spice Trail',
+      severity: 'moderate',
+      title: 'South Goa Highway Bridge Resurfacing',
+      description: 'Chauffeur reassigned via NH-66 bypass to maintain Fort Aguada arrival schedule.',
+      affectedTravelers: 4,
+      category: 'transport',
+      actionSuggested: 'Swap driver to Ramcharan S. and route via Atal Setu bypass.',
+      isResolved: false,
+    },
+  });
+
   console.log(`✅ Seeded cohorts and disruption alerts`);
 
   // 11. Seed Payments Ledger
