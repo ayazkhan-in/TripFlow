@@ -73,9 +73,7 @@ function BookitApp() {
   const [activeBookedTripId, setActiveBookedTripId] = useState<string | null>(null);
   const [currentItinerary, setCurrentItinerary] = useState<TripItinerary>(PREMADE_KERALA_ITINERARY);
   const [modifyingTripId, setModifyingTripId] = useState<string | null>(null);
-  const [vaultDocuments, setVaultDocuments] = useState<VaultDocument[]>(() => [
-    ...INITIAL_VAULT_DOCUMENTS,
-  ]);
+  const [vaultDocuments, setVaultDocuments] = useState<VaultDocument[]>([]);
   const [vaultSelectedTripId, setVaultSelectedTripId] = useState<string>('all');
   const [assistantInitialPrompt, setAssistantInitialPrompt] = useState<string | null>(null);
   const [isPaymentOverlayOpen, setIsPaymentOverlayOpen] = useState<boolean>(false);
@@ -194,7 +192,7 @@ function BookitApp() {
     // Clear all user-specific data so next login starts fresh
     setBookedTrips([]);
     setActiveBookedTripId(null);
-    setVaultDocuments([...INITIAL_VAULT_DOCUMENTS]);
+    setVaultDocuments([]);
     setCurrentRoute('landing');
     showToast('Signed out of TripFlow.');
   };
@@ -486,6 +484,7 @@ function BookitApp() {
                   onOpenProfile={() => setIsProfileOpen(true)}
                   onSignOut={handleSignOut}
                   onGoToLanding={() => setCurrentRoute('landing')}
+                  vaultCount={vaultDocuments.length}
                 />
               )}
 
@@ -504,6 +503,7 @@ function BookitApp() {
                     bookedTrips={bookedTrips}
                     activeBookedTripId={activeBookedTripId}
                     userName={authUser?.name || 'Traveler'}
+                    vaultCount={vaultDocuments.length}
                   />
                 )}
 
@@ -540,6 +540,7 @@ function BookitApp() {
                     documents={vaultDocuments}
                     selectedTripId={vaultSelectedTripId}
                     bookedTrips={bookedTrips}
+                    userName={authUser?.name || 'Traveler'}
                   />
                 )}
 
@@ -553,7 +554,7 @@ function BookitApp() {
                       setConsumerTab('assistant');
                     }}
                     onOpenPayment={handleOpenPayment}
-                    userName={authUser?.name || 'Sarah Mehta'}
+                    userName={authUser?.name || 'Traveler'}
                     userAvatar={authUser?.avatar || USER_AVATAR}
                   />
                 )}

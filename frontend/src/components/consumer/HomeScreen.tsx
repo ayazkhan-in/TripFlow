@@ -21,6 +21,7 @@ interface HomeScreenProps {
   bookedTrips?: BookedTrip[];
   activeBookedTripId?: string | null;
   userName?: string;
+  vaultCount?: number;
 }
 
 export const HomeScreen: React.FC<HomeScreenProps> = ({
@@ -34,6 +35,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
   bookedTrips = [],
   activeBookedTripId,
   userName = 'Traveler',
+  vaultCount = 0,
 }) => {
   const [filter, setFilter] = useState<'all' | 'domestic' | 'international'>('all');
   const { packages: operatorPackages } = useOperator();
@@ -584,7 +586,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
               <span className="material-symbols-outlined text-2xl">lock</span>
             </span>
             <span className="text-[10px] font-bold text-emerald-800 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200">
-              Offline Docs
+              {vaultCount} Doc{vaultCount === 1 ? '' : 's'}
             </span>
           </div>
           <div>

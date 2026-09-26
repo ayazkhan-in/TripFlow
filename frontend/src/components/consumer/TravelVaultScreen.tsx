@@ -11,6 +11,7 @@ interface TravelVaultScreenProps {
   documents?: VaultDocument[];
   selectedTripId?: string;
   bookedTrips?: BookedTrip[];
+  userName?: string;
 }
 
 export const TravelVaultScreen: React.FC<TravelVaultScreenProps> = ({
@@ -19,12 +20,13 @@ export const TravelVaultScreen: React.FC<TravelVaultScreenProps> = ({
   documents: externalDocuments,
   selectedTripId: externalTripId,
   bookedTrips = [],
+  userName = 'Traveler',
 }) => {
-  const [documents, setDocuments] = useState<VaultDocument[]>(externalDocuments || INITIAL_VAULT_DOCUMENTS);
+  const [documents, setDocuments] = useState<VaultDocument[]>(externalDocuments || []);
   const [selectedTrip, setSelectedTrip] = useState<string>(externalTripId || 'all');
 
   useEffect(() => {
-    if (externalDocuments && externalDocuments.length > 0) {
+    if (externalDocuments !== undefined) {
       setDocuments(externalDocuments);
     }
   }, [externalDocuments]);
@@ -45,8 +47,8 @@ export const TravelVaultScreen: React.FC<TravelVaultScreenProps> = ({
   // New Document Form State
   const [newTitle, setNewTitle] = useState('');
   const [newCategory, setNewCategory] = useState<VaultCategory>('passport');
-  const [newTripId, setNewTripId] = useState('kerala-escape');
-  const [newTravelerName, setNewTravelerName] = useState('Sarah Mehta');
+  const [newTripId, setNewTripId] = useState('trip-1');
+  const [newTravelerName, setNewTravelerName] = useState(userName);
   const [newDocNumber, setNewDocNumber] = useState('');
   const [newExpiryDate, setNewExpiryDate] = useState('');
   const [newNotes, setNewNotes] = useState('');

@@ -147,46 +147,60 @@ router.post('/checkout', optionalAuth, async (req: AuthenticatedRequest, res: Re
               },
             })),
           },
-        },
-      });
-      itineraryId = savedItinerary.id;
-    }
+    // Fetch user details for real personalization of booking and vault docs
+    const currentUser = await prisma.user.findUnique({
+      where: { id: userId },
+      select: { name: true, email: true },
+    });
+    const travelerName = currentUser?.name || req.user?.name || 'Traveler';
 
-    // 2. Synthesize Logistics Bento Details
+    // 2. Synthesize Logistics Details dynamically based on Destination & Itinerary
+    const dest = itinerary.destination || 'Kerala';
+    const firstCity = itinerary.routeStops?.[0]?.city || dest;
+    const destCode = dest.substring(0, 3).toUpperCase();
+    const flightNumber = `AI-${Math.floor(200 + Math.random() * 700)}`;
+    const pnr = `${destCode}${Math.floor(100 + Math.random() * 900)}`;
+
     const flightDetails = {
       airline: 'Air India',
-      flightNumber: 'AI-682',
-      pnr: `KOK${Math.floor(100 + Math.random() * 900)}`,
-      route: 'BOM ➔ COK',
+      flightNumber,
+      pnr,
+      route: `BOM ➔ ${destCode}`,
       departureTime: '11:30 AM',
       arrivalTime: '01:30 PM',
       terminal: 'Terminal 2',
-      gate: 'Gate 42B',
+      gate: `Gate ${Math.floor(10 + Math.random() * 40)}B`,
       seat: '14A & 14B (Premium Economy)',
       baggage: '2 x 30kg Priority Tagged',
       status: 'Confirmed',
     };
 
+    // Extract hotel from itinerary if present, otherwise default to destination luxury resort
+    const hotelItem = itinerary.days?.flatMap((d: any) => d.items || []).find((it: any) => it.category === 'hotel');
+    const hotelName = hotelItem?.title || itinerary.routeStops?.[0]?.hotelName || `${dest} Palace & Heritage Resort`;
     const hotelCheckIn = {
-      hotelName: 'Brunton Boatyard — CGH Earth',
-      roomType: 'Sea Facing Heritage Suite',
-      checkInDate: 'Oct 14, 2025',
+      hotelName,
+      roomType: 'Sea / Mountain Facing Heritage Suite',
+      checkInDate: itinerary.dates?.split('–')[0]?.trim() || 'Day 1 of Circuit',
       checkInTime: '02:00 PM',
-      checkOutDate: 'Oct 17, 2025',
-      voucherRef: `VCHR-BB-${Math.floor(1000 + Math.random() * 9000)}`,
-      address: '1/498, Calvathy Road, Fort Kochi, Kerala 682001',
+      checkOutDate: itinerary.dates?.split('–')[1]?.trim() || 'Circuit Departure',
+      voucherRef: `VCHR-${destCode}-${Math.floor(1000 + Math.random() * 9000)}`,
+      address: `1/498, Prime Boulevard, ${firstCity}`,
       inclusions: ['Breakfast Buffet', 'High Tea', 'Sunset Harbour Cruise', 'Complimentary WiFi'],
-      nights: 3,
+      nights: itinerary.days?.length ? Math.max(1, itinerary.days.length - 1) : 3,
     };
 
+    const chauffeurNames = ['Arun V.', 'Rajesh K.', 'Sandeep M.', 'Deepak N.'];
+    const chauffeurName = chauffeurNames[Math.floor(Math.random() * chauffeurNames.length)];
+    const plateLetters = ['KL', 'DL', 'MH', 'KA', 'RJ'][Math.floor(Math.random() * 5)];
     const carDetails = {
       vehicleType: 'Executive MPV',
       vehicleModel: 'Toyota Innova Crysta (Dual AC)',
-      licensePlate: 'KL-07-CD-4092',
-      chauffeurName: 'Arun V.',
+      licensePlate: `${plateLetters}-07-CD-${Math.floor(1000 + Math.random() * 9000)}`,
+      chauffeurName,
       chauffeurPhone: '+91 98470 12345',
       chauffeurRating: '4.98 ★ (420+ tours)',
-      pickupLocation: 'Cochin International Airport T3 (Arrival Gate 4)',
+      pickupLocation: `${firstCity} Airport (Arrival Gate 4)`,
       pickupTime: '01:45 PM',
       serviceScope: 'Dedicated 24/7 on standby for entirety of circuit',
       gpsTrackingActive: true,
@@ -198,9 +212,9 @@ router.post('/checkout', optionalAuth, async (req: AuthenticatedRequest, res: Re
         itineraryId,
         userId,
         bookingRef,
-        title: itinerary.title || 'Personalized Luxury Circuit',
-        destination: itinerary.destination || 'Kerala',
-        dates: itinerary.dates || '5 Days · Personalized Circuit',
+        title: itinerary.title || `${dest} Luxury Circuit`,
+        destination: dest,
+        dates: itinerary.dates || `${itinerary.days?.length || 5} Days · Personalized Circuit`,
         duration: `${itinerary.days?.length || 5} Days`,
         travelers: Number(itinerary.travelers || 2),
         totalPrice: Number(totalPrice),
@@ -208,6 +222,7 @@ router.post('/checkout', optionalAuth, async (req: AuthenticatedRequest, res: Re
         status: 'CONFIRMED',
         heroImageUrl:
           itinerary.heroImage ||
+          itinerary.heroImageUrl ||
           'https://images.unsplash.com/photo-1549317661-bd32c8ce0db2?auto=format&fit=crop&w=800&q=80',
         flightDetails,
         hotelCheckIn,
@@ -235,22 +250,22 @@ router.post('/checkout', optionalAuth, async (req: AuthenticatedRequest, res: Re
               userId,
               category: 'flight',
               title: `${flightDetails.airline} ${flightDetails.flightNumber} E-Ticket`,
-              travelerName: 'Sarah Mehta',
+              travelerName,
               documentNumber: flightDetails.pnr,
               issueDate: 'Today',
-              expiryDate: 'Oct 14, 2025',
+              expiryDate: 'Valid for Travel',
               status: 'confirmed',
               fileUrl: 'https://images.unsplash.com/photo-1544620347-c4fd4a3d5957?w=800&q=80',
               filePublicId: `flight_${Date.now()}`,
               fileType: 'pdf',
               fileSize: '1.4 MB',
-              notes: 'Air India non-stop flight confirmed. Priority boarding tags.',
+              notes: `${flightDetails.airline} non-stop flight confirmed. Priority boarding tags for ${travelerName}.`,
             },
             {
               userId,
               category: 'hotel',
               title: `${hotelCheckIn.hotelName} Luxury Stay Voucher`,
-              travelerName: 'Sarah Mehta',
+              travelerName,
               documentNumber: hotelCheckIn.voucherRef,
               issueDate: 'Today',
               expiryDate: hotelCheckIn.checkOutDate,
@@ -259,13 +274,13 @@ router.post('/checkout', optionalAuth, async (req: AuthenticatedRequest, res: Re
               filePublicId: `hotel_${Date.now()}`,
               fileType: 'pdf',
               fileSize: '2.1 MB',
-              notes: 'Sea Facing Heritage Suite reserved with high tea and breakfast included.',
+              notes: `Luxury suite reserved with high tea and gourmet breakfast included for ${travelerName}.`,
             },
             {
               userId,
               category: 'transit',
               title: `Dedicated Chauffeur Manifest — ${carDetails.chauffeurName}`,
-              travelerName: 'Sarah Mehta',
+              travelerName,
               documentNumber: carDetails.licensePlate,
               issueDate: 'Today',
               status: 'confirmed',
@@ -273,7 +288,7 @@ router.post('/checkout', optionalAuth, async (req: AuthenticatedRequest, res: Re
               filePublicId: `chauffeur_${Date.now()}`,
               fileType: 'pdf',
               fileSize: '890 KB',
-              notes: 'Chauffeur on standby with chilled tender coconuts on arrival.',
+              notes: `Chauffeur ${carDetails.chauffeurName} on standby with executive MPV on arrival for ${travelerName}.`,
             },
           ],
         },

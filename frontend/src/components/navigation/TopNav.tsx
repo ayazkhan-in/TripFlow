@@ -12,6 +12,7 @@ interface TopNavProps {
   onOpenProfile?: () => void;
   onSignOut?: () => void;
   onGoToLanding?: () => void;
+  vaultCount?: number;
 }
 
 export const TopNav: React.FC<TopNavProps> = ({
@@ -23,6 +24,7 @@ export const TopNav: React.FC<TopNavProps> = ({
   onOpenProfile,
   onSignOut,
   onGoToLanding,
+  vaultCount = 0,
 }) => {
   const [isProfileMenuOpen, setIsProfileMenuOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
@@ -37,9 +39,9 @@ export const TopNav: React.FC<TopNavProps> = ({
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  const userName = user?.name || 'Sarah Mehta';
+  const userName = user?.name || 'Traveler';
   const userAvatar = user?.avatar || USER_AVATAR;
-  const userMembership = user?.membership || 'Concierge Elite Member';
+  const userMembership = user?.membership || 'Concierge Member';
 
   const handleProfileClick = () => {
     setIsProfileMenuOpen(false);
@@ -217,7 +219,7 @@ export const TopNav: React.FC<TopNavProps> = ({
                 <div>
                   <div className="text-xs font-bold text-[#111827]">{userName}</div>
                   <div className="text-[11px] text-[#6B7280] truncate">
-                    {user?.email || 'sarah.mehta@concierge.tripflow.io'}
+                    {user?.email || 'traveler@tripflow.io'}
                   </div>
                 </div>
                 <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-blue-50 text-[#004AC6] border border-blue-200">
@@ -253,7 +255,7 @@ export const TopNav: React.FC<TopNavProps> = ({
                   className="w-full px-4 py-2 text-left text-xs text-[#374151] hover:bg-[#F0F3FF] hover:text-[#004AC6] flex items-center gap-2.5 cursor-pointer font-medium"
                 >
                   <span className="material-symbols-outlined text-base text-[#737686]">lock</span>
-                  <span>Travel Vault (12 Documents)</span>
+                  <span>Travel Vault ({vaultCount} Document{vaultCount === 1 ? '' : 's'})</span>
                 </button>
 
                 {onGoToLanding && (
