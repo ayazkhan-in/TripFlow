@@ -151,8 +151,8 @@ router.get('/bookings', async (_req: Request, res: Response) => {
   }
 });
 
-// GET /api/v1/operator/alerts - Disruption alerts
-router.get('/alerts', async (_req: Request, res: Response) => {
+// GET /api/v1/operator/alerts (and /disruptions alias)
+router.get(['/alerts', '/disruptions'], async (_req: Request, res: Response) => {
   try {
     const alerts = await prisma.disruptionAlert.findMany({
       orderBy: { createdAt: 'desc' },
@@ -163,8 +163,8 @@ router.get('/alerts', async (_req: Request, res: Response) => {
   }
 });
 
-// PUT /api/v1/operator/alerts/:id/resolve - Resolve disruption alert
-router.put('/alerts/:id/resolve', async (req: Request, res: Response) => {
+// PUT /api/v1/operator/alerts/:id/resolve (and /disruptions/:id/resolve alias)
+router.put(['/alerts/:id/resolve', '/disruptions/:id/resolve'], async (req: Request, res: Response) => {
   try {
     const alert = await prisma.disruptionAlert.update({
       where: { id: req.params.id },
