@@ -4,6 +4,9 @@ import {
   OperatorStayBooking,
   OperatorTransferBooking,
   OperatorActivityBooking,
+  OPERATOR_FLIGHT_TICKETS,
+  OPERATOR_STAY_BOOKINGS,
+  OPERATOR_TRANSFER_BOOKINGS,
 } from '../../data/operatorBookingsData';
 import { OperatorTab } from '../../types/travel';
 import { formatCurrency } from '../../utils/pricing';
