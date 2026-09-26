@@ -1,11 +1,14 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useRef } from 'react';
 import { ConsumerTab, SavedJourney } from '../../types/travel';
+import { TripItinerary } from '../../types/itinerary';
+import { KERALA_HERO_IMAGE } from '../../data/mockData';
 import {
-  KERALA_HERO_IMAGE,
-  SAVED_JOURNEYS,
-} from '../../data/mockData';
+  OperatorCuratedPackage,
+  INITIAL_OPERATOR_PACKAGES,
+  getPackageAmenities,
+} from '../../data/operatorPackagesData';
+import { useOperator } from '../../context/OperatorContext';
 import { LuxuryCard } from '../common/LuxuryCard';
-import { TripFlowApi } from '../../services/api';
 
 interface HomeScreenProps {
   onNavigateTab: (tab: ConsumerTab) => void;
@@ -13,6 +16,7 @@ interface HomeScreenProps {
   onOpenDirections: () => void;
   onOpenContactDriver: () => void;
   onSelectJourneyDetails: (journey: SavedJourney) => void;
+  onSelectPremadeTrip?: (itinerary: TripItinerary) => void;
 }
 
 export const HomeScreen: React.FC<HomeScreenProps> = ({
@@ -21,28 +25,58 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
   onOpenDirections,
   onOpenContactDriver,
   onSelectJourneyDetails,
+  onSelectPremadeTrip,
 }) => {
   const [filter, setFilter] = useState<'all' | 'domestic' | 'international'>('all');
-  const [journeys, setJourneys] = useState<SavedJourney[]>(SAVED_JOURNEYS);
+  const { packages: operatorPackages } = useOperator();
+  const sourcePackages = operatorPackages && operatorPackages.length > 0
+    ? operatorPackages
+    : INITIAL_OPERATOR_PACKAGES;
 
-  useEffect(() => {
-    TripFlowApi.getSavedJourneys().then(backendJourneys => {
-      if (backendJourneys && backendJourneys.length > 0) {
-        setJourneys(backendJourneys);
-      }
-    });
-  }, []);
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
 
-  const toggleBookmark = (id: string) => {
-    setJourneys(prev =>
-      prev.map(j => (j.id === id ? { ...j, isBookmarked: !j.isBookmarked } : j))
-    );
+  const scrollLeft = () => {
+    if (scrollContainerRef.current) {
+      scrollContainerRef.current.scrollBy({ left: -320, behavior: 'smooth' });
+    }
   };
 
-  const filteredJourneys = journeys.filter(j => {
+  const scrollRight = () => {
+    if (scrollContainerRef.current) {
+      scrollContainerRef.current.scrollBy({ left: 320, behavior: 'smooth' });
+    }
+  };
+
+  const filteredPackages = sourcePackages.filter(pkg => {
     if (filter === 'all') return true;
-    return j.category === filter;
+    if (filter === 'domestic') return pkg.isDomestic;
+    if (filter === 'international') return !pkg.isDomestic;
+    return true;
   });
+
+  const handleSelectPackage = (pkg: OperatorCuratedPackage) => {
+    if (onSelectPremadeTrip) {
+      onSelectPremadeTrip(pkg.itineraryTemplate);
+    } else {
+      const savedJourney: SavedJourney = {
+        id: pkg.id,
+        title: pkg.title,
+        origin: pkg.routeStops[0]?.city || pkg.destination,
+        destination: pkg.destination,
+        dates: pkg.dates,
+        duration: `${pkg.days} Days`,
+        travelers: pkg.travelers,
+        price: `₹${pkg.totalPriceINR.toLocaleString('en-IN')}`,
+        category: pkg.isDomestic ? 'domestic' : 'international',
+        isBookmarked: false,
+        image: pkg.heroImage,
+        rating: `${pkg.operator.rating}/5`,
+        description: `${pkg.days} Days · ${pkg.destination}, ${pkg.country} · ${pkg.tag}. Curated by ${pkg.operator.name}.`,
+        amenities: getPackageAmenities(pkg),
+      };
+      onSelectJourneyDetails(savedJourney);
+    }
+  };
 
   return (
     <div className="w-full max-w-[1280px] mx-auto px-4 sm:px-6 lg:px-8 py-8 md:py-10 pb-24 md:pb-12 text-left space-y-8 font-sans">
@@ -111,7 +145,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
       {/* REAL-TIME TRAVEL TELEMETRY TICKER                             */}
       {/* ------------------------------------------------------------- */}
       <section className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
-        <div className="bg-white p-3.5 rounded-2xl border border-slate-200 shadow-2xs flex items-center gap-3">
+        <div className="bg-white p-3.5 rounded-2xl border border-slate-200 shadow-2xs flex items-center gap-3 hover:-translate-y-0.5 hover:border-slate-300 hover:shadow-xs transition-all duration-200">
           <span className="w-10 h-10 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center shrink-0 border border-indigo-100">
             <span className="material-symbols-outlined text-xl">flight</span>
           </span>
@@ -122,7 +156,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
           </div>
         </div>
 
-        <div className="bg-white p-3.5 rounded-2xl border border-slate-200 shadow-2xs flex items-center gap-3">
+        <div className="bg-white p-3.5 rounded-2xl border border-slate-200 shadow-2xs flex items-center gap-3 hover:-translate-y-0.5 hover:border-slate-300 hover:shadow-xs transition-all duration-200">
           <span className="w-10 h-10 rounded-xl bg-sky-50 text-sky-600 flex items-center justify-center shrink-0 border border-sky-100">
             <span className="material-symbols-outlined text-xl">directions_car</span>
           </span>
@@ -133,7 +167,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
           </div>
         </div>
 
-        <div className="bg-white p-3.5 rounded-2xl border border-slate-200 shadow-2xs flex items-center gap-3">
+        <div className="bg-white p-3.5 rounded-2xl border border-slate-200 shadow-2xs flex items-center gap-3 hover:-translate-y-0.5 hover:border-slate-300 hover:shadow-xs transition-all duration-200">
           <span className="w-10 h-10 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center shrink-0 border border-amber-100">
             <span className="material-symbols-outlined text-xl">partly_cloudy_day</span>
           </span>
@@ -144,7 +178,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
           </div>
         </div>
 
-        <div className="bg-white p-3.5 rounded-2xl border border-slate-200 shadow-2xs flex items-center gap-3">
+        <div className="bg-white p-3.5 rounded-2xl border border-slate-200 shadow-2xs flex items-center gap-3 hover:-translate-y-0.5 hover:border-slate-300 hover:shadow-xs transition-all duration-200">
           <span className="w-10 h-10 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center shrink-0 border border-emerald-100">
             <span className="material-symbols-outlined text-xl">support_agent</span>
           </span>
@@ -160,15 +194,15 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
       </section>
 
       {/* ------------------------------------------------------------- */}
-      {/* HERO SHOWCASE: ACTIVE JOURNEY FEATURED BENTO                   */}
+      {/* HERO SHOWCASE: ACTIVE JOURNEY FEATURED BENTO (COMPACT)       */}
       {/* ------------------------------------------------------------- */}
-      <section className="space-y-4">
+      <section className="space-y-3">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
             <span className="material-symbols-outlined text-blue-600 text-xl">
               near_me
             </span>
-            <h2 className="text-xl font-bold text-slate-900 tracking-tight">Active Itinerary</h2>
+            <h2 className="text-lg font-bold text-slate-900 tracking-tight">Active Itinerary</h2>
           </div>
           <button
             type="button"
@@ -180,164 +214,145 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
           </button>
         </div>
 
-        {/* Featured Bento Container */}
-        <div className="relative bg-white rounded-3xl border border-slate-200 shadow-xs overflow-hidden flex flex-col lg:flex-row transition-all hover:border-slate-300">
-          {/* Media Visual Block */}
-          <div className="lg:w-7/12 relative min-h-[340px] md:min-h-[420px] bg-slate-900 overflow-hidden group">
+        {/* Compact Bento Container */}
+        <div className="relative bg-white rounded-2xl md:rounded-3xl border border-slate-200 shadow-xs overflow-hidden flex flex-col lg:flex-row transition-all hover:border-slate-300 hover:shadow-sm">
+          {/* Media Visual Block (Compact Widescreen Accent) */}
+          <div className="w-full lg:w-[320px] xl:w-[340px] shrink-0 relative min-h-[160px] sm:min-h-[180px] lg:min-h-full aspect-video lg:aspect-auto bg-slate-900 overflow-hidden group">
             <img
               alt="Kerala Escape backwaters and Munnar tea hills"
               className="w-full h-full object-cover transition-transform duration-700 ease-out group-hover:scale-105"
               src={KERALA_HERO_IMAGE}
             />
-            <div className="absolute inset-0 bg-gradient-to-t from-slate-950/80 via-slate-950/20 to-transparent pointer-events-none"></div>
+            <div className="absolute inset-0 bg-gradient-to-t from-slate-950/85 via-slate-950/25 to-transparent pointer-events-none"></div>
 
-            {/* Floating Category & Weather Pill */}
-            <div className="absolute top-4 left-4 flex items-center gap-2 flex-wrap">
-              <span className="backdrop-blur-md bg-white/95 px-3 py-1 rounded-full text-slate-900 text-xs font-bold shadow-xs flex items-center gap-1.5 border border-white/50">
+            {/* Floating Live Pill & Weather */}
+            <div className="absolute top-3 left-3 right-3 flex items-center justify-between gap-1.5 flex-wrap">
+              <span className="backdrop-blur-md bg-white/95 px-2.5 py-0.5 rounded-full text-slate-900 text-[11px] font-bold shadow-xs flex items-center gap-1.5 border border-white/60">
                 <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
-                Live Journey · Day 2 of 6
+                Day 2 of 6 · Live
               </span>
-              <span className="backdrop-blur-md bg-white/95 px-2.5 py-1 rounded-full text-slate-900 text-xs font-semibold shadow-xs flex items-center gap-1 border border-white/50">
-                <span className="material-symbols-outlined text-sm text-amber-500">
+              <span className="backdrop-blur-md bg-white/95 px-2 py-0.5 rounded-full text-slate-800 text-[11px] font-semibold shadow-xs flex items-center gap-1 border border-white/60">
+                <span className="material-symbols-outlined text-[13px] text-amber-500">
                   partly_cloudy_day
                 </span>
                 24°C Munnar
               </span>
             </div>
 
-            {/* Bottom Overlay on Media for Mobile / Tablet */}
-            <div className="absolute bottom-5 left-5 right-5 text-white">
-              <span className="text-[11px] font-mono uppercase tracking-wider text-blue-300 font-bold">
+            {/* Bottom Overlay on Media */}
+            <div className="absolute bottom-3 left-3 right-3 text-white">
+              <span className="text-[10px] font-mono uppercase tracking-wider text-blue-300 font-bold block">
                 Luxury Circuit
               </span>
-              <h3 className="text-2xl sm:text-3xl font-extrabold text-white drop-shadow-sm">Kerala Escape</h3>
-              <p className="text-xs text-white/90 mt-1 flex items-center gap-2">
+              <h3 className="text-xl sm:text-2xl font-extrabold text-white drop-shadow-sm leading-tight">Kerala Escape</h3>
+              <div className="flex items-center gap-1.5 text-[11px] text-white/90 mt-0.5 font-medium">
                 <span>Kochi</span>
                 <span className="text-blue-300">→</span>
-                <span>Munnar Tea Hills</span>
+                <span>Munnar</span>
                 <span className="text-blue-300">→</span>
-                <span>Alleppey Houseboat</span>
-              </p>
+                <span>Alleppey</span>
+              </div>
             </div>
           </div>
 
-          {/* Trip Details & Embedded 'Up Next' Area */}
-          <div className="lg:w-5/12 p-6 md:p-8 flex flex-col justify-between bg-white text-left">
-            <div>
-              <div className="flex items-center justify-between">
-                <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs font-bold">
+          {/* Compact Trip Details & Up Next Content Area */}
+          <div className="flex-1 p-4 sm:p-5 flex flex-col justify-between bg-white text-left min-w-0">
+            {/* Header Strip: Reference, Status & Key Metrics */}
+            <div className="flex flex-wrap items-center justify-between gap-2 pb-2.5 border-b border-slate-100">
+              <div className="flex items-center gap-2">
+                <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-emerald-50 border border-emerald-200 text-emerald-800 text-[11px] font-bold">
                   <span className="w-1.5 h-1.5 rounded-full bg-emerald-600 animate-pulse"></span>
                   Confirmed Booking
-                </div>
-                <span className="text-xs font-mono text-slate-500 font-bold tracking-tight">
+                </span>
+                <span className="text-[11px] font-mono text-slate-500 font-bold tracking-tight">
                   REF #KL-9402
                 </span>
               </div>
 
-              <div className="mt-3">
-                <h3 className="text-2xl text-slate-900 font-extrabold tracking-tight">
-                  Kerala Escape
-                </h3>
-
-                {/* Route Badge */}
-                <div className="mt-2.5 inline-flex items-center gap-2 px-3 py-1.5 rounded-xl bg-slate-100 border border-slate-200 text-slate-600 text-xs font-semibold">
-                  <span className="text-slate-900 font-bold">Kochi</span>
-                  <span className="material-symbols-outlined text-sm text-blue-600">arrow_forward</span>
-                  <span className="text-blue-600 font-bold">Munnar</span>
-                  <span className="material-symbols-outlined text-sm text-slate-400">arrow_forward</span>
-                  <span className="text-slate-500">Alleppey</span>
+              {/* Compact Metrics Row */}
+              <div className="flex items-center gap-3.5 text-xs">
+                <div className="flex items-center gap-1">
+                  <span className="text-slate-400 text-[11px] uppercase font-bold">Dates:</span>
+                  <span className="text-slate-900 font-bold text-[11px]">June 14–19</span>
                 </div>
-              </div>
-
-              {/* Metric Strip */}
-              <div className="grid grid-cols-3 gap-3 my-5 py-4 border-y border-slate-200 text-left">
-                <div>
-                  <span className="text-slate-400 text-[10px] block uppercase font-bold tracking-wider">
-                    Dates
-                  </span>
-                  <span className="text-slate-900 text-xs font-extrabold mt-0.5 block">
-                    June 14–19
-                  </span>
+                <div className="hidden sm:flex items-center gap-1">
+                  <span className="text-slate-400 text-[11px] uppercase font-bold">Party:</span>
+                  <span className="text-slate-900 font-bold text-[11px]">2 Guests</span>
                 </div>
-                <div>
-                  <span className="text-slate-400 text-[10px] block uppercase font-bold tracking-wider">
-                    Travelers
-                  </span>
-                  <span className="text-slate-900 text-xs font-extrabold mt-0.5 block">
-                    2 Guests
-                  </span>
-                </div>
-                <div>
-                  <span className="text-slate-400 text-[10px] block uppercase font-bold tracking-wider">
-                    Total Value
-                  </span>
-                  <span className="text-blue-600 text-xs font-mono font-extrabold mt-0.5 block">
-                    ₹42,800
-                  </span>
-                </div>
-              </div>
-
-              {/* Embedded 'Up Next' Live Card */}
-              <div className="bg-slate-50 rounded-2xl p-4 border border-slate-200 relative overflow-hidden text-left space-y-2">
-                <div className="absolute top-0 left-0 w-1.5 h-full bg-blue-600"></div>
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-1.5">
-                    <span className="text-blue-600 text-[11px] uppercase font-extrabold tracking-wide flex items-center gap-1">
-                      <span className="material-symbols-outlined text-sm">schedule</span>
-                      Up Next
-                    </span>
-                    <span className="text-slate-400 text-[11px]">• 10:30 AM</span>
-                  </div>
-                  <span className="px-2 py-0.5 bg-white text-slate-700 rounded-md text-[11px] font-mono border border-slate-200 font-bold">
-                    2 hrs away
-                  </span>
-                </div>
-
-                <h4 className="text-sm font-bold text-slate-900">
-                  Munnar Tea Estate Guided Walk & Sommelier Tasting
-                </h4>
-                <p className="text-slate-600 text-xs leading-relaxed line-clamp-2">
-                  Private hand-plucking session and heritage tea sommelier walk with estate botanist. Private Innova waiting at lobby.
-                </p>
-
-                {/* Actions */}
-                <div className="mt-3 flex items-center gap-2 pt-2 border-t border-slate-200">
-                  <button
-                    type="button"
-                    onClick={() => onNavigateTab('trips')}
-                    className="px-3.5 py-1.5 rounded-full bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold flex items-center gap-1.5 transition-colors cursor-pointer shadow-xs"
-                  >
-                    <span className="material-symbols-outlined text-sm">visibility</span>
-                    <span>View Timeline</span>
-                  </button>
-                  <button
-                    type="button"
-                    onClick={onOpenDirections}
-                    className="px-3.5 py-1.5 rounded-full bg-white hover:bg-slate-100 text-slate-800 text-xs font-bold border border-slate-200 flex items-center gap-1.5 transition-colors cursor-pointer shadow-2xs"
-                  >
-                    <span className="material-symbols-outlined text-sm text-blue-600">directions</span>
-                    <span>Directions</span>
-                  </button>
-                  <button
-                    type="button"
-                    onClick={onOpenContactDriver}
-                    className="ml-auto p-2 text-slate-600 hover:text-slate-900 rounded-full hover:bg-white transition-colors cursor-pointer border border-transparent hover:border-slate-200"
-                    title="Call Chauffeur Arun V."
-                  >
-                    <span className="material-symbols-outlined text-base">call</span>
-                  </button>
+                <div className="flex items-center gap-1">
+                  <span className="text-slate-400 text-[11px] uppercase font-bold">Total:</span>
+                  <span className="text-blue-600 font-mono font-extrabold text-[11px]">₹42,800</span>
                 </div>
               </div>
             </div>
 
-            {/* Footer Guarantee */}
-            <div className="mt-5 pt-3.5 flex items-center justify-between text-xs text-slate-500 border-t border-slate-200">
-              <span className="flex items-center gap-1.5 font-medium">
-                <span className="material-symbols-outlined text-base text-blue-600">verified_user</span>
+            {/* Embedded Compact 'Up Next' Live Card */}
+            <div className="my-2 bg-slate-50/90 rounded-2xl p-3 sm:p-3.5 border border-slate-200/90 relative overflow-hidden text-left space-y-2">
+              <div className="absolute top-0 left-0 w-1.5 h-full bg-blue-600"></div>
+
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <div className="flex items-center gap-2">
+                  <span className="px-2 py-0.5 rounded-md bg-blue-600 text-white text-[10px] font-extrabold uppercase tracking-wide flex items-center gap-1 shadow-2xs">
+                    <span className="material-symbols-outlined text-[12px]">schedule</span>
+                    Up Next
+                  </span>
+                  <span className="text-slate-900 text-xs font-bold">10:30 AM</span>
+                  <span className="text-slate-400 text-xs">• In 2 hrs</span>
+                </div>
+
+                <div className="flex items-center gap-1.5 text-[11px] text-slate-600 font-medium">
+                  <span className="material-symbols-outlined text-sm text-sky-600">directions_car</span>
+                  <span>Chauffeur Arun V. (Toyota Innova)</span>
+                </div>
+              </div>
+
+              <div className="space-y-0.5">
+                <h4 className="text-sm font-bold text-slate-900 leading-snug">
+                  Munnar Tea Estate Guided Walk & Sommelier Tasting
+                </h4>
+                <p className="text-slate-600 text-xs leading-relaxed line-clamp-1">
+                  Private hand-plucking session with estate botanist. Innova waiting at resort lobby.
+                </p>
+              </div>
+
+              {/* Action Buttons in single clean row */}
+              <div className="pt-2 flex items-center gap-2 border-t border-slate-200/60">
+                <button
+                  type="button"
+                  onClick={() => onNavigateTab('trips')}
+                  className="px-3.5 py-1.5 rounded-full bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold flex items-center gap-1.5 transition-colors cursor-pointer shadow-xs active:scale-98"
+                >
+                  <span className="material-symbols-outlined text-sm">visibility</span>
+                  <span>View Timeline</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={onOpenDirections}
+                  className="px-3 py-1.5 rounded-full bg-white hover:bg-slate-100 text-slate-800 text-xs font-bold border border-slate-200 flex items-center gap-1.5 transition-colors cursor-pointer shadow-2xs active:scale-98"
+                >
+                  <span className="material-symbols-outlined text-sm text-blue-600">directions</span>
+                  <span>Directions</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={onOpenContactDriver}
+                  className="px-3 py-1.5 rounded-full bg-white hover:bg-slate-100 text-slate-800 text-xs font-semibold border border-slate-200 flex items-center gap-1.5 transition-colors cursor-pointer shadow-2xs active:scale-98 ml-auto sm:ml-0"
+                >
+                  <span className="material-symbols-outlined text-sm text-emerald-600">call</span>
+                  <span>Call Arun</span>
+                </button>
+              </div>
+            </div>
+
+            {/* Compact Footer Guarantee & Live Status */}
+            <div className="pt-1.5 flex items-center justify-between text-[11px] text-slate-500 border-t border-slate-100">
+              <span className="flex items-center gap-1 font-medium">
+                <span className="material-symbols-outlined text-sm text-blue-600">verified_user</span>
                 TripFlow Guarantee Active
               </span>
-              <span className="font-mono text-slate-700 font-semibold">
-                Chauffeur: Arun V.
+              <span className="font-mono text-slate-600 flex items-center gap-1.5">
+                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
+                Innova Mesh GPS: 12m away · KL-07-CD
               </span>
             </div>
           </div>
@@ -458,20 +473,20 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
       </section>
 
       {/* ------------------------------------------------------------- */}
-      {/* UPCOMING & SAVED JOURNEYS SECTION                             */}
+      {/* CURATED OPERATOR PACKAGES SECTION                             */}
       {/* ------------------------------------------------------------- */}
-      <section className="mt-8 mb-6 space-y-5">
+      <section className="mt-8 mb-6 space-y-4">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div>
             <h2 className="text-xl sm:text-2xl text-slate-900 font-extrabold tracking-tight">
-              Upcoming & Curated Journeys
+              Curated Operator Packages
             </h2>
             <p className="text-slate-500 text-xs mt-0.5">
-              Carefully orchestrated future circuits and reserved boutique accommodations
+              Handcrafted turnkey circuits, boutique accommodations & private transit
             </p>
           </div>
 
-          {/* Segmented Filter Control */}
+          {/* Segmented Filter Control & Carousel Scroll Controls */}
           <div className="flex items-center gap-2">
             <div className="flex bg-slate-100 p-1 rounded-full border border-slate-200">
               <button
@@ -483,7 +498,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
                     : 'text-slate-500 hover:text-slate-900'
                 }`}
               >
-                All (3)
+                All ({sourcePackages.length})
               </button>
               <button
                 type="button"
@@ -508,26 +523,54 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
                 International
               </button>
             </div>
+
+            {/* Scroll navigation arrows */}
+            <div className="hidden sm:flex items-center gap-1.5 ml-1">
+              <button
+                type="button"
+                onClick={scrollLeft}
+                className="w-8 h-8 rounded-full border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 flex items-center justify-center transition-all shadow-2xs active:scale-95 cursor-pointer"
+                title="Scroll left"
+              >
+                <span className="material-symbols-outlined text-base">chevron_left</span>
+              </button>
+              <button
+                type="button"
+                onClick={scrollRight}
+                className="w-8 h-8 rounded-full border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 flex items-center justify-center transition-all shadow-2xs active:scale-95 cursor-pointer"
+                title="Scroll right"
+              >
+                <span className="material-symbols-outlined text-base">chevron_right</span>
+              </button>
+            </div>
           </div>
         </div>
 
         {/* Horizontally Scrollable Cards Container */}
-        <div className="relative group">
-          <div className="flex gap-4 overflow-x-auto pb-4 pt-1 px-1 custom-scrollbar snap-x snap-mandatory scroll-smooth items-stretch">
-            {filteredJourneys.map(journey => (
+        <div className="relative">
+          <div
+            ref={scrollContainerRef}
+            className="flex gap-4 overflow-x-auto pb-4 pt-1 px-1 custom-scrollbar snap-x snap-mandatory scroll-smooth items-stretch"
+          >
+            {filteredPackages.map(pkg => (
               <LuxuryCard
-                key={journey.id}
-                id={journey.id}
-                title={journey.title}
-                description={journey.description}
-                image={journey.image}
-                rating={journey.rating || '4.8/5'}
-                isFavorite={journey.isBookmarked}
-                onToggleFavorite={() => toggleBookmark(journey.id)}
-                amenities={journey.amenities}
-                price={journey.price}
-                pricePeriod="/night"
-                onClick={() => onSelectJourneyDetails(journey)}
+                key={pkg.id}
+                id={pkg.id}
+                title={pkg.title}
+                description={`${pkg.days} Days · ${pkg.destination} · Curated by ${pkg.operator.name}`}
+                image={pkg.heroImage}
+                rating={`${pkg.operator.rating}/5`}
+                kicker={`${pkg.operator.name} · ${pkg.destination}`}
+                badge={pkg.isNewlyCreated ? 'Operator Published' : pkg.badgeText}
+                badgeColor={pkg.isDomestic ? 'emerald' : 'dark'}
+                amenities={getPackageAmenities(pkg)}
+                price={`₹${pkg.totalPriceINR.toLocaleString('en-IN')}`}
+                pricePeriod="/package"
+                actionVariant="button"
+                actionLabel="Select & Customize"
+                theme="light"
+                onActionClick={() => handleSelectPackage(pkg)}
+                onClick={() => handleSelectPackage(pkg)}
               />
             ))}
           </div>

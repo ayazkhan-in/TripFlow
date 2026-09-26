@@ -498,3 +498,62 @@ export function createCuratedPackageFromOperator(params: {
     isNewlyCreated: true,
   };
 }
+
+/**
+ * Returns formatted 3x2 amenities for LuxuryCard display
+ */
+export function getPackageAmenities(pkg: OperatorCuratedPackage) {
+  const amenities = [
+    { icon: 'calendar_today', label: `${pkg.days} Days` },
+    { icon: 'group', label: `${pkg.travelers} Guests` },
+  ];
+
+  if (pkg.routeStops && pkg.routeStops.length > 0) {
+    const routeLabel = pkg.routeStops.map(s => s.city).slice(0, 2).join(' → ');
+    amenities.push({ icon: 'route', label: routeLabel });
+  }
+
+  pkg.inclusions.forEach(inc => {
+    if (amenities.length < 6) {
+      let label = inc.text;
+      if (label.includes('Flight')) label = 'Flight Inc.';
+      else if (label.includes('Chauffeur')) label = 'Chauffeur';
+      else if (
+        label.includes('Hotel') ||
+        label.includes('Villa') ||
+        label.includes('Boatyard') ||
+        label.includes('Palace') ||
+        label.includes('Resort') ||
+        label.includes('Aman') ||
+        label.includes('Stay')
+      )
+        label = '5-Star Stay';
+      else if (
+        label.includes('Catamaran') ||
+        label.includes('Cruise') ||
+        label.includes('Sailing') ||
+        label.includes('Yacht')
+      )
+        label = 'Private Cruise';
+      else if (label.includes('Train') || label.includes('Shinkansen'))
+        label = 'Bullet Train';
+      else if (label.includes('Guide') || label.includes('Historian'))
+        label = 'Private Guide';
+      else label = label.split('—')[0].split('&')[0].trim().slice(0, 14);
+      amenities.push({ icon: inc.icon || 'verified', label });
+    }
+  });
+
+  const fallbacks = [
+    { icon: 'verified_user', label: 'VIP Pass' },
+    { icon: 'support_agent', label: 'Concierge' },
+    { icon: 'shield', label: 'Allianz Mesh' },
+  ];
+  let fallbackIdx = 0;
+  while (amenities.length < 6 && fallbackIdx < fallbacks.length) {
+    amenities.push(fallbacks[fallbackIdx++]);
+  }
+
+  return amenities.slice(0, 6);
+}
+

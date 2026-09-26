@@ -412,6 +412,7 @@ function TripFlowApp() {
                     }
                     onOpenContactDriver={() => setIsWhatsAppOpen(true)}
                     onSelectJourneyDetails={journey => setSelectedJourney(journey)}
+                    onSelectPremadeTrip={handleSelectPremadeTrip}
                   />
                 )}
 

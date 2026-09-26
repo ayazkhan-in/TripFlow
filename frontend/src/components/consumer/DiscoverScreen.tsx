@@ -23,6 +23,8 @@ import {
 import { addCustomCatalogItems } from '../../data/itineraryData';
 import { formatCurrency } from '../../utils/pricing';
 import { USER_AVATAR } from '../../data/mockData';
+import { LuxuryCard } from '../common/LuxuryCard';
+import { getPackageAmenities } from '../../data/operatorPackagesData';
 
 interface DiscoverScreenProps {
   onNavigateTab: (tab: ConsumerTab) => void;
@@ -2097,139 +2099,28 @@ export const DiscoverScreen: React.FC<DiscoverScreenProps> = ({
         {/* OPERATOR CURATED PACKAGES GRID                              */}
         {/* ----------------------------------------------------------- */}
         {filteredPackages.length > 0 ? (
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 justify-items-center">
             {filteredPackages.map(pkg => (
-              <div
+              <LuxuryCard
                 key={pkg.id}
-                className="bg-white rounded-3xl border border-slate-200/90 shadow-sm hover:shadow-xl transition-all duration-300 flex flex-col overflow-hidden group"
-              >
-                {/* OPERATOR ATTRIBUTION BAR (At top of each package) */}
-                <div className="flex items-center gap-2.5 px-4 py-3 bg-slate-50 border-b border-slate-100">
-                  <img
-                    src={pkg.operator.avatar}
-                    alt={pkg.operator.leadDirector}
-                    className="w-8 h-8 rounded-full object-cover ring-2 ring-white shadow-xs shrink-0"
-                  />
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-1">
-                      <span className="text-xs font-extrabold text-slate-900 truncate">
-                        {pkg.operator.name}
-                      </span>
-                      <span className="material-symbols-outlined text-[13px] text-blue-600" title="Verified Operator">
-                        verified
-                      </span>
-                    </div>
-                    <div className="text-[10px] text-slate-500 font-medium truncate">
-                      Lead: <span className="font-semibold text-slate-700">{pkg.operator.leadDirector}</span> · ★ {pkg.operator.rating} ({pkg.operator.toursCount} tours)
-                    </div>
-                  </div>
-
-                  <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold border shrink-0 ${
-                    pkg.isDomestic 
-                      ? 'bg-emerald-50 text-emerald-700 border-emerald-200' 
-                      : 'bg-indigo-50 text-indigo-700 border-indigo-200'
-                  }`}>
-                    {pkg.isDomestic ? 'Domestic' : 'International'}
-                  </span>
-                </div>
-
-                {/* Package Image & Badges */}
-                <div className="relative h-48 overflow-hidden">
-                  <img
-                    src={pkg.heroImage}
-                    alt={pkg.title}
-                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                  />
-                  <div className="absolute inset-0 bg-gradient-to-t from-slate-900/85 via-slate-900/20 to-transparent" />
-                  
-                  <div className="absolute top-3 left-3 flex items-center gap-1.5 flex-wrap max-w-[70%]">
-                    {pkg.isNewlyCreated && (
-                      <span className="bg-gradient-to-r from-blue-600 to-indigo-600 text-white text-[10px] font-extrabold px-2.5 py-1 rounded-full shadow-md flex items-center gap-1">
-                        <span className="material-symbols-outlined text-[11px]">sparkles</span>
-                        <span>Operator Published</span>
-                      </span>
-                    )}
-                    <span className="bg-white/95 backdrop-blur-xs text-slate-900 text-[10px] font-extrabold px-2.5 py-1 rounded-full shadow-xs">
-                      {pkg.tag}
-                    </span>
-                  </div>
-                  
-                  <div className={`absolute top-3 right-3 ${pkg.badgeBg} text-white text-[10px] font-extrabold px-2.5 py-1 rounded-full shadow-xs`}>
-                    {pkg.badgeText}
-                  </div>
-
-                  <div className="absolute bottom-3 left-3 right-3 text-white">
-                    <div className="text-[11px] font-bold text-white/80">
-                      {pkg.dates} · {pkg.days} Days · {travelersCount} Pax
-                    </div>
-                    <h3 className="text-base font-extrabold leading-snug line-clamp-1">
-                      {pkg.title}
-                    </h3>
-                  </div>
-                </div>
-
-                {/* Package Details & Inclusions */}
-                <div className="p-5 flex-1 flex flex-col justify-between space-y-4">
-                  <div className="space-y-3">
-                    {/* Route Stops */}
-                    <div className="flex items-center gap-1.5 flex-wrap">
-                      {pkg.routeStops.map((stop, i) => (
-                        <span
-                          key={stop.city}
-                          className="inline-flex items-center gap-1 text-[11px] bg-slate-50 border border-slate-200/80 px-2 py-0.5 rounded-lg text-slate-700 font-semibold"
-                        >
-                          <span>{stop.city}</span>
-                          {i < pkg.routeStops.length - 1 && (
-                            <span className="text-slate-300">→</span>
-                          )}
-                        </span>
-                      ))}
-                    </div>
-
-                    {/* Key Inclusions */}
-                    <div className="space-y-1.5 text-xs text-slate-600">
-                      {pkg.inclusions.map((inc, i) => (
-                        <div key={i} className="flex items-center gap-2">
-                          <span className="material-symbols-outlined text-blue-600 text-sm shrink-0">
-                            {inc.icon}
-                          </span>
-                          <span className="truncate">{inc.text}</span>
-                        </div>
-                      ))}
-                    </div>
-
-                    {/* Operator Dispatch Badge */}
-                    <div className="pt-1 flex items-center justify-between text-[10px] text-slate-400 font-mono">
-                      <span>Dispatch: {pkg.operator.dispatchHub}</span>
-                      <span className="text-emerald-700 font-semibold">Live Monitoring</span>
-                    </div>
-                  </div>
-
-                  {/* INR Pricing & CTA Button */}
-                  <div className="pt-3 border-t border-slate-100 flex items-center justify-between gap-3">
-                    <div>
-                      <div className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">
-                        Package Price
-                      </div>
-                      <div className="text-lg font-black text-slate-900">
-                        {formatINR(pkg.totalPriceINR)}
-                      </div>
-                      <div className="text-[10px] text-slate-500 font-medium">
-                        {formatINR(Math.round(pkg.totalPriceINR / travelersCount))} / traveler
-                      </div>
-                    </div>
-
-                    <button
-                      type="button"
-                      onClick={() => onSelectPremadeTrip(pkg.itineraryTemplate)}
-                      className="px-4 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold transition-all shadow-sm hover:shadow flex items-center gap-1.5 cursor-pointer active:scale-95"
-                    >
-                      <span>Select & Customize</span>
-                      <span className="material-symbols-outlined text-xs">arrow_forward</span>
-                    </button>
-                  </div>
-                </div>
-              </div>
+                id={pkg.id}
+                title={pkg.title}
+                description={`${pkg.days} Days · ${pkg.destination} · Curated by ${pkg.operator.name}`}
+                image={pkg.heroImage}
+                rating={`${pkg.operator.rating}/5`}
+                kicker={`${pkg.operator.name} · ${pkg.destination}`}
+                badge={pkg.isNewlyCreated ? 'Operator Published' : pkg.badgeText}
+                badgeColor={pkg.isDomestic ? 'emerald' : 'dark'}
+                amenities={getPackageAmenities(pkg)}
+                price={`₹${pkg.totalPriceINR.toLocaleString('en-IN')}`}
+                pricePeriod="/package"
+                actionVariant="button"
+                actionLabel="Select & Customize"
+                theme="light"
+                className="w-full max-w-[340px]"
+                onActionClick={() => onSelectPremadeTrip(pkg.itineraryTemplate)}
+                onClick={() => onSelectPremadeTrip(pkg.itineraryTemplate)}
+              />
             ))}
           </div>
         ) : (
