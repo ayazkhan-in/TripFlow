@@ -2,6 +2,7 @@ export type ItineraryCategory = 'activity' | 'hotel' | 'transport' | 'meal' | 'e
 
 export interface CatalogItem {
   id: string;
+  catalogId?: string;
   title: string;
   category: ItineraryCategory;
   price: number;

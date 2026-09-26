@@ -105,8 +105,8 @@ export const AIAssistantInput: React.FC<AIAssistantInputProps> = ({
   };
 
   return (
-    <div className="fixed bottom-3 left-0 right-0 z-30 px-4 pointer-events-none" ref={containerRef}>
-      <div className="max-w-xl mx-auto pointer-events-auto">
+    <div className="fixed bottom-3.5 left-0 right-0 z-30 px-4 pointer-events-none flex justify-center" ref={containerRef}>
+      <div className="w-full max-w-lg pointer-events-auto">
         {/* Last AI Feedback Toast (auto-dismisses after 5 seconds) */}
         {visibleFeedback && (
           <div

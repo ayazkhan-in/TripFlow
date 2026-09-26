@@ -536,24 +536,22 @@ function BookitApp() {
           {/* ========================================================= */}
           {viewMode === 'consumer' && (
             <div className={`flex-1 min-h-0 flex flex-col ${consumerTab === 'builder' || consumerTab === 'assistant' || consumerTab === 'story' ? 'h-screen max-h-screen overflow-hidden' : ''}`}>
-              {consumerTab !== 'builder' && (
-                <TopNav
-                  activeTab={consumerTab}
-                  onTabChange={handleConsumerTabChange}
-                  onOpenNotifications={() =>
-                    showToast(
-                      'Live flight telemetry sync active. No pending delays on current leg.'
-                    )
-                  }
-                  user={authUser}
-                  onOpenProfile={() => setIsProfileOpen(true)}
-                  onSignOut={handleSignOut}
-                  onGoToLanding={() => navigateTo({ route: 'landing' })}
-                  vaultCount={vaultDocuments.length}
-                />
-              )}
+              <TopNav
+                activeTab={consumerTab}
+                onTabChange={handleConsumerTabChange}
+                onOpenNotifications={() =>
+                  showToast(
+                    'Live flight telemetry sync active. No pending delays on current leg.'
+                  )
+                }
+                user={authUser}
+                onOpenProfile={() => setIsProfileOpen(true)}
+                onSignOut={handleSignOut}
+                onGoToLanding={() => navigateTo({ route: 'landing' })}
+                vaultCount={vaultDocuments.length}
+              />
 
-              <main className={`flex-1 min-h-0 flex flex-col ${consumerTab === 'builder' ? 'h-screen max-h-screen overflow-hidden' : (consumerTab === 'assistant' || consumerTab === 'story') ? 'h-[calc(100vh-3.5rem)] max-h-[calc(100vh-3.5rem)] overflow-hidden' : ''}`}>
+              <main className={`flex-1 min-h-0 flex flex-col ${consumerTab === 'builder' || consumerTab === 'assistant' || consumerTab === 'story' ? 'h-[calc(100vh-3.5rem)] max-h-[calc(100vh-3.5rem)] overflow-hidden' : ''}`}>
                 {consumerTab === 'home' && (
                   <HomeScreen
                     onNavigateTab={handleConsumerTabChange}
