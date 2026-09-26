@@ -8,12 +8,19 @@ import {
 import {
   DISPATCH_TRANSFERS,
   INITIAL_DISRUPTIONS,
-  RADAR_MAP_IMAGE,
   REALTIME_EVENTS,
 } from '../../data/mockData';
 import { TripFlowApi } from '../../services/api';
 import { useOperator } from '../../context/OperatorContext';
 import { ThemedToast } from '../common/ThemedToast';
+
+const DISPATCH_AVATARS: Record<string, string> = {
+  '#1024': 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&w=120&q=80', // Iqra Mulla
+  '#1042': 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=120&q=80', // Ayaz Khan
+  '#1099': 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=120&q=80', // Umme Hani
+  '#1019': 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&w=120&q=80', // Faiz Khan
+  '#1055': 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?auto=format&fit=crop&w=120&q=80', // Iqra Mulla
+};
 
 interface OpsCommandHubProps {
   onInspectTour: (tourId: string) => void;
@@ -41,6 +48,24 @@ export const OpsCommandHub: React.FC<OpsCommandHubProps> = ({
     'all' | 'flight' | 'hotel' | 'driver'
   >('all');
   const [liveToast, setLiveToast] = useState<string | null>(null);
+
+  // Collapsible alerts state: All alerts collapsed/off by default
+  const [expandedAlerts, setExpandedAlerts] = useState<Record<string, boolean>>({
+    'issue-1024': false,
+    'issue-1081': false,
+    'issue-1042': false,
+  });
+
+  const toggleAlert = (id: string, defaultOpen = false) => {
+    setExpandedAlerts(prev => ({
+      ...prev,
+      [id]: prev[id] !== undefined ? !prev[id] : !defaultOpen,
+    }));
+  };
+
+  const isAlertOpen = (id: string, defaultOpen: boolean) => {
+    return expandedAlerts[id] !== undefined ? expandedAlerts[id] : defaultOpen;
+  };
 
   useEffect(() => {
     TripFlowApi.getMe().then(user => {
@@ -135,7 +160,11 @@ export const OpsCommandHub: React.FC<OpsCommandHubProps> = ({
     return e.category === eventCategoryFilter;
   });
 
-  const openIssuesCount = disruptions.filter(d => d.status === 'open').length;
+  const item1 = disruptions[0] || INITIAL_DISRUPTIONS[0];
+  const item2 = disruptions[1] || INITIAL_DISRUPTIONS[1];
+  const item3 = disruptions[2] || INITIAL_DISRUPTIONS[2];
+  const displayDisruptions = [item1, item2, item3];
+  const openIssuesCount = displayDisruptions.filter(d => d.status === 'open').length;
 
   return (
     <div className="flex-1 flex flex-col min-h-screen bg-[#F7F8FA]">
@@ -286,124 +315,147 @@ export const OpsCommandHub: React.FC<OpsCommandHubProps> = ({
           </div>
         )}
 
-        {/* Tour Package Creator Callout Banner */}
-        <div className="p-4 bg-gradient-to-r from-blue-900 via-indigo-900 to-slate-900 text-white rounded-2xl flex flex-col md:flex-row md:items-center justify-between gap-4 shadow-sm">
-          <div className="flex items-start gap-3.5">
-            <span className="w-10 h-10 rounded-xl bg-blue-600 flex items-center justify-center text-white shrink-0 shadow-xs">
-              <span className="material-symbols-outlined text-xl">card_travel</span>
-            </span>
-            <div>
-              <div className="flex items-center gap-2">
-                <span className="text-xs font-bold tracking-tight">
-                  Tour Package Creator & Discover Marketplace
-                </span>
-                <span className="text-[10px] bg-blue-500/30 text-blue-200 px-2 py-0.5 rounded-full font-bold border border-blue-400/30">
-                  Live Dispatch
-                </span>
-              </div>
-              <p className="text-xs text-slate-300 mt-0.5">
-                Curate signature multi-day tour packages, publish them to travelers in Discover, and manage bookings when travelers customize activities & stays.
-              </p>
-            </div>
-          </div>
 
-          <div className="flex items-center gap-2 self-start md:self-auto shrink-0">
-            {onNavigateToTab && (
-              <button
-                type="button"
-                onClick={() => onNavigateToTab('packages')}
-                className="px-3.5 py-2 bg-white/10 hover:bg-white/20 text-white rounded-xl text-xs font-semibold border border-white/20 transition-all flex items-center gap-1.5 cursor-pointer"
-              >
-                <span className="material-symbols-outlined text-sm">inventory_2</span>
-                <span>Tour Packages Studio</span>
-              </button>
-            )}
-
-            {onOpenCreatePackage && (
-              <button
-                type="button"
-                onClick={onOpenCreatePackage}
-                className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-bold shadow-xs transition-all flex items-center gap-1.5 cursor-pointer active:scale-95"
-              >
-                <span className="material-symbols-outlined text-sm">add_business</span>
-                <span>+ Create Tour Package</span>
-              </button>
-            )}
-          </div>
-        </div>
-
-        {/* Key Metrics Row (5 Clean Cards) */}
+        {/* Key Metrics Row (5 Clean Cards with Compact Visual Indicators) */}
         <section className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3">
-          {/* Metric 1 */}
-          <div className="p-3.5 bg-white border border-slate-200/80 rounded-xl flex flex-col justify-between">
-            <span className="text-[11px] font-medium text-slate-400 uppercase tracking-wider">
+          {/* Metric 1: Active Tours (Bigger Sparkline Centered with Metric) */}
+          <div className="p-3.5 bg-white border border-slate-200/80 rounded-xl flex flex-col justify-between hover:border-slate-300 transition-colors shadow-2xs min-h-[118px]">
+            <span className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider truncate">
               Active Tours
             </span>
-            <div className="mt-1">
+            <div className="flex items-center justify-between my-1">
               <span className="text-2xl font-bold tracking-tight text-slate-900">
                 128
               </span>
+              {/* Bigger Sparkline Line Chart */}
+              <svg className="w-20 h-7 overflow-visible" viewBox="0 0 64 24" fill="none">
+                <defs>
+                  <linearGradient id="sparkline-emerald-lg" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stopColor="#10B981" stopOpacity="0.28" />
+                    <stop offset="100%" stopColor="#10B981" stopOpacity="0.0" />
+                  </linearGradient>
+                </defs>
+                <path
+                  d="M0 18 L10 16 L20 17 L32 11 L42 13 L52 6 L64 3 L64 24 L0 24 Z"
+                  fill="url(#sparkline-emerald-lg)"
+                />
+                <path
+                  d="M0 18 L10 16 L20 17 L32 11 L42 13 L52 6 L64 3"
+                  stroke="#10B981"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                />
+              </svg>
             </div>
-            <div className="mt-0.5 text-[11px] text-slate-400">+12% vs last week</div>
+            <div className="flex items-center gap-1 text-[11px] text-slate-400">
+              <span className="inline-flex items-center text-emerald-600 font-semibold text-[10px]">
+                <span className="material-symbols-outlined text-[13px] mr-0.5">trending_up</span>
+                +12%
+              </span>
+              <span>vs last week</span>
+            </div>
           </div>
 
-          {/* Metric 2 */}
-          <div className="p-3.5 bg-white border border-slate-200/80 rounded-xl flex flex-col justify-between">
-            <span className="text-[11px] font-medium text-slate-400 uppercase tracking-wider">
+          {/* Metric 2: Travelers In-Transit (Capacity Centered with Metric) */}
+          <div className="p-3.5 bg-white border border-slate-200/80 rounded-xl flex flex-col justify-between hover:border-slate-300 transition-colors shadow-2xs min-h-[118px]">
+            <span className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider truncate">
               Travelers In-Transit
             </span>
-            <div className="mt-1">
+            <div className="flex items-center justify-between my-1">
               <span className="text-2xl font-bold tracking-tight text-slate-900">
                 342
               </span>
+              <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-blue-700 bg-blue-50 px-2 py-0.5 rounded-md border border-blue-200/70">
+                <span className="w-1.5 h-1.5 rounded-full bg-blue-600" />
+                100% Manifest
+              </span>
             </div>
-            <div className="mt-0.5 text-[11px] text-slate-400">42 groups · 100% manifest</div>
+            <div>
+              <div className="w-full h-1 bg-slate-100 rounded-full overflow-hidden">
+                <div className="h-full bg-blue-600 rounded-full w-full" />
+              </div>
+              <div className="mt-1 text-[11px] text-slate-400 truncate">42 groups · 100% capacity</div>
+            </div>
           </div>
 
-          {/* Metric 3 */}
-          <div className="p-3.5 bg-white border border-slate-200/80 rounded-xl flex flex-col justify-between">
-            <span className="text-[11px] font-medium text-slate-400 uppercase tracking-wider">
+          {/* Metric 3: Open Issues (Bigger Severity Dots Centered with Metric) */}
+          <div className="p-3.5 bg-white border border-slate-200/80 rounded-xl flex flex-col justify-between hover:border-slate-300 transition-colors shadow-2xs min-h-[118px]">
+            <span className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider truncate">
               Open Issues
             </span>
-            <div className="mt-1">
+            <div className="flex items-center justify-between my-1">
               <span className="text-2xl font-bold tracking-tight text-red-600">
                 {openIssuesCount}
               </span>
+              <div className="flex items-center gap-1.5 px-2 py-1 bg-red-50/70 rounded-md border border-red-100/90 shadow-2xs">
+                <span className="w-2 h-2 rounded-full bg-red-500 animate-pulse" title="Critical Disruption" />
+                <span className="w-2 h-2 rounded-full bg-amber-500" title="High Impact" />
+                <span className="w-2 h-2 rounded-full bg-blue-500" title="Medium Advisory" />
+              </div>
             </div>
-            <div className="mt-0.5 text-[11px] text-slate-400">Requires authorization</div>
+            <div className="flex items-center justify-between text-[11px]">
+              <span className="text-slate-400">Requires auth</span>
+              <span className="text-[10px] text-red-600 font-semibold bg-red-50 px-1.5 py-0.2 rounded border border-red-200/60">
+                Action Req.
+              </span>
+            </div>
           </div>
 
-          {/* Metric 4 */}
-          <div className="p-3.5 bg-white border border-slate-200/80 rounded-xl flex flex-col justify-between">
-            <span className="text-[11px] font-medium text-slate-400 uppercase tracking-wider">
+          {/* Metric 4: Today's Transfers (Badge Centered with Metric) */}
+          <div className="p-3.5 bg-white border border-slate-200/80 rounded-xl flex flex-col justify-between hover:border-slate-300 transition-colors shadow-2xs min-h-[118px]">
+            <span className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider truncate">
               Today's Transfers
             </span>
-            <div className="mt-1">
+            <div className="flex items-center justify-between my-1">
               <span className="text-2xl font-bold tracking-tight text-slate-900">
                 24
               </span>
+              <span className="text-[11px] font-mono text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-md border border-emerald-200/70 font-semibold">
+                75% On-Time
+              </span>
             </div>
-            <div className="mt-0.5 text-[11px] text-slate-400">18 on-time · 4 delayed · 2 active</div>
+            <div>
+              <div className="w-full flex h-1 rounded-full overflow-hidden bg-slate-100 gap-0.5">
+                <div style={{ width: '75%' }} className="bg-emerald-500 rounded-l-full" title="18 On-time" />
+                <div style={{ width: '17%' }} className="bg-amber-500" title="4 Delayed" />
+                <div style={{ width: '8%' }} className="bg-blue-500 rounded-r-full" title="2 Active" />
+              </div>
+              <div className="mt-1 text-[11px] text-slate-400 truncate">18 on-time · 4 delayed · 2 active</div>
+            </div>
           </div>
 
-          {/* Metric 5 */}
-          <div className="p-3.5 bg-white border border-slate-200/80 rounded-xl flex flex-col justify-between">
-            <span className="text-[11px] font-medium text-slate-400 uppercase tracking-wider">
+          {/* Metric 5: Managed GMV (Bigger Bar Chart Centered with Metric) */}
+          <div className="p-3.5 bg-white border border-slate-200/80 rounded-xl flex flex-col justify-between hover:border-slate-300 transition-colors shadow-2xs min-h-[118px]">
+            <span className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider truncate">
               Managed GMV
             </span>
-            <div className="mt-1">
+            <div className="flex items-center justify-between my-1">
               <span className="text-2xl font-bold tracking-tight text-slate-900">
                 ₹18.4L
               </span>
+              {/* Bigger Ascending Column Spark */}
+              <div className="flex items-end gap-1 h-6">
+                <span className="w-1.5 h-2 bg-slate-200 rounded-xs" title="Q1" />
+                <span className="w-1.5 h-3 bg-blue-200 rounded-xs" title="Q2" />
+                <span className="w-1.5 h-4 bg-blue-300 rounded-xs" title="Q3" />
+                <span className="w-1.5 h-5 bg-blue-500 rounded-xs" title="Q4" />
+                <span className="w-1.5 h-6 bg-blue-600 rounded-xs" title="Current" />
+              </div>
             </div>
-            <div className="mt-0.5 text-[11px] text-slate-400">Active billing cycle</div>
+            <div className="flex items-center justify-between text-[11px]">
+              <span className="text-slate-400">Active billing</span>
+              <span className="inline-flex items-center text-[10px] font-semibold text-emerald-600">
+                +8.4%
+              </span>
+            </div>
           </div>
         </section>
 
-        {/* Main Focus & Operational Grid */}
+        {/* Main Operational Grid: Attention Required + Real-Time Event Stream + Active Dispatch Queue */}
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
           {/* Left: Attention Required Section (7 Cols) */}
-          <section className="lg:col-span-7 flex flex-col gap-4 text-left">
+          <section className="lg:col-span-7 flex flex-col gap-2.5 text-left">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <h2 className="text-base font-bold text-slate-900">
@@ -418,7 +470,7 @@ export const OpsCommandHub: React.FC<OpsCommandHubProps> = ({
               </div>
             </div>
 
-            {disruptions.length === 0 ? (
+            {displayDisruptions.length === 0 ? (
               <div className="bg-white border border-emerald-200/80 rounded-2xl p-8 text-center shadow-xs">
                 <div className="w-12 h-12 rounded-2xl bg-emerald-50 text-emerald-600 flex items-center justify-center mx-auto mb-3">
                   <span className="material-symbols-outlined text-2xl">check_circle</span>
@@ -429,517 +481,504 @@ export const OpsCommandHub: React.FC<OpsCommandHubProps> = ({
                 </p>
               </div>
             ) : (
-              <>
-                {/* Card 1: Critical Flight Delay (Tour #1024) */}
-                {disruptions[0] && (
+              <div className="flex flex-col gap-2">
+                {/* Alert 1: 🔴 Critical (Tour #1024) - Expanded by Default */}
                 <article
-                  className={`bg-white border rounded-xl p-4 shadow-xs relative overflow-hidden transition-all ${
-                    disruptions[0].status === 'resolved'
-                      ? 'border-emerald-300 opacity-80'
-                      : 'border-red-300 hover:border-red-400'
+                  className={`bg-white border rounded-xl shadow-2xs relative overflow-hidden transition-all hover:border-slate-300 ${
+                    item1.status === 'resolved'
+                      ? 'border-slate-200/80 opacity-90'
+                      : 'border-slate-200/90'
                   }`}
                 >
-              <div
-                className={`absolute left-0 top-0 bottom-0 w-1.5 ${
-                  disruptions[0].status === 'resolved'
-                    ? 'bg-emerald-500'
-                    : 'bg-red-600'
-                }`}
-              ></div>
-              <div className="flex items-start justify-between gap-4">
-                <div className="flex items-center gap-2 flex-wrap text-xs">
-                  <div className="flex items-center gap-1.5">
-                    <span
-                      className={`w-1.5 h-1.5 rounded-full ${
-                        disruptions[0].status === 'resolved'
-                          ? 'bg-emerald-500'
-                          : 'bg-red-500'
-                      }`}
-                    />
-                    <span
-                      className={`font-semibold text-[11px] ${
-                        disruptions[0].status === 'resolved'
-                          ? 'text-emerald-700'
-                          : 'text-red-700'
-                      }`}
-                    >
-                      {disruptions[0].status === 'resolved'
-                        ? 'Reconciled & Synced'
-                        : 'Critical Disruption'}
-                    </span>
-                  </div>
-                  <span className="text-slate-300">·</span>
-                  <span className="font-semibold text-slate-900">
-                    Tour #1024 · Kerala Mist & Spice Route
-                  </span>
-                  <span className="text-slate-300">·</span>
-                  <span className="font-mono text-slate-400">
-                    PNR: IN-99824
-                  </span>
-                </div>
-                <span className="text-xs font-mono text-slate-400 whitespace-nowrap">
-                  T-minus 1h 45m
-                </span>
-              </div>
+                  <div
+                    className={`absolute left-0 top-0 bottom-0 w-1 ${
+                      item1.status === 'resolved' ? 'bg-emerald-500' : 'bg-red-500'
+                    }`}
+                  />
 
-              {/* Body Context */}
-              <div className="mt-3 grid grid-cols-1 md:grid-cols-3 gap-3 p-3 bg-slate-50 rounded-lg border border-slate-100">
-                <div>
-                  <p className="text-[10px] uppercase font-medium text-slate-400">
-                    Impacted Group
-                  </p>
-                  <p className="text-xs font-semibold text-slate-900 mt-0.5">
-                    Sarah Mehta Group (4 pax)
-                  </p>
-                  <p className="text-[11px] text-slate-500">Family Deluxe tier</p>
-                </div>
-                <div>
-                  <p className="text-[10px] uppercase font-medium text-slate-400">
-                    Root Cause
-                  </p>
-                  <p className="text-xs font-bold text-red-600 mt-0.5">
-                    IndiGo 6E-204 (DEL → COK)
-                  </p>
-                  <p className="text-[11px] text-red-600">Delayed +5h 10m · Fog in Delhi</p>
-                </div>
-                <div>
-                  <p className="text-[10px] uppercase font-medium text-slate-400">
-                    Downstream Conflict
-                  </p>
-                  <p className="text-xs font-semibold text-slate-900 mt-0.5">
-                    Cochin Airport Chauffeur
-                  </p>
-                  <p className="text-[11px] text-slate-500">Original pickup: 09:30 AM</p>
-                </div>
-              </div>
-
-              {/* AI Dispatch Recommendation */}
-              <div className="mt-3 flex items-center gap-2 p-2 bg-slate-50 border border-slate-200/80 rounded-lg text-slate-800 text-xs">
-                <span className="material-symbols-outlined text-slate-600 text-base shrink-0">
-                  auto_fix_high
-                </span>
-                <div className="flex-1">
-                  <span className="font-semibold">AI Dispatch Recommendation:</span>{' '}
-                  Reschedule airport transfer to 02:30 PM & swap lunch stop to Fort
-                  Kochi heritage cafe.
-                </div>
-              </div>
-
-              {/* Action Controls */}
-              <div className="mt-4 flex items-center justify-between pt-3 border-t border-slate-100">
-                <div className="flex items-center gap-2 text-xs text-slate-500">
-                  <span className="material-symbols-outlined text-base">person_pin</span>
-                  <span>Driver: Anoop Nair (Innova Crysta)</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <button
-                    onClick={() => onInspectTour('issue-1024')}
-                    className="px-3 py-1.5 rounded-lg border border-slate-200 bg-white text-xs font-medium text-slate-700 hover:bg-slate-50 transition-colors"
+                  {/* Compact Header */}
+                  <div
+                    onClick={() => toggleAlert(item1.id, false)}
+                    className="py-2 px-3 pl-3.5 flex items-center justify-between gap-2.5 cursor-pointer select-none hover:bg-slate-50/70 transition-colors"
                   >
-                    Review Details
-                  </button>
-                  {disruptions[0].status === 'open' ? (
-                    <button
-                      onClick={() => handleQuickReschedule(disruptions[0].id)}
-                      className="px-3.5 py-1.5 rounded-lg bg-slate-900 hover:bg-slate-800 text-white text-xs font-medium transition-colors flex items-center gap-1.5"
-                    >
-                      <span className="material-symbols-outlined text-sm">bolt</span>
-                      <span>Quick Reschedule</span>
-                    </button>
-                  ) : (
-                    <span className="inline-flex items-center gap-1 text-xs text-emerald-700 font-medium">
-                      <span className="material-symbols-outlined text-sm">check</span>
-                      Dispatched
-                    </span>
-                  )}
-                </div>
-              </div>
-            </article>
-            )}
-
-            {/* Card 2: High Urgency Hotel Outage (Tour #1081) */}
-            {disruptions[1] && (
-            <article
-              className={`bg-white border rounded-xl p-4 shadow-xs relative overflow-hidden transition-all ${
-                disruptions[1].status === 'resolved'
-                  ? 'border-emerald-300 opacity-80'
-                  : 'border-amber-300 hover:border-amber-400'
-              }`}
-            >
-              <div
-                className={`absolute left-0 top-0 bottom-0 w-1.5 ${
-                  disruptions[1].status === 'resolved'
-                    ? 'bg-emerald-500'
-                    : 'bg-amber-500'
-                }`}
-              ></div>
-              <div className="flex items-start justify-between gap-4">
-                <div className="flex items-center gap-2 flex-wrap text-xs">
-                  <div className="flex items-center gap-1.5">
-                    <span
-                      className={`w-1.5 h-1.5 rounded-full ${
-                        disruptions[1].status === 'resolved'
-                          ? 'bg-emerald-500'
-                          : 'bg-amber-500'
-                      }`}
-                    />
-                    <span
-                      className={`font-semibold text-[11px] ${
-                        disruptions[1].status === 'resolved'
-                          ? 'text-emerald-700'
-                          : 'text-amber-800'
-                      }`}
-                    >
-                      {disruptions[1].status === 'resolved'
-                        ? 'Approved & Held'
-                        : 'High Urgency'}
-                    </span>
-                  </div>
-                  <span className="text-slate-300">·</span>
-                  <span className="font-semibold text-slate-900">
-                    Tour #1081 · Rajasthan Royal Heritage
-                  </span>
-                  <span className="text-slate-300">·</span>
-                  <span className="font-mono text-slate-400">
-                    PNR: RJ-33411
-                  </span>
-                </div>
-                <span className="text-xs font-mono text-slate-400">
-                  Check-in: 03:00 PM
-                </span>
-              </div>
-
-              <div className="mt-3 grid grid-cols-1 md:grid-cols-3 gap-3 p-3 bg-slate-50 rounded-lg border border-slate-100">
-                <div>
-                  <p className="text-[10px] uppercase font-medium text-slate-400">
-                    Travelers Affected
-                  </p>
-                  <p className="text-xs font-semibold text-slate-900 mt-0.5">
-                    Vikram Malhotra Group (4 pax)
-                  </p>
-                  <p className="text-[11px] text-slate-500">Luxury Suite package</p>
-                </div>
-                <div>
-                  <p className="text-[10px] uppercase font-medium text-slate-400">
-                    Root Cause
-                  </p>
-                  <p className="text-xs font-bold text-amber-700 mt-0.5">
-                    Samode Palace Jaipur
-                  </p>
-                  <p className="text-[11px] text-amber-800">
-                    HVAC emergency electrical outage
-                  </p>
-                </div>
-                <div>
-                  <p className="text-[10px] uppercase font-medium text-slate-400">
-                    Auto-Reconciliation
-                  </p>
-                  <p className="text-xs font-semibold text-emerald-700 mt-0.5">
-                    Meridian Heritage Suite
-                  </p>
-                  <p className="text-[11px] text-emerald-700 font-mono">
-                    +₹2,400 delta approved budget
-                  </p>
-                </div>
-              </div>
-
-              <div className="mt-3 flex items-center justify-between p-2.5 bg-amber-50/50 border border-amber-200/60 rounded-lg text-xs text-slate-800">
-                <div className="flex items-center gap-2">
-                  <span className="material-symbols-outlined text-amber-700 text-base">
-                    hotel
-                  </span>
-                  <span>
-                    Hold placed on 2x Luxury Garden Suites at{' '}
-                    <strong>Hotel Meridian Heritage</strong>. Confirm within 22 mins.
-                  </span>
-                </div>
-                <span className="text-[11px] font-mono text-amber-800 font-medium whitespace-nowrap">
-                  22m remaining
-                </span>
-              </div>
-
-              <div className="mt-4 flex items-center justify-between pt-3 border-t border-slate-100">
-                <span className="text-xs text-slate-500">
-                  No additional cost passed to guest
-                </span>
-                <div className="flex items-center gap-2">
-                  <button
-                    onClick={() =>
-                      setLiveToast(
-                        'Alternatives: ITC Rajputana (+₹5,100) or Rambagh Palace (+₹18,000)'
-                      )
-                    }
-                    className="px-3 py-1.5 rounded-lg border border-slate-200 bg-white text-xs font-medium text-slate-700 hover:bg-slate-50 transition-colors"
-                  >
-                    View Alternatives
-                  </button>
-                  {disruptions[1].status === 'open' ? (
-                    <button
-                      onClick={() => handleApproveBudget(disruptions[1].id)}
-                      className="px-3.5 py-1.5 rounded-lg bg-emerald-700 hover:bg-emerald-800 text-white text-xs font-medium transition-colors flex items-center gap-1.5"
-                    >
-                      <span className="material-symbols-outlined text-sm">check</span>
-                      <span>Approve +₹2,400</span>
-                    </button>
-                  ) : (
-                    <span className="inline-flex items-center gap-1 text-xs text-emerald-700 font-medium">
-                      <span className="material-symbols-outlined text-sm">check</span>
-                      Approved
-                    </span>
-                  )}
-                </div>
-              </div>
-            </article>
-            )}
-
-            {/* Card 3: Moderate Chauffeur Delay (Tour #1042) */}
-            {disruptions[2] && (
-            <article
-              className={`bg-white border rounded-xl p-4 shadow-xs relative overflow-hidden transition-all ${
-                disruptions[2].status === 'resolved'
-                  ? 'border-emerald-300 opacity-80'
-                  : 'border-slate-200/80 hover:border-slate-300'
-              }`}
-            >
-              <div
-                className={`absolute left-0 top-0 bottom-0 w-1.5 ${
-                  disruptions[2].status === 'resolved'
-                    ? 'bg-emerald-500'
-                    : 'bg-blue-500'
-                }`}
-              ></div>
-              <div className="flex items-start justify-between gap-4">
-                <div className="flex items-center gap-2 flex-wrap text-xs">
-                  <div className="flex items-center gap-1.5">
-                    <span
-                      className={`w-1.5 h-1.5 rounded-full ${
-                        disruptions[2].status === 'resolved'
-                          ? 'bg-emerald-500'
-                          : 'bg-blue-500'
-                      }`}
-                    />
-                    <span
-                      className={`font-semibold text-[11px] ${
-                        disruptions[2].status === 'resolved'
-                          ? 'text-emerald-700'
-                          : 'text-blue-700'
-                      }`}
-                    >
-                      {disruptions[2].status === 'resolved'
-                        ? 'Driver Swapped'
-                        : 'Moderate Delay'}
-                    </span>
-                  </div>
-                  <span className="text-slate-300">·</span>
-                  <span className="font-semibold text-slate-900">
-                    Tour #1042 · Goa Coastal & Spice Trail
-                  </span>
-                  <span className="text-slate-300">·</span>
-                  <span className="font-mono text-slate-400">
-                    PNR: GA-11029
-                  </span>
-                </div>
-                <span className="text-xs font-mono text-slate-400">
-                  Pickup in 25m
-                </span>
-              </div>
-
-              <div className="mt-3 grid grid-cols-1 md:grid-cols-3 gap-3 p-3 bg-slate-50 rounded-lg border border-slate-100">
-                <div>
-                  <p className="text-[10px] uppercase font-medium text-slate-400">
-                    Travelers
-                  </p>
-                  <p className="text-xs font-semibold text-slate-900 mt-0.5">
-                    Dev & Riya Kapoor (2 pax)
-                  </p>
-                  <p className="text-[11px] text-slate-500">W Goa to Panjim Marina</p>
-                </div>
-                <div>
-                  <p className="text-[10px] uppercase font-medium text-slate-400">
-                    Primary Issue
-                  </p>
-                  <p className="text-xs font-bold text-slate-900 mt-0.5">
-                    EV Charging Queue Stalled
-                  </p>
-                  <p className="text-[11px] text-amber-600">Assigned driver delayed ~35m</p>
-                </div>
-                <div>
-                  <p className="text-[10px] uppercase font-medium text-slate-400">
-                    Standby Proximity
-                  </p>
-                  <p className="text-xs font-semibold text-emerald-700 mt-0.5">
-                    Rohit S. (Tata Nexon EV)
-                  </p>
-                  <p className="text-[11px] text-emerald-700 font-mono">
-                    10 mins away from resort
-                  </p>
-                </div>
-              </div>
-
-              <div className="mt-4 flex items-center justify-between pt-3 border-t border-slate-100">
-                <span className="text-xs text-slate-500">
-                  Guest has not been notified yet
-                </span>
-                <div className="flex items-center gap-2">
-                  <button
-                    onClick={() =>
-                      setLiveToast('SMS ping dispatched to original driver.')
-                    }
-                    className="px-3 py-1.5 rounded-lg border border-slate-200 bg-white text-xs font-medium text-slate-700 hover:bg-slate-50 transition-colors"
-                  >
-                    Contact Driver
-                  </button>
-                  {disruptions[2].status === 'open' ? (
-                    <button
-                      onClick={() => handleReassignDriver(disruptions[2].id)}
-                      className="px-3.5 py-1.5 rounded-lg bg-slate-900 hover:bg-slate-800 text-white text-xs font-medium transition-colors flex items-center gap-1.5"
-                    >
-                      <span className="material-symbols-outlined text-sm">
-                        swap_horiz
+                    <div className="flex items-center gap-2 flex-wrap text-xs min-w-0">
+                      {/* Capsule / Pill Severity Badge */}
+                      <span
+                        className={`inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[11px] font-semibold shrink-0 border ${
+                          item1.status === 'resolved'
+                            ? 'bg-emerald-50 text-emerald-700 border-emerald-200/70'
+                            : 'bg-red-50 text-red-700 border-red-200/70'
+                        }`}
+                      >
+                        <span
+                          className={`w-1.5 h-1.5 rounded-full shrink-0 ${
+                            item1.status === 'resolved' ? 'bg-emerald-500' : 'bg-red-500 animate-pulse'
+                          }`}
+                        />
+                        <span>
+                          {item1.status === 'resolved'
+                            ? 'Reconciled & Synced'
+                            : 'Critical'}
+                        </span>
                       </span>
-                      <span>Reassign Driver</span>
-                    </button>
-                  ) : (
-                    <span className="inline-flex items-center gap-1 text-xs text-emerald-700 font-medium">
-                      <span className="material-symbols-outlined text-sm">check</span>
-                      Rohit S. Enroute
-                    </span>
+
+                      {/* Primary Text: Tour Name */}
+                      <span className="font-semibold text-slate-900 truncate">
+                        Tour #1024 · Kerala Mist & Spice Route
+                      </span>
+
+                      {/* Secondary Metadata: PNR */}
+                      <span className="font-mono text-slate-400 text-[11px] shrink-0">
+                        PNR: IN-99824
+                      </span>
+
+                      {/* Neutral Risk Capsule */}
+                      <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-medium text-slate-600 bg-slate-100 border border-slate-200/70 whitespace-nowrap">
+                        IndiGo 6E-204 · Delayed +5h 10m
+                      </span>
+                    </div>
+
+                    <div className="flex items-center gap-2 shrink-0 ml-auto">
+                      <span className="text-[11px] font-mono text-slate-400 whitespace-nowrap">
+                        T-minus 1h 45m
+                      </span>
+                      <button
+                        type="button"
+                        className="p-0.5 text-slate-400 hover:text-slate-600 transition-colors"
+                        aria-label={isAlertOpen(item1.id, false) ? "Collapse alert" : "Expand alert"}
+                      >
+                        <span
+                          className={`material-symbols-outlined text-base leading-none transition-transform duration-200 ${
+                            isAlertOpen(item1.id, false) ? 'rotate-180' : ''
+                          }`}
+                        >
+                          expand_more
+                        </span>
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Clean 3-Column Context Grid */}
+                  {isAlertOpen(item1.id, false) && (
+                    <div className="px-3 pb-2.5 pt-1 border-t border-slate-100/90 animate-in fade-in duration-150">
+                      <div className="grid grid-cols-1 md:grid-cols-3 gap-2 p-2 bg-slate-50/70 rounded-lg border border-slate-100 text-xs">
+                        <div>
+                          <span className="text-[10px] uppercase font-semibold text-slate-400 tracking-wider block">
+                            Impacted Group
+                          </span>
+                          <p className="font-semibold text-slate-900 mt-0.5 leading-snug">
+                            {item1.impactedGroup || 'Iqra Mulla Group'}
+                          </p>
+                          <p className="text-[11px] text-slate-500 leading-snug">Family Deluxe tier</p>
+                        </div>
+                        <div>
+                          <span className="text-[10px] uppercase font-semibold text-slate-400 tracking-wider block">
+                            Root Cause
+                          </span>
+                          <p className="font-semibold text-slate-900 mt-0.5 leading-snug">
+                            IndiGo 6E-204 (DEL → COK)
+                          </p>
+                          <p className="text-[11px] text-red-600 font-medium leading-snug">
+                            Delayed +5h 10m · Fog in Delhi
+                          </p>
+                        </div>
+                        <div>
+                          <span className="text-[10px] uppercase font-semibold text-slate-400 tracking-wider block">
+                            Downstream Conflict
+                          </span>
+                          <p className="font-semibold text-slate-900 mt-0.5 leading-snug">
+                            Cochin Airport Chauffeur
+                          </p>
+                          <p className="text-[11px] text-slate-500 leading-snug">Original pickup: 09:30 AM</p>
+                        </div>
+                      </div>
+
+                      {/* Concise AI Recommendation */}
+                      <div className="mt-2 flex items-center gap-2 px-2.5 py-1.5 bg-slate-50 border border-slate-200/70 rounded-md text-xs text-slate-700">
+                        <span className="material-symbols-outlined text-slate-500 text-sm shrink-0">
+                          auto_fix_high
+                        </span>
+                        <div className="flex-1 truncate">
+                          <span className="font-semibold text-slate-900">AI Recommendation:</span>{' '}
+                          Reschedule airport transfer to 02:30 PM & swap lunch stop to Fort Kochi.
+                        </div>
+                      </div>
+
+                      {/* Concise Actions */}
+                      <div className="mt-2 flex items-center justify-between pt-1.5 border-t border-slate-100 text-xs">
+                        <div className="flex items-center gap-1.5 text-[11px] text-slate-500">
+                          <span className="material-symbols-outlined text-sm">person_pin</span>
+                          <span>Driver: Anoop Nair (Innova Crysta)</span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <button
+                            onClick={() => onInspectTour('issue-1024')}
+                            className="px-2.5 py-1 rounded-md border border-slate-200 bg-white text-xs font-medium text-slate-700 hover:bg-slate-50 transition-colors cursor-pointer"
+                          >
+                            Review Details
+                          </button>
+                          {item1.status === 'open' ? (
+                            <button
+                              onClick={() => handleQuickReschedule(item1.id)}
+                              className="px-3 py-1 rounded-md bg-slate-900 hover:bg-slate-800 text-white text-xs font-medium transition-colors flex items-center gap-1 cursor-pointer"
+                            >
+                              <span className="material-symbols-outlined text-xs">bolt</span>
+                              <span>Quick Reschedule</span>
+                            </button>
+                          ) : (
+                            <span className="inline-flex items-center gap-1 text-xs text-emerald-700 font-medium bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200/60">
+                              <span className="material-symbols-outlined text-xs">check</span>
+                              Dispatched
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                    </div>
                   )}
-                </div>
+                </article>
+
+                {/* Alert 2: 🟠 High (Tour #1081) - Collapsed by Default */}
+                <article
+                  className={`bg-white border rounded-xl shadow-2xs relative overflow-hidden transition-all hover:border-slate-300 ${
+                    item2.status === 'resolved'
+                      ? 'border-slate-200/80 opacity-90'
+                      : 'border-slate-200/90'
+                  }`}
+                >
+                  <div
+                    className={`absolute left-0 top-0 bottom-0 w-1 ${
+                      item2.status === 'resolved' ? 'bg-emerald-500' : 'bg-amber-500'
+                    }`}
+                  />
+
+                  {/* Compact Header */}
+                  <div
+                    onClick={() => toggleAlert(item2.id, false)}
+                    className="py-2 px-3 pl-3.5 flex items-center justify-between gap-2.5 cursor-pointer select-none hover:bg-slate-50/70 transition-colors"
+                  >
+                    <div className="flex items-center gap-2 flex-wrap text-xs min-w-0">
+                      {/* Capsule / Pill Severity Badge */}
+                      <span
+                        className={`inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[11px] font-semibold shrink-0 border ${
+                          item2.status === 'resolved'
+                            ? 'bg-emerald-50 text-emerald-700 border-emerald-200/70'
+                            : 'bg-amber-50 text-amber-800 border-amber-200/70'
+                        }`}
+                      >
+                        <span
+                          className={`w-1.5 h-1.5 rounded-full shrink-0 ${
+                            item2.status === 'resolved' ? 'bg-emerald-500' : 'bg-amber-500'
+                          }`}
+                        />
+                        <span>
+                          {item2.status === 'resolved'
+                            ? 'Approved & Held'
+                            : 'High'}
+                        </span>
+                      </span>
+
+                      {/* Primary Text: Tour Name */}
+                      <span className="font-semibold text-slate-900 truncate">
+                        Tour #1081 · Rajasthan Royal Heritage
+                      </span>
+
+                      {/* Secondary Metadata: PNR */}
+                      <span className="font-mono text-slate-400 text-[11px] shrink-0">
+                        PNR: RJ-33411
+                      </span>
+
+                      {/* Neutral Risk Capsule */}
+                      <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-medium text-slate-600 bg-slate-100 border border-slate-200/70 whitespace-nowrap">
+                        HVAC Outage
+                      </span>
+                    </div>
+
+                    <div className="flex items-center gap-2 shrink-0 ml-auto">
+                      <span className="text-[11px] font-mono text-slate-400 whitespace-nowrap">
+                        Check-in: 03:00 PM
+                      </span>
+                      <button
+                        type="button"
+                        className="p-0.5 text-slate-400 hover:text-slate-600 transition-colors"
+                        aria-label={isAlertOpen(item2.id, false) ? "Collapse alert" : "Expand alert"}
+                      >
+                        <span
+                          className={`material-symbols-outlined text-base leading-none transition-transform duration-200 ${
+                            isAlertOpen(item2.id, false) ? 'rotate-180' : ''
+                          }`}
+                        >
+                          expand_more
+                        </span>
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Clean 3-Column Context Grid */}
+                  {isAlertOpen(item2.id, false) && (
+                    <div className="px-3 pb-2.5 pt-1 border-t border-slate-100/90 animate-in fade-in duration-150">
+                      <div className="grid grid-cols-1 md:grid-cols-3 gap-2 p-2 bg-slate-50/70 rounded-lg border border-slate-100 text-xs">
+                        <div>
+                          <span className="text-[10px] uppercase font-semibold text-slate-400 tracking-wider block">
+                            Impacted Group
+                          </span>
+                          <p className="font-semibold text-slate-900 mt-0.5 leading-snug">
+                            {item2.impactedGroup || 'Ayaz Khan Group'}
+                          </p>
+                          <p className="text-[11px] text-slate-500 leading-snug">Luxury Suite package</p>
+                        </div>
+                        <div>
+                          <span className="text-[10px] uppercase font-semibold text-slate-400 tracking-wider block">
+                            Root Cause
+                          </span>
+                          <p className="font-semibold text-slate-900 mt-0.5 leading-snug">
+                            Samode Palace Jaipur
+                          </p>
+                          <p className="text-[11px] text-amber-700 font-medium leading-snug">
+                            HVAC emergency electrical outage
+                          </p>
+                        </div>
+                        <div>
+                          <span className="text-[10px] uppercase font-semibold text-slate-400 tracking-wider block">
+                            Downstream Conflict
+                          </span>
+                          <p className="font-semibold text-slate-900 mt-0.5 leading-snug">
+                            Meridian Heritage Suite
+                          </p>
+                          <p className="text-[11px] text-emerald-700 font-mono leading-snug">
+                            +₹2,400 delta approved budget
+                          </p>
+                        </div>
+                      </div>
+
+                      {/* Concise AI Recommendation */}
+                      <div className="mt-2 flex items-center justify-between px-2.5 py-1.5 bg-amber-50/50 border border-amber-200/60 rounded-md text-xs text-slate-700">
+                        <div className="flex items-center gap-2 truncate">
+                          <span className="material-symbols-outlined text-amber-600 text-sm shrink-0">
+                            hotel
+                          </span>
+                          <span className="truncate">
+                            <strong className="text-slate-900 font-semibold">AI Recommendation:</strong>{' '}
+                            Hold placed on 2x Luxury Garden Suites at Hotel Meridian Heritage.
+                          </span>
+                        </div>
+                        <span className="text-[10px] font-mono text-amber-700 font-medium whitespace-nowrap ml-2">
+                          22m remaining
+                        </span>
+                      </div>
+
+                      {/* Concise Actions */}
+                      <div className="mt-2 flex items-center justify-between pt-1.5 border-t border-slate-100 text-xs">
+                        <span className="text-[11px] text-slate-500">
+                          No additional cost passed to guest
+                        </span>
+                        <div className="flex items-center gap-2">
+                          <button
+                            onClick={() =>
+                              setLiveToast(
+                                'Alternatives: ITC Rajputana (+₹5,100) or Rambagh Palace (+₹18,000)'
+                              )
+                            }
+                            className="px-2.5 py-1 rounded-md border border-slate-200 bg-white text-xs font-medium text-slate-700 hover:bg-slate-50 transition-colors cursor-pointer"
+                          >
+                            View Alternatives
+                          </button>
+                          {item2.status === 'open' ? (
+                            <button
+                              onClick={() => handleApproveBudget(item2.id)}
+                              className="px-3 py-1 rounded-md bg-emerald-700 hover:bg-emerald-800 text-white text-xs font-medium transition-colors flex items-center gap-1 cursor-pointer"
+                            >
+                              <span className="material-symbols-outlined text-xs">check</span>
+                              <span>Approve +₹2,400</span>
+                            </button>
+                          ) : (
+                            <span className="inline-flex items-center gap-1 text-xs text-emerald-700 font-medium bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200/60">
+                              <span className="material-symbols-outlined text-xs">check</span>
+                              Approved
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                </article>
+
+                {/* Alert 3: 🔵 Medium (Tour #1042) - Collapsed by Default */}
+                <article
+                  className={`bg-white border rounded-xl shadow-2xs relative overflow-hidden transition-all hover:border-slate-300 ${
+                    item3.status === 'resolved'
+                      ? 'border-slate-200/80 opacity-90'
+                      : 'border-slate-200/90'
+                  }`}
+                >
+                  <div
+                    className={`absolute left-0 top-0 bottom-0 w-1 ${
+                      item3.status === 'resolved' ? 'bg-emerald-500' : 'bg-blue-500'
+                    }`}
+                  />
+
+                  {/* Compact Header */}
+                  <div
+                    onClick={() => toggleAlert(item3.id, false)}
+                    className="py-2 px-3 pl-3.5 flex items-center justify-between gap-2.5 cursor-pointer select-none hover:bg-slate-50/70 transition-colors"
+                  >
+                    <div className="flex items-center gap-2 flex-wrap text-xs min-w-0">
+                      {/* Capsule / Pill Severity Badge */}
+                      <span
+                        className={`inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[11px] font-semibold shrink-0 border ${
+                          item3.status === 'resolved'
+                            ? 'bg-emerald-50 text-emerald-700 border-emerald-200/70'
+                            : 'bg-blue-50 text-blue-700 border-blue-200/70'
+                        }`}
+                      >
+                        <span
+                          className={`w-1.5 h-1.5 rounded-full shrink-0 ${
+                            item3.status === 'resolved' ? 'bg-emerald-500' : 'bg-blue-500'
+                          }`}
+                        />
+                        <span>
+                          {item3.status === 'resolved'
+                            ? 'Driver Swapped'
+                            : 'Medium'}
+                        </span>
+                      </span>
+
+                      {/* Primary Text: Tour Name */}
+                      <span className="font-semibold text-slate-900 truncate">
+                        Tour #1042 · Goa Coastal & Spice Trail
+                      </span>
+
+                      {/* Secondary Metadata: PNR */}
+                      <span className="font-mono text-slate-400 text-[11px] shrink-0">
+                        PNR: GA-11029
+                      </span>
+
+                      {/* Neutral Risk Capsule */}
+                      <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-medium text-slate-600 bg-slate-100 border border-slate-200/70 whitespace-nowrap">
+                        EV Charging Stalled +35m
+                      </span>
+                    </div>
+
+                    <div className="flex items-center gap-2 shrink-0 ml-auto">
+                      <span className="text-[11px] font-mono text-slate-400 whitespace-nowrap">
+                        Pickup in 25m
+                      </span>
+                      <button
+                        type="button"
+                        className="p-0.5 text-slate-400 hover:text-slate-600 transition-colors"
+                        aria-label={isAlertOpen(item3.id, false) ? "Collapse alert" : "Expand alert"}
+                      >
+                        <span
+                          className={`material-symbols-outlined text-base leading-none transition-transform duration-200 ${
+                            isAlertOpen(item3.id, false) ? 'rotate-180' : ''
+                          }`}
+                        >
+                          expand_more
+                        </span>
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Clean 3-Column Context Grid */}
+                  {isAlertOpen(item3.id, false) && (
+                    <div className="px-3 pb-2.5 pt-1 border-t border-slate-100/90 animate-in fade-in duration-150">
+                      <div className="grid grid-cols-1 md:grid-cols-3 gap-2 p-2 bg-slate-50/70 rounded-lg border border-slate-100 text-xs">
+                        <div>
+                          <span className="text-[10px] uppercase font-semibold text-slate-400 tracking-wider block">
+                            Impacted Group
+                          </span>
+                          <p className="font-semibold text-slate-900 mt-0.5 leading-snug">
+                            {item3.impactedGroup || 'Umme Hani & Faiz Khan'}
+                          </p>
+                          <p className="text-[11px] text-slate-500 leading-snug">W Goa to Panjim Marina</p>
+                        </div>
+                        <div>
+                          <span className="text-[10px] uppercase font-semibold text-slate-400 tracking-wider block">
+                            Root Cause
+                          </span>
+                          <p className="font-semibold text-slate-900 mt-0.5 leading-snug">
+                            EV Charging Queue Stalled
+                          </p>
+                          <p className="text-[11px] text-amber-600 font-medium leading-snug">
+                            Assigned driver delayed ~35m
+                          </p>
+                        </div>
+                        <div>
+                          <span className="text-[10px] uppercase font-semibold text-slate-400 tracking-wider block">
+                            Downstream Conflict
+                          </span>
+                          <p className="font-semibold text-slate-900 mt-0.5 leading-snug">
+                            Standby: Rohit S. (Tata Nexon EV)
+                          </p>
+                          <p className="text-[11px] text-emerald-700 font-mono leading-snug">
+                            10 mins away · Standby proximity
+                          </p>
+                        </div>
+                      </div>
+
+                      {/* Concise AI Recommendation */}
+                      <div className="mt-2 flex items-center gap-2 px-2.5 py-1.5 bg-slate-50 border border-slate-200/70 rounded-md text-xs text-slate-700">
+                        <span className="material-symbols-outlined text-slate-500 text-sm shrink-0">
+                          swap_horiz
+                        </span>
+                        <div className="flex-1 truncate">
+                          <span className="font-semibold text-slate-900">AI Recommendation:</span>{' '}
+                          Auto-reassign standby chauffeur Rohit S. to arrive within 10 minutes.
+                        </div>
+                      </div>
+
+                      {/* Concise Actions */}
+                      <div className="mt-2 flex items-center justify-between pt-1.5 border-t border-slate-100 text-xs">
+                        <span className="text-[11px] text-slate-500">
+                          Guest has not been notified yet
+                        </span>
+                        <div className="flex items-center gap-2">
+                          <button
+                            onClick={() =>
+                              setLiveToast('SMS ping dispatched to original driver.')
+                            }
+                            className="px-2.5 py-1 rounded-md border border-slate-200 bg-white text-xs font-medium text-slate-700 hover:bg-slate-50 transition-colors cursor-pointer"
+                          >
+                            Contact Driver
+                          </button>
+                          {item3.status === 'open' ? (
+                            <button
+                              onClick={() => handleReassignDriver(item3.id)}
+                              className="px-3 py-1 rounded-md bg-slate-900 hover:bg-slate-800 text-white text-xs font-medium transition-colors flex items-center gap-1 cursor-pointer"
+                            >
+                              <span className="material-symbols-outlined text-xs">
+                                swap_horiz
+                              </span>
+                              <span>Reassign Driver</span>
+                            </button>
+                          ) : (
+                            <span className="inline-flex items-center gap-1 text-xs text-emerald-700 font-medium bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200/60">
+                              <span className="material-symbols-outlined text-xs">check</span>
+                              Rohit S. Enroute
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                </article>
               </div>
-            </article>
-            )}
-              </>
             )}
           </section>
 
-          {/* Right: Auxiliary Radar & Real-Time Event Stream (5 Cols) */}
-          <section className="lg:col-span-5 flex flex-col gap-4 text-left">
-            {/* South India Active Fleet Radar */}
-            <div className="bg-white border border-[#E5E7EB] rounded-xl overflow-hidden shadow-xs flex flex-col">
-              <div className="p-3.5 border-b border-[#E5E7EB] flex items-center justify-between bg-white">
-                <div className="flex items-center gap-2">
-                  <span className="material-symbols-outlined text-[#004AC6]">
-                    radar
-                  </span>
-                  <h3 className="text-xs font-bold text-[#111827]">
-                    South India Active Fleet Radar
-                  </h3>
-                </div>
-                <div className="flex items-center gap-2">
-                  <span className="inline-flex items-center gap-1 text-[11px] font-mono text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200">
-                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-600 animate-pulse"></span>
-                    14 Chauffeurs Live
-                  </span>
-                  <button
-                    onClick={() =>
-                      setLiveToast('Full radar map telemetry synchronized.')
-                    }
-                    className="text-[#9CA3AF] hover:text-[#111827] cursor-pointer"
-                  >
-                    <span className="material-symbols-outlined text-base">
-                      fullscreen
-                    </span>
-                  </button>
-                </div>
-              </div>
-
-              {/* Map Container */}
-              <div className="relative h-64 w-full bg-[#E5E7EB] overflow-hidden group">
-                <img
-                  alt="South India Route Radar"
-                  className="w-full h-full object-cover object-center grayscale contrast-125 brightness-95 opacity-80"
-                  src={RADAR_MAP_IMAGE}
-                />
-                <div className="absolute inset-0 bg-blue-950/10 pointer-events-none"></div>
-
-                {/* Live Chauffeur Markers Overlay */}
-                <div
-                  onClick={() =>
-                    setLiveToast('Chauffeur KL-07-BW-4412 on time at Fort Kochi.')
-                  }
-                  className="absolute top-1/4 left-1/3 flex flex-col items-center cursor-pointer hover:scale-110 transition-transform"
-                >
-                  <div className="bg-[#004AC6] text-white text-[10px] font-mono px-1.5 py-0.5 rounded shadow-md border border-white flex items-center gap-1">
-                    <span className="material-symbols-outlined text-xs">
-                      directions_car
-                    </span>
-                    <span>KL-07-BW-4412</span>
-                  </div>
-                  <div className="w-2 h-2 bg-[#004AC6] rounded-full ring-4 ring-[#004AC6]/30 mt-0.5"></div>
-                </div>
-
-                <div
-                  onClick={() => onInspectTour('issue-1024')}
-                  className="absolute bottom-1/3 right-1/4 flex flex-col items-center cursor-pointer hover:scale-110 transition-transform"
-                >
-                  <div className="bg-amber-600 text-white text-[10px] font-mono px-1.5 py-0.5 rounded shadow-md border border-white flex items-center gap-1">
-                    <span className="material-symbols-outlined text-xs">
-                      flight_land
-                    </span>
-                    <span>6E-204 (+5h)</span>
-                  </div>
-                  <div className="w-2 h-2 bg-amber-600 rounded-full ring-4 ring-amber-600/30 mt-0.5"></div>
-                </div>
-
-                <div
-                  onClick={() =>
-                    setLiveToast('Munnar Tea Estate Chauffeur standby active.')
-                  }
-                  className="absolute top-1/2 right-1/3 flex flex-col items-center cursor-pointer hover:scale-110 transition-transform"
-                >
-                  <div className="bg-emerald-600 text-white text-[10px] font-mono px-1.5 py-0.5 rounded shadow-md border border-white flex items-center gap-1">
-                    <span className="material-symbols-outlined text-xs">hotel</span>
-                    <span>Munnar Tea Estate</span>
-                  </div>
-                  <div className="w-2 h-2 bg-emerald-600 rounded-full ring-4 ring-emerald-600/30 mt-0.5"></div>
-                </div>
-
-                {/* Floating Map Badge */}
-                <div className="absolute bottom-3 left-3 bg-white/95 backdrop-blur-md px-2.5 py-1.5 rounded-lg border border-[#E5E7EB] text-[11px] shadow-xs flex items-center gap-2">
-                  <span className="w-2 h-2 rounded-full bg-[#004AC6]"></span>
-                  <span className="font-semibold text-[#151c27]">
-                    Corridor: Kochi (COK) → Munnar → Alleppey
-                  </span>
-                </div>
-              </div>
-
-              {/* Hub Quick Stats */}
-              <div className="grid grid-cols-3 divide-x divide-[#E5E7EB] bg-[#F9FAFB] text-center py-2 border-t border-[#E5E7EB]">
-                <div>
-                  <p className="text-[10px] uppercase font-semibold text-[#6B7280]">
-                    Kochi Hub
-                  </p>
-                  <p className="text-xs font-bold text-[#111827]">9 Dispatched</p>
-                </div>
-                <div>
-                  <p className="text-[10px] uppercase font-semibold text-[#6B7280]">
-                    Munnar Hub
-                  </p>
-                  <p className="text-xs font-bold text-[#111827]">4 In-transit</p>
-                </div>
-                <div>
-                  <p className="text-[10px] uppercase font-semibold text-[#6B7280]">
-                    Alleppey Hub
-                  </p>
-                  <p className="text-xs font-bold text-[#111827]">3 Docked</p>
-                </div>
-              </div>
-            </div>
-
-            {/* Real-Time Event Stream Log */}
-            <div className="bg-white border border-[#E5E7EB] rounded-xl shadow-xs flex flex-col flex-1">
+          {/* Right: Real-Time Event Stream Log (5 Cols) - Takes the space of the removed radar map */}
+          <section className="lg:col-span-5 flex flex-col text-left">
+            <div className="bg-white border border-[#E5E7EB] rounded-xl shadow-xs flex flex-col">
               <div className="p-3.5 border-b border-[#E5E7EB]">
                 <div className="flex items-center justify-between mb-2">
                   <div className="flex items-center gap-2">
-                    <span className="material-symbols-outlined text-[#6B7280]">
+                    <span className="material-symbols-outlined text-blue-600">
                       manage_history
                     </span>
                     <h3 className="text-xs font-bold text-[#111827]">
                       Real-Time Event Stream
                     </h3>
                   </div>
-                  <span className="text-[10px] font-mono text-emerald-700 bg-emerald-50 px-1.5 py-0.5 rounded font-semibold">
+                  <span className="text-[10px] font-mono text-blue-700 bg-blue-50 px-2 py-0.5 rounded font-semibold border border-blue-200/70">
                     WebSocket: LIVE
                   </span>
                 </div>
@@ -955,7 +994,7 @@ export const OpsCommandHub: React.FC<OpsCommandHubProps> = ({
                     <button
                       key={tab.id}
                       onClick={() => setEventCategoryFilter(tab.id as any)}
-                      className={`px-2.5 py-1 rounded-md text-[11px] font-medium transition-colors ${
+                      className={`px-2.5 py-1 rounded-md text-[11px] font-medium transition-colors cursor-pointer ${
                         eventCategoryFilter === tab.id
                           ? 'bg-white text-slate-900 font-semibold shadow-2xs'
                           : 'text-slate-600 hover:text-slate-900'
@@ -968,16 +1007,16 @@ export const OpsCommandHub: React.FC<OpsCommandHubProps> = ({
               </div>
 
               {/* Feed Items */}
-              <div className="divide-y divide-[#E5E7EB] max-h-80 overflow-y-auto custom-scrollbar">
+              <div className="divide-y divide-[#E5E7EB] max-h-[310px] overflow-y-auto custom-scrollbar">
                 {filteredEvents.map(evt => (
                   <div
                     key={evt.id}
                     className="p-3 hover:bg-[#F9FAFB] transition-colors flex items-start gap-3"
                   >
                     <div
-                      className={`w-6 h-6 rounded-full ${evt.iconBg} ${evt.iconColor} flex items-center justify-center shrink-0 mt-0.5`}
+                      className="w-6 h-6 rounded-full bg-blue-50 text-blue-600 border border-blue-100 flex items-center justify-center shrink-0 mt-0.5 shadow-2xs"
                     >
-                      <span className="material-symbols-outlined text-xs">
+                      <span className="material-symbols-outlined text-xs text-blue-600">
                         {evt.icon}
                       </span>
                     </div>
@@ -1012,84 +1051,96 @@ export const OpsCommandHub: React.FC<OpsCommandHubProps> = ({
               </div>
             </div>
           </section>
-        </div>
 
-        {/* Quick Transfer Matrix Bar */}
-        <section className="bg-white border border-[#E5E7EB] rounded-xl p-4 shadow-xs text-left">
-          <div className="flex items-center justify-between pb-3 mb-3 border-b border-[#E5E7EB]">
-            <div className="flex items-center gap-2">
-              <span className="material-symbols-outlined text-[#6B7280]">
-                sync_alt
-              </span>
-              <h3 className="text-sm font-bold text-[#111827]">
-                Active Dispatch Queue (Today's Next 5 Transfers)
-              </h3>
+          {/* Full Width Row: Active Dispatch Queue (12 Cols) */}
+          <section className="lg:col-span-12 bg-white border border-[#E5E7EB] rounded-xl p-4 shadow-xs text-left">
+            <div className="flex items-center justify-between pb-3 mb-3 border-b border-[#E5E7EB]">
+              <div className="flex items-center gap-2">
+                <span className="material-symbols-outlined text-[#6B7280]">
+                  sync_alt
+                </span>
+                <h3 className="text-sm font-bold text-[#111827]">
+                  Active Dispatch Queue (Today's Next 5 Transfers)
+                </h3>
+              </div>
+              <span className="text-xs text-[#6B7280]">Auto-refreshing every 30s</span>
             </div>
-            <span className="text-xs text-[#6B7280]">Auto-refreshing every 30s</span>
-          </div>
 
-          <div className="overflow-x-auto">
-            <table className="w-full text-left border-collapse">
-              <thead>
-                <tr className="border-b border-[#E5E7EB] text-[11px] font-semibold text-[#6B7280] uppercase tracking-wider">
-                  <th className="py-2 px-3">Tour ID</th>
-                  <th className="py-2 px-3">Lead Traveler</th>
-                  <th className="py-2 px-3">Leg / Segment</th>
-                  <th className="py-2 px-3">Vehicle / Chauffeur</th>
-                  <th className="py-2 px-3">Scheduled</th>
-                  <th className="py-2 px-3">Status</th>
-                  <th className="py-2 px-3 text-right">Action</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-[#E5E7EB] text-xs">
-                {transfers.map(item => (
-                  <tr
-                    key={item.tourId}
-                    className="hover:bg-[#F9FAFB] transition-colors"
-                  >
-                    <td className="py-2.5 px-3 font-mono font-bold text-[#004AC6]">
-                      {item.tourId}
-                    </td>
-                    <td className="py-2.5 px-3 font-semibold text-[#111827]">
-                      {item.leadTraveler}
-                    </td>
-                    <td className="py-2.5 px-3 text-[#6B7280]">{item.leg}</td>
-                    <td className="py-2.5 px-3 text-[#111827]">{item.vehicle}</td>
-                    <td
-                      className={`py-2.5 px-3 font-mono ${
-                        item.isDelayed ? 'text-red-600 font-bold' : 'text-[#111827]'
-                      }`}
-                    >
-                      {item.scheduledTime}
-                    </td>
-                    <td className="py-2.5 px-3">
-                      <div className="flex items-center gap-1.5 text-xs text-slate-700">
-                        <span
-                          className={`w-1.5 h-1.5 rounded-full ${
-                            item.statusColor === 'red'
-                              ? 'bg-red-500'
-                              : item.statusColor === 'blue'
-                              ? 'bg-blue-500'
-                              : 'bg-emerald-500'
-                          }`}
-                        />
-                        <span className="font-medium text-[11px]">{item.status}</span>
-                      </div>
-                    </td>
-                    <td className="py-2.5 px-3 text-right">
-                      <button
-                        onClick={() => onInspectTour(item.tourId)}
-                        className="px-2.5 py-1 text-xs font-medium bg-slate-100 border border-slate-200 rounded-md hover:bg-slate-200 text-slate-700 transition-colors"
-                      >
-                        Inspect
-                      </button>
-                    </td>
+            <div className="overflow-x-auto">
+              <table className="w-full text-left border-collapse">
+                <thead>
+                  <tr className="border-b border-[#E5E7EB] text-[11px] font-semibold text-[#6B7280] uppercase tracking-wider">
+                    <th className="py-2 px-3">Tour ID</th>
+                    <th className="py-2 px-3">Lead Traveler</th>
+                    <th className="py-2 px-3">Leg / Segment</th>
+                    <th className="py-2 px-3">Vehicle / Chauffeur</th>
+                    <th className="py-2 px-3">Scheduled</th>
+                    <th className="py-2 px-3">Status</th>
+                    <th className="py-2 px-3 text-right">Action</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </section>
+                </thead>
+                <tbody className="divide-y divide-[#E5E7EB] text-xs">
+                  {transfers.map(item => (
+                    <tr
+                      key={item.tourId}
+                      className="hover:bg-[#F9FAFB] transition-colors"
+                    >
+                      <td className="py-2.5 px-3 font-mono font-bold text-[#004AC6]">
+                        {item.tourId}
+                      </td>
+                      <td className="py-2.5 px-3">
+                        <div className="flex items-center gap-2.5">
+                          <img
+                            src={
+                              DISPATCH_AVATARS[item.tourId] ||
+                              'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=120&q=80'
+                            }
+                            alt={item.leadTraveler}
+                            className="w-7 h-7 rounded-full object-cover border border-slate-200/90 shrink-0 shadow-2xs"
+                          />
+                          <span className="font-semibold text-[#111827]">
+                            {item.leadTraveler}
+                          </span>
+                        </div>
+                      </td>
+                      <td className="py-2.5 px-3 text-[#6B7280]">{item.leg}</td>
+                      <td className="py-2.5 px-3 text-[#111827]">{item.vehicle}</td>
+                      <td
+                        className={`py-2.5 px-3 font-mono ${
+                          item.isDelayed ? 'text-red-600 font-bold' : 'text-[#111827]'
+                        }`}
+                      >
+                        {item.scheduledTime}
+                      </td>
+                      <td className="py-2.5 px-3">
+                        <div className="flex items-center gap-1.5 text-xs text-slate-700">
+                          <span
+                            className={`w-1.5 h-1.5 rounded-full ${
+                              item.statusColor === 'red'
+                                ? 'bg-red-500'
+                                : item.statusColor === 'blue'
+                                ? 'bg-blue-500'
+                                : 'bg-emerald-500'
+                            }`}
+                          />
+                          <span className="font-medium text-[11px]">{item.status}</span>
+                        </div>
+                      </td>
+                      <td className="py-2.5 px-3 text-right">
+                        <button
+                          onClick={() => onInspectTour(item.tourId)}
+                          className="px-2.5 py-1 text-xs font-medium bg-slate-100 border border-slate-200 rounded-md hover:bg-slate-200 text-slate-700 transition-colors cursor-pointer"
+                        >
+                          Inspect
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </section>
+        </div>
       </main>
     </div>
   );

@@ -541,7 +541,7 @@ export const INITIAL_DISRUPTIONS: DisruptionIssue[] = [
     severity: 'critical',
     severityLabel: 'Critical Disruption',
     tMinus: 'T-minus 1h 45m',
-    impactedGroup: 'Sarah Mehta Group (4 pax)',
+    impactedGroup: 'Iqra Mulla Group',
     tier: 'Family Deluxe tier',
     rootCauseTitle: 'IndiGo 6E-204 (DEL → COK)',
     rootCauseDetail: 'Delayed +5h 10m · Fog in Delhi',
@@ -603,7 +603,7 @@ export const INITIAL_DISRUPTIONS: DisruptionIssue[] = [
     severity: 'high',
     severityLabel: 'High Urgency',
     tMinus: 'Check-in: 03:00 PM',
-    impactedGroup: 'Vikram Malhotra Group (4 pax)',
+    impactedGroup: 'Ayaz Khan Group',
     tier: 'Luxury Suite package',
     rootCauseTitle: 'Samode Palace Jaipur',
     rootCauseDetail: 'HVAC emergency electrical outage',
@@ -642,7 +642,7 @@ export const INITIAL_DISRUPTIONS: DisruptionIssue[] = [
     severity: 'moderate',
     severityLabel: 'Moderate Delay',
     tMinus: 'Pickup in 25m',
-    impactedGroup: 'Dev & Riya Kapoor (2 pax)',
+    impactedGroup: 'Umme Hani & Faiz Khan',
     tier: 'W Goa to Panjim Marina',
     rootCauseTitle: 'EV Charging Queue Stalled',
     rootCauseDetail: 'Assigned driver delayed ~35m',
@@ -677,7 +677,7 @@ export const INITIAL_DISRUPTIONS: DisruptionIssue[] = [
 export const DISPATCH_TRANSFERS: DispatchTransfer[] = [
   {
     tourId: '#1024',
-    leadTraveler: 'Sarah Mehta (4)',
+    leadTraveler: 'Iqra Mulla',
     pax: 4,
     leg: 'COK Airport → Brunton Boatyard',
     vehicle: 'Anoop Nair · Crysta',
@@ -690,7 +690,7 @@ export const DISPATCH_TRANSFERS: DispatchTransfer[] = [
   },
   {
     tourId: '#1042',
-    leadTraveler: 'Dev Kapoor (2)',
+    leadTraveler: 'Ayaz Khan',
     pax: 2,
     leg: 'W Goa → Panjim Marina Cruise',
     vehicle: 'Rohit S. (Standby) · EV',
@@ -701,7 +701,7 @@ export const DISPATCH_TRANSFERS: DispatchTransfer[] = [
   },
   {
     tourId: '#1099',
-    leadTraveler: 'Marcus Sterling (1)',
+    leadTraveler: 'Umme Hani',
     pax: 1,
     leg: 'Kumarakom → Marari Beach Resort',
     vehicle: 'Biju K. · Sedan',
@@ -712,7 +712,7 @@ export const DISPATCH_TRANSFERS: DispatchTransfer[] = [
   },
   {
     tourId: '#1019',
-    leadTraveler: 'Pierre Dubois (6)',
+    leadTraveler: 'Faiz Khan',
     pax: 6,
     leg: 'Alleppey Dock → Lake Cruiser',
     vehicle: 'Saji M. · Luxury Van',
@@ -723,7 +723,7 @@ export const DISPATCH_TRANSFERS: DispatchTransfer[] = [
   },
   {
     tourId: '#1055',
-    leadTraveler: 'Ananya Sen (2)',
+    leadTraveler: 'Iqra Mulla',
     pax: 2,
     leg: 'Udaipur Airport → Lake Palace',
     vehicle: 'Manohar P. · Sedan',
