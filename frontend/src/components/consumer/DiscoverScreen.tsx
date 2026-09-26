@@ -1,4 +1,5 @@
 import React, { useState, useRef, useMemo, useEffect } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { ConsumerTab } from '../../types/travel';
 import { TripItinerary } from '../../types/itinerary';
 import {
@@ -25,6 +26,7 @@ import { formatCurrency } from '../../utils/pricing';
 import { USER_AVATAR } from '../../data/mockData';
 import { LuxuryCard } from '../common/LuxuryCard';
 import { getPackageAmenities } from '../../data/operatorPackagesData';
+import { WordByWordBlurText, BlurFadeCard } from '../ui/MotionComponents';
 
 interface DiscoverScreenProps {
   onNavigateTab: (tab: ConsumerTab) => void;
@@ -726,10 +728,14 @@ export const DiscoverScreen: React.FC<DiscoverScreenProps> = ({
         {/* Ambient subtle central glow */}
         <div className="absolute inset-0 pointer-events-none bg-[radial-gradient(ellipse_75%_55%_at_50%_40%,rgba(241,245,249,0.9),transparent)]" />
 
-        {/* Clean Headline (No branding, no pill) */}
-        <h1 className="text-3xl sm:text-5xl lg:text-5xl font-black text-[#111827] tracking-tight text-center mb-8 sm:mb-10 select-none z-20">
-          Where is your next destination?
-        </h1>
+        {/* Clean Headline with Word by Word Blur appear animation */}
+        <WordByWordBlurText
+          text="Where is your next destination?"
+          as="h1"
+          delay={0.1}
+          staggerDuration={0.08}
+          className="text-3xl sm:text-5xl lg:text-5xl font-black text-[#111827] tracking-tight text-center mb-8 sm:mb-10 select-none z-20"
+        />
 
         {/* Orbit Canvas with Floating Cards and Center Search Form */}
         <div className="relative w-full min-h-[480px] sm:min-h-[540px] flex items-center justify-center">
@@ -737,9 +743,16 @@ export const DiscoverScreen: React.FC<DiscoverScreenProps> = ({
           {/* FLOATING DESTINATION CARDS (Non-clickable ambient orbit)  */}
           {/* --------------------------------------------------------- */}
           <div className="hidden md:block absolute inset-0 pointer-events-none select-none">
-            {ORBIT_CARDS.map(dest => (
-              <div
+            {ORBIT_CARDS.map((dest, idx) => (
+              <motion.div
                 key={dest.id}
+                initial={{ opacity: 0, scale: 0.8, filter: 'blur(10px)' }}
+                animate={{ opacity: 1, scale: 1, filter: 'blur(0px)' }}
+                transition={{
+                  delay: 0.15 + idx * 0.08,
+                  duration: 0.55,
+                  ease: [0.22, 1, 0.36, 1],
+                }}
                 className={`absolute ${dest.desktopPosition} ${dest.animationClass} ${dest.extraStyle || ''}`}
               >
                 {/* Floating Card Frame */}
@@ -765,7 +778,7 @@ export const DiscoverScreen: React.FC<DiscoverScreenProps> = ({
                     />
                   </div>
                 </div>
-              </div>
+              </motion.div>
             ))}
           </div>
 
@@ -2128,10 +2141,11 @@ export const DiscoverScreen: React.FC<DiscoverScreenProps> = ({
         {/* ----------------------------------------------------------- */}
         {filteredPackages.length > 0 ? (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 justify-items-center">
-            {filteredPackages.map(pkg => (
+            {filteredPackages.map((pkg, idx) => (
               <LuxuryCard
                 key={pkg.id}
                 id={pkg.id}
+                index={idx}
                 title={pkg.title}
                 description={`${pkg.days} Days · ${pkg.destination} · Curated by ${pkg.operator.name}`}
                 image={pkg.heroImage}

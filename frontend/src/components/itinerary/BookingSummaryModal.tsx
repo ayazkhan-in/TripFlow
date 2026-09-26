@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { motion } from 'framer-motion';
 import { PriceBreakdown, TripItinerary } from '../../types/itinerary';
 import { CATEGORY_CONFIG, formatCurrency } from '../../utils/pricing';
 
@@ -57,7 +58,12 @@ export const BookingSummaryModal: React.FC<BookingSummaryModalProps> = ({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-in fade-in duration-150">
-      <div className="bg-white rounded-3xl max-w-xl w-full max-h-[92dvh] flex flex-col shadow-2xl border border-slate-200 overflow-hidden animate-in zoom-in-95 duration-200 text-left">
+      <motion.div
+        initial={{ opacity: 0, scale: 0.95, filter: 'blur(8px)' }}
+        animate={{ opacity: 1, scale: 1, filter: 'blur(0px)' }}
+        transition={{ duration: 0.25, ease: 'easeOut' }}
+        className="bg-white rounded-3xl max-w-xl w-full max-h-[92dvh] flex flex-col shadow-2xl border border-slate-200 overflow-hidden text-left"
+      >
         {/* Header */}
         <div className="p-5 bg-gradient-to-r from-blue-600 via-indigo-600 to-blue-700 text-white flex items-center justify-between">
           <div className="flex items-center gap-3">
@@ -185,12 +191,15 @@ export const BookingSummaryModal: React.FC<BookingSummaryModalProps> = ({
             <div className="space-y-1.5">
               {(
                 ['hotel', 'activity', 'transport', 'meal', 'experience'] as const
-              ).map(catKey => {
+              ).map((catKey, catIdx) => {
                 const amount = pricing.byCategory[catKey] || 0;
                 const config = CATEGORY_CONFIG[catKey];
                 return (
-                  <div
+                  <motion.div
                     key={catKey}
+                    initial={{ opacity: 0, x: -8, filter: 'blur(6px)' }}
+                    animate={{ opacity: 1, x: 0, filter: 'blur(0px)' }}
+                    transition={{ duration: 0.3, delay: 0.15 + catIdx * 0.04, ease: 'easeOut' }}
                     className="flex items-center justify-between text-xs py-1.5 px-3 rounded-xl bg-slate-50 border border-slate-100"
                   >
                     <div className="flex items-center gap-2">
@@ -200,7 +209,7 @@ export const BookingSummaryModal: React.FC<BookingSummaryModalProps> = ({
                       <span className="text-slate-700 font-medium">{config.label}s</span>
                     </div>
                     <span className="font-bold text-slate-900">{formatCurrency(amount)}</span>
-                  </div>
+                  </motion.div>
                 );
               })}
             </div>
@@ -385,7 +394,7 @@ export const BookingSummaryModal: React.FC<BookingSummaryModalProps> = ({
             )}
           </button>
         </div>
-      </div>
+      </motion.div>
     </div>
   );
 };

@@ -1,4 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 import {
   CURATED_DESTINATIONS,
   KERALA_TIMELINE_HERO,
@@ -10,6 +11,7 @@ import {
   SAVED_JOURNEYS,
 } from '../../data/mockData';
 import { LuxuryCard } from '../common/LuxuryCard';
+import { WordByWordBlurText, BlurFadeCard } from '../ui/MotionComponents';
 
 interface LandingPageProps {
   onOpenAuth: (defaultRole?: 'traveler' | 'operator') => void;
@@ -207,29 +209,53 @@ export const LandingPage: React.FC<LandingPageProps> = ({
 
         {/* MIDDLE: Left-Aligned Large Display Headline & Get Started Button */}
         <div className="relative z-20 px-4 sm:px-12 lg:px-16 my-auto py-8 sm:py-12 max-w-4xl text-left">
-          <h1 className="text-4xl sm:text-6xl lg:text-[5.5rem] font-bold text-white tracking-tight leading-[1.04] drop-shadow-[0_2px_12px_rgba(0,0,0,0.6)]">
-            Personalized<br />
-            Luxury<br />
-            Journeys.
-          </h1>
+          <WordByWordBlurText
+            text="Personalized Luxury Journeys."
+            as="h1"
+            delay={0.12}
+            staggerDuration={0.14}
+            className="text-4xl sm:text-6xl lg:text-[5.5rem] font-bold text-white tracking-tight leading-[1.04] drop-shadow-[0_2px_12px_rgba(0,0,0,0.6)]"
+          />
 
-          <p className="text-base sm:text-lg text-white/95 leading-relaxed max-w-xl mt-5 font-normal drop-shadow-[0_1px_8px_rgba(0,0,0,0.6)]">
-            Bespoke, hand-crafted private itineraries that automatically adapt
-            to flight delays, weather shifts, and chauffeur tracking in real time.
-          </p>
+          <WordByWordBlurText
+            text="Bespoke, hand-crafted private itineraries that automatically adapt to flight delays, weather shifts, and chauffeur tracking in real time."
+            as="p"
+            delay={0.65}
+            staggerDuration={0.035}
+            className="text-base sm:text-lg text-white/95 leading-relaxed max-w-xl mt-5 font-normal drop-shadow-[0_1px_8px_rgba(0,0,0,0.6)]"
+          />
 
-          <div className="pt-6">
-            <button
+          <motion.div
+            initial={{ opacity: 0, y: 20, filter: 'blur(10px)' }}
+            animate={{ opacity: 1, y: 0, filter: 'blur(0px)' }}
+            transition={{ delay: 1.15, duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
+            className="pt-6"
+          >
+            <motion.button
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
               onClick={onExploreDemo}
-              className="px-8 py-3.5 rounded-full bg-white text-slate-900 hover:bg-slate-100 text-sm sm:text-base font-semibold transition-all shadow-lg hover:shadow-2xl hover:scale-105 active:scale-95 inline-flex items-center gap-2 cursor-pointer"
+              className="px-8 py-3.5 rounded-full bg-white text-slate-900 hover:bg-slate-100 text-sm sm:text-base font-semibold transition-all shadow-lg hover:shadow-2xl inline-flex items-center gap-2 cursor-pointer"
             >
               <span>Get Started</span>
-            </button>
-          </div>
+              <motion.span
+                animate={{ x: [0, 4, 0] }}
+                transition={{ repeat: Infinity, duration: 1.5, ease: 'easeInOut' }}
+                className="material-symbols-outlined text-base"
+              >
+                arrow_forward
+              </motion.span>
+            </motion.button>
+          </motion.div>
         </div>
 
         {/* BOTTOM: Social Proof Avatars & Category Pills */}
-        <div className="relative z-20 px-4 sm:px-12 lg:px-16 pb-8 sm:pb-10 pt-4 flex flex-col sm:flex-row items-start sm:items-end justify-between gap-6">
+        <motion.div
+          initial={{ opacity: 0, y: 20, filter: 'blur(10px)' }}
+          animate={{ opacity: 1, y: 0, filter: 'blur(0px)' }}
+          transition={{ delay: 1.3, duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
+          className="relative z-20 px-4 sm:px-12 lg:px-16 pb-8 sm:pb-10 pt-4 flex flex-col sm:flex-row items-start sm:items-end justify-between gap-6"
+        >
           {/* Bottom Left: Avatar Stack */}
           <div className="flex items-center gap-3 drop-shadow-[0_1px_8px_rgba(0,0,0,0.6)]">
             <div className="flex -space-x-2.5 overflow-hidden">
@@ -257,17 +283,26 @@ export const LandingPage: React.FC<LandingPageProps> = ({
 
           {/* Bottom Right: Category Pills */}
           <div className="flex items-center gap-2.5 flex-wrap drop-shadow-[0_1px_8px_rgba(0,0,0,0.6)]">
-            <span className="px-5 py-2 rounded-full bg-black/40 backdrop-blur-md border border-white/15 text-white/90 text-xs font-medium hover:bg-black/50 transition-colors cursor-default shadow-xs">
+            <motion.span
+              whileHover={{ scale: 1.05 }}
+              className="px-5 py-2 rounded-full bg-black/40 backdrop-blur-md border border-white/15 text-white/90 text-xs font-medium hover:bg-black/50 transition-colors cursor-default shadow-xs"
+            >
               Curated Circuits
-            </span>
-            <span className="px-5 py-2 rounded-full bg-black/40 backdrop-blur-md border border-white/15 text-white/90 text-xs font-medium hover:bg-black/50 transition-colors cursor-default shadow-xs">
+            </motion.span>
+            <motion.span
+              whileHover={{ scale: 1.05 }}
+              className="px-5 py-2 rounded-full bg-black/40 backdrop-blur-md border border-white/15 text-white/90 text-xs font-medium hover:bg-black/50 transition-colors cursor-default shadow-xs"
+            >
               Live Telemetry
-            </span>
-            <span className="px-5 py-2 rounded-full bg-black/40 backdrop-blur-md border border-white/15 text-white/90 text-xs font-medium hover:bg-black/50 transition-colors cursor-default shadow-xs">
+            </motion.span>
+            <motion.span
+              whileHover={{ scale: 1.05 }}
+              className="px-5 py-2 rounded-full bg-black/40 backdrop-blur-md border border-white/15 text-white/90 text-xs font-medium hover:bg-black/50 transition-colors cursor-default shadow-xs"
+            >
               Chauffeur Mesh
-            </span>
+            </motion.span>
           </div>
-        </div>
+        </motion.div>
       </section>
 
       {/* ------------------------------------------------------------- */}
@@ -275,32 +310,19 @@ export const LandingPage: React.FC<LandingPageProps> = ({
       {/* ------------------------------------------------------------- */}
       <section className="bg-white py-10 px-4 sm:px-8 border-b border-[#E5E7EB]">
         <div className="max-w-6xl mx-auto grid grid-cols-2 md:grid-cols-4 gap-8 text-center">
-          <div>
-            <div className="text-3xl sm:text-4xl font-extrabold text-[#004AC6]">99.4%</div>
-            <div className="text-xs sm:text-sm text-[#4B5563] mt-1 font-medium">
-              Chauffeur On-Time Pickup Rate
-            </div>
-          </div>
-          <div>
-            <div className="text-3xl sm:text-4xl font-extrabold text-[#111827]">
-              &lt; 14 min
-            </div>
-            <div className="text-xs sm:text-sm text-[#4B5563] mt-1 font-medium">
-              Autonomous Disruption Re-dispatch
-            </div>
-          </div>
-          <div>
-            <div className="text-3xl sm:text-4xl font-extrabold text-[#004AC6]">4.98 ★</div>
-            <div className="text-xs sm:text-sm text-[#4B5563] mt-1 font-medium">
-              Traveler Satisfaction Index
-            </div>
-          </div>
-          <div>
-            <div className="text-3xl sm:text-4xl font-extrabold text-[#111827]">₹45M+</div>
-            <div className="text-xs sm:text-sm text-[#4B5563] mt-1 font-medium">
-              Curated Luxury Tours Orchestrated
-            </div>
-          </div>
+          {[
+            { value: '99.4%', label: 'Chauffeur On-Time Pickup Rate', color: 'text-[#004AC6]' },
+            { value: '< 14 min', label: 'Autonomous Disruption Re-dispatch', color: 'text-[#111827]' },
+            { value: '4.98 ★', label: 'Traveler Satisfaction Index', color: 'text-[#004AC6]' },
+            { value: '₹45M+', label: 'Curated Luxury Tours Orchestrated', color: 'text-[#111827]' },
+          ].map((metric, idx) => (
+            <BlurFadeCard key={idx} index={idx} className="space-y-1">
+              <div className={`text-3xl sm:text-4xl font-extrabold ${metric.color}`}>{metric.value}</div>
+              <div className="text-xs sm:text-sm text-[#4B5563] font-medium">
+                {metric.label}
+              </div>
+            </BlurFadeCard>
+          ))}
         </div>
       </section>
 
@@ -323,7 +345,11 @@ export const LandingPage: React.FC<LandingPageProps> = ({
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
           {/* Pillar 1 */}
-          <div className="bg-white rounded-2xl p-7 border border-[#E5E7EB] shadow-xs hover:shadow-md transition-shadow space-y-4">
+          <BlurFadeCard
+            index={0}
+            hoverEffect
+            className="bg-white rounded-2xl p-7 border border-[#E5E7EB] shadow-xs hover:shadow-md transition-shadow space-y-4"
+          >
             <div className="w-12 h-12 rounded-xl bg-[#EBF1FF] text-[#004AC6] flex items-center justify-center">
               <span className="material-symbols-outlined text-2xl">schedule</span>
             </div>
@@ -339,10 +365,14 @@ export const LandingPage: React.FC<LandingPageProps> = ({
               <span>View live cascade resolver</span>
               <span className="material-symbols-outlined text-sm">arrow_forward</span>
             </div>
-          </div>
+          </BlurFadeCard>
 
           {/* Pillar 2 */}
-          <div className="bg-white rounded-2xl p-7 border border-[#E5E7EB] shadow-xs hover:shadow-md transition-shadow space-y-4">
+          <BlurFadeCard
+            index={1}
+            hoverEffect
+            className="bg-white rounded-2xl p-7 border border-[#E5E7EB] shadow-xs hover:shadow-md transition-shadow space-y-4"
+          >
             <div className="w-12 h-12 rounded-xl bg-emerald-50 text-emerald-700 flex items-center justify-center">
               <span className="material-symbols-outlined text-2xl">chat</span>
             </div>
@@ -358,10 +388,14 @@ export const LandingPage: React.FC<LandingPageProps> = ({
               <span>Instant WhatsApp connection</span>
               <span className="material-symbols-outlined text-sm">arrow_forward</span>
             </div>
-          </div>
+          </BlurFadeCard>
 
           {/* Pillar 3 */}
-          <div className="bg-white rounded-2xl p-7 border border-[#E5E7EB] shadow-xs hover:shadow-md transition-shadow space-y-4">
+          <BlurFadeCard
+            index={2}
+            hoverEffect
+            className="bg-white rounded-2xl p-7 border border-[#E5E7EB] shadow-xs hover:shadow-md transition-shadow space-y-4"
+          >
             <div className="w-12 h-12 rounded-xl bg-purple-50 text-purple-700 flex items-center justify-center">
               <span className="material-symbols-outlined text-2xl">radar</span>
             </div>
@@ -377,22 +411,22 @@ export const LandingPage: React.FC<LandingPageProps> = ({
               <span>Explore dispatch radar</span>
               <span className="material-symbols-outlined text-sm">arrow_forward</span>
             </div>
-          </div>
+          </BlurFadeCard>
         </div>
       </section>
 
       {/* ------------------------------------------------------------- */}
-      {/* FEATURE SPOTLIGHT: LIVING ITINERARY DEEP DIVE                  */}
+      {/* FEATURE SPOTLIGHT: LIVING ITINERARY DEEP DIVE (TRAVELLER)      */}
       {/* ------------------------------------------------------------- */}
       <section
         id="living-itinerary"
         className="py-20 px-4 sm:px-8 bg-white border-y border-[#E5E7EB]"
       >
         <div className="max-w-6xl mx-auto grid grid-cols-1 lg:grid-cols-12 gap-12 items-center">
-          <div className="lg:col-span-6 space-y-5">
+          <BlurFadeCard index={0} className="lg:col-span-6 space-y-5">
             <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-blue-50 text-[#004AC6] text-xs font-semibold">
               <span className="material-symbols-outlined text-sm">timeline</span>
-              <span>Intelligent Day-by-Day Flow</span>
+              <span>Intelligent Day-by-Day Flow · Traveler View</span>
             </div>
             <h2 className="text-3xl sm:text-4xl font-extrabold text-[#111827] tracking-tight">
               A travel timeline that breathes with your trip.
@@ -434,92 +468,87 @@ export const LandingPage: React.FC<LandingPageProps> = ({
             </ul>
 
             <div className="pt-4">
-              <button
+              <motion.button
+                whileHover={{ scale: 1.03 }}
+                whileTap={{ scale: 0.97 }}
                 onClick={onExploreDemo}
                 className="px-6 py-3.5 rounded-full bg-[#2563EB] hover:bg-[#1D4ED8] text-white text-xs font-bold transition-all shadow-xs flex items-center gap-2 cursor-pointer"
               >
                 <span>View Kerala Escape Living Timeline</span>
                 <span className="material-symbols-outlined text-sm">chevron_right</span>
-              </button>
+              </motion.button>
             </div>
-          </div>
+          </BlurFadeCard>
 
-          <div className="lg:col-span-6">
+          <BlurFadeCard index={1} className="lg:col-span-6">
             <div className="rounded-2xl border border-[#E5E7EB] bg-[#F7F8FA] p-4 shadow-lg overflow-hidden">
-              <div className="rounded-xl overflow-hidden shadow-xs mb-4">
+              <div className="rounded-xl overflow-hidden shadow-xs mb-4 group">
                 <img
                   src={KERALA_TIMELINE_HERO}
                   alt="Kerala Living Timeline"
-                  className="w-full h-56 object-cover"
+                  className="w-full h-56 object-cover group-hover:scale-105 transition-transform duration-500"
                 />
               </div>
 
               {/* Sample Timeline items preview */}
               <div className="space-y-2.5">
-                <div className="p-3 rounded-xl bg-white border border-[#E5E7EB] flex items-center justify-between text-xs">
-                  <div className="flex items-center gap-3">
-                    <span className="w-8 h-8 rounded-lg bg-blue-50 text-[#004AC6] flex items-center justify-center">
-                      <span className="material-symbols-outlined text-base">flight_land</span>
-                    </span>
-                    <div>
-                      <div className="font-bold text-[#111827]">
-                        Cochin Intl Airport (COK) Arrival
-                      </div>
-                      <div className="text-[11px] text-[#6B7280]">
-                        Flight AI-682 · Rescheduled to 01:45 PM
-                      </div>
-                    </div>
-                  </div>
-                  <span className="px-2 py-0.5 rounded-full bg-blue-100 text-blue-800 text-[10px] font-semibold">
-                    Live Sync
-                  </span>
-                </div>
-
-                <div className="p-3 rounded-xl bg-white border border-[#E5E7EB] flex items-center justify-between text-xs">
-                  <div className="flex items-center gap-3">
-                    <span className="w-8 h-8 rounded-lg bg-emerald-50 text-emerald-700 flex items-center justify-center">
-                      <span className="material-symbols-outlined text-base">directions_car</span>
-                    </span>
-                    <div>
-                      <div className="font-bold text-[#111827]">
-                        Private Transfer to Brunton Boatyard
-                      </div>
-                      <div className="text-[11px] text-[#6B7280]">
-                        Chauffeur Rajesh K. · Innova Crysta
-                      </div>
-                    </div>
-                  </div>
-                  <span className="px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 text-[10px] font-semibold">
-                    Confirmed
-                  </span>
-                </div>
-
-                <div className="p-3 rounded-xl bg-white border border-[#E5E7EB] flex items-center justify-between text-xs">
-                  <div className="flex items-center gap-3">
-                    <span className="w-8 h-8 rounded-lg bg-purple-50 text-purple-700 flex items-center justify-center">
-                      <span className="material-symbols-outlined text-base">hotel</span>
-                    </span>
-                    <div>
-                      <div className="font-bold text-[#111827]">
-                        Brunton Boatyard — Sea View Suite
-                      </div>
-                      <div className="text-[11px] text-[#6B7280]">
-                        Early check-in prioritized · Sunset tea included
+                {[
+                  {
+                    icon: 'flight_land',
+                    bg: 'bg-blue-50 text-[#004AC6]',
+                    title: 'Cochin Intl Airport (COK) Arrival',
+                    subtitle: 'Flight AI-682 · Rescheduled to 01:45 PM',
+                    badge: 'Live Sync',
+                    badgeBg: 'bg-blue-100 text-blue-800',
+                  },
+                  {
+                    icon: 'directions_car',
+                    bg: 'bg-emerald-50 text-emerald-700',
+                    title: 'Private Transfer to Brunton Boatyard',
+                    subtitle: 'Chauffeur Rajesh K. · Innova Crysta',
+                    badge: 'Confirmed',
+                    badgeBg: 'bg-emerald-100 text-emerald-800',
+                  },
+                  {
+                    icon: 'hotel',
+                    bg: 'bg-purple-50 text-purple-700',
+                    title: 'Brunton Boatyard — Sea View Suite',
+                    subtitle: 'Early check-in prioritized · Sunset tea included',
+                    badge: 'Voucher #BB-788',
+                    badgeBg: 'bg-purple-100 text-purple-800',
+                  },
+                ].map((item, idx) => (
+                  <motion.div
+                    key={idx}
+                    initial={{ opacity: 0, x: -10, filter: 'blur(6px)' }}
+                    whileInView={{ opacity: 1, x: 0, filter: 'blur(0px)' }}
+                    viewport={{ once: true }}
+                    transition={{ delay: 0.15 + idx * 0.1, duration: 0.4 }}
+                    whileHover={{ scale: 1.01, backgroundColor: '#ffffff' }}
+                    className="p-3 rounded-xl bg-white border border-[#E5E7EB] flex items-center justify-between text-xs shadow-2xs transition-all"
+                  >
+                    <div className="flex items-center gap-3">
+                      <span className={`w-8 h-8 rounded-lg ${item.bg} flex items-center justify-center`}>
+                        <span className="material-symbols-outlined text-base">{item.icon}</span>
+                      </span>
+                      <div>
+                        <div className="font-bold text-[#111827]">{item.title}</div>
+                        <div className="text-[11px] text-[#6B7280]">{item.subtitle}</div>
                       </div>
                     </div>
-                  </div>
-                  <span className="px-2 py-0.5 rounded-full bg-purple-100 text-purple-800 text-[10px] font-semibold">
-                    Voucher #BB-788
-                  </span>
-                </div>
+                    <span className={`px-2 py-0.5 rounded-full ${item.badgeBg} text-[10px] font-semibold`}>
+                      {item.badge}
+                    </span>
+                  </motion.div>
+                ))}
               </div>
             </div>
-          </div>
+          </BlurFadeCard>
         </div>
       </section>
 
       {/* ------------------------------------------------------------- */}
-      {/* DUAL-SURFACE ARCHITECTURE                                     */}
+      {/* DUAL-SURFACE ARCHITECTURE (TRAVELLER & OPERATOR SECTIONS)      */}
       {/* ------------------------------------------------------------- */}
       <section id="dual-surface" className="py-20 px-4 sm:px-8 max-w-6xl mx-auto">
         <div className="text-center max-w-2xl mx-auto mb-16 space-y-3">
@@ -536,11 +565,16 @@ export const LandingPage: React.FC<LandingPageProps> = ({
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-          {/* Surface A: Traveler View */}
-          <div className="bg-white rounded-3xl p-8 border border-[#E5E7EB] shadow-sm flex flex-col justify-between">
+          {/* Surface A: Traveler View (Traveller Section) */}
+          <BlurFadeCard
+            index={0}
+            hoverEffect
+            className="bg-white rounded-3xl p-8 border border-[#E5E7EB] shadow-sm flex flex-col justify-between"
+          >
             <div className="space-y-4">
               <div className="flex items-center justify-between">
-                <span className="px-3 py-1 rounded-full bg-blue-100 text-[#004AC6] text-xs font-bold">
+                <span className="px-3 py-1 rounded-full bg-blue-100 text-[#004AC6] text-xs font-bold flex items-center gap-1.5">
+                  <span className="w-2 h-2 rounded-full bg-blue-600 animate-pulse"></span>
                   Surface 01 · Consumer Traveler
                 </span>
                 <span className="text-xs text-[#6B7280]">Sarah Mehta</span>
@@ -553,30 +587,41 @@ export const LandingPage: React.FC<LandingPageProps> = ({
                 vouchers, interactive route maps, personalized recommendations, and instant
                 WhatsApp concierge help.
               </p>
-              <div className="rounded-xl overflow-hidden border border-[#E5E7EB] shadow-2xs">
+              <div className="rounded-xl overflow-hidden border border-[#E5E7EB] shadow-2xs group relative">
                 <img
                   src={ROUTE_MAP_IMAGE}
                   alt="Traveler Route Visualizer"
-                  className="w-full h-44 object-cover"
+                  className="w-full h-44 object-cover group-hover:scale-105 transition-transform duration-500"
                 />
+                <div className="absolute bottom-2 left-2 px-2 py-1 bg-black/60 backdrop-blur-md rounded-lg text-[10px] text-white font-mono flex items-center gap-1.5">
+                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-ping"></span>
+                  <span>Active Traveler GPS Mesh</span>
+                </div>
               </div>
             </div>
             <div className="pt-6">
-              <button
+              <motion.button
+                whileHover={{ scale: 1.02 }}
+                whileTap={{ scale: 0.98 }}
                 onClick={onExploreDemo}
                 className="w-full py-3 rounded-full bg-[#2563EB] hover:bg-[#1D4ED8] text-white text-xs font-bold transition-all shadow-xs flex items-center justify-center gap-2 cursor-pointer"
               >
                 <span>Launch Traveler View (Sarah Mehta)</span>
                 <span className="material-symbols-outlined text-sm">arrow_forward</span>
-              </button>
+              </motion.button>
             </div>
-          </div>
+          </BlurFadeCard>
 
           {/* Surface B: Operations Controller View */}
-          <div className="bg-white rounded-3xl p-8 border border-[#E5E7EB] shadow-sm flex flex-col justify-between">
+          <BlurFadeCard
+            index={1}
+            hoverEffect
+            className="bg-white rounded-3xl p-8 border border-[#E5E7EB] shadow-sm flex flex-col justify-between"
+          >
             <div className="space-y-4">
               <div className="flex items-center justify-between">
-                <span className="px-3 py-1 rounded-full bg-emerald-100 text-emerald-800 text-xs font-bold">
+                <span className="px-3 py-1 rounded-full bg-emerald-100 text-emerald-800 text-xs font-bold flex items-center gap-1.5">
+                  <span className="w-2 h-2 rounded-full bg-emerald-600 animate-pulse"></span>
                   Surface 02 · Dispatch Operations
                 </span>
                 <span className="text-xs text-[#6B7280]">Alex Vance</span>
@@ -589,24 +634,30 @@ export const LandingPage: React.FC<LandingPageProps> = ({
                 solver with heuristic budget recalculation, vendor manifests, and instant driver
                 dispatch.
               </p>
-              <div className="rounded-xl overflow-hidden border border-[#E5E7EB] shadow-2xs">
+              <div className="rounded-xl overflow-hidden border border-[#E5E7EB] shadow-2xs group relative">
                 <img
                   src={RADAR_MAP_IMAGE}
                   alt="Operations Radar"
-                  className="w-full h-44 object-cover"
+                  className="w-full h-44 object-cover group-hover:scale-105 transition-transform duration-500"
                 />
+                <div className="absolute bottom-2 left-2 px-2 py-1 bg-black/60 backdrop-blur-md rounded-lg text-[10px] text-white font-mono flex items-center gap-1.5">
+                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-ping"></span>
+                  <span>Live Operations Radar Feed</span>
+                </div>
               </div>
             </div>
             <div className="pt-6">
-              <button
+              <motion.button
+                whileHover={{ scale: 1.02 }}
+                whileTap={{ scale: 0.98 }}
                 onClick={onExploreOps}
                 className="w-full py-3 rounded-full bg-[#111827] hover:bg-[#1F2937] text-white text-xs font-bold transition-all shadow-xs flex items-center justify-center gap-2 cursor-pointer"
               >
                 <span className="material-symbols-outlined text-sm text-emerald-400">hub</span>
                 <span>Launch Operations Hub (Alex Vance)</span>
-              </button>
+              </motion.button>
             </div>
-          </div>
+          </BlurFadeCard>
         </div>
       </section>
 
@@ -634,10 +685,11 @@ export const LandingPage: React.FC<LandingPageProps> = ({
           </div>
 
           <div className="flex gap-4 overflow-x-auto pb-4 pt-1 px-1 custom-scrollbar snap-x snap-mandatory scroll-smooth items-stretch">
-            {CURATED_DESTINATIONS.map(dest => (
+            {CURATED_DESTINATIONS.map((dest, idx) => (
               <LuxuryCard
                 key={dest.id}
                 id={dest.id}
+                index={idx}
                 title={dest.title}
                 description={dest.description}
                 image={dest.image}
@@ -652,11 +704,13 @@ export const LandingPage: React.FC<LandingPageProps> = ({
 
           {/* Secondary Journeys Row */}
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 pt-4">
-            {SAVED_JOURNEYS.map(journey => (
-              <div
+            {SAVED_JOURNEYS.map((journey, idx) => (
+              <BlurFadeCard
                 key={journey.id}
+                index={idx}
+                hoverEffect
                 onClick={onExploreDemo}
-                className="p-3.5 rounded-xl border border-[#E5E7EB] bg-white hover:bg-blue-50/40 transition-colors cursor-pointer flex items-center gap-3.5"
+                className="p-3.5 rounded-xl border border-[#E5E7EB] bg-white hover:bg-blue-50/40 transition-colors cursor-pointer flex items-center gap-3.5 shadow-2xs"
               >
                 <img
                   src={journey.image}
@@ -674,7 +728,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({
                     Luxury Private Tour
                   </div>
                 </div>
-              </div>
+              </BlurFadeCard>
             ))}
           </div>
         </div>
@@ -702,7 +756,11 @@ export const LandingPage: React.FC<LandingPageProps> = ({
         {/* 3 Pillar Feature Cards */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8 items-stretch mb-12">
           {/* Vault Pillar 1 */}
-          <div className="bg-white rounded-3xl p-7 border border-[#E5E7EB] shadow-xs flex flex-col justify-between space-y-4">
+          <BlurFadeCard
+            index={0}
+            hoverEffect
+            className="bg-white rounded-3xl p-7 border border-[#E5E7EB] shadow-xs flex flex-col justify-between space-y-4"
+          >
             <div className="space-y-3">
               <span className="w-12 h-12 rounded-xl bg-amber-50 text-amber-800 border border-amber-200 flex items-center justify-center">
                 <span className="material-symbols-outlined text-2xl">badge</span>
@@ -718,10 +776,14 @@ export const LandingPage: React.FC<LandingPageProps> = ({
             <div className="p-3 bg-[#F9FAFB] rounded-xl text-[11px] font-mono text-[#374151] border border-[#E5E7EB]">
               ✓ Verified by Concierge Arun V.
             </div>
-          </div>
+          </BlurFadeCard>
 
           {/* Vault Pillar 2 */}
-          <div className="bg-white rounded-3xl p-7 border-2 border-[#2563EB] shadow-lg relative flex flex-col justify-between space-y-4">
+          <BlurFadeCard
+            index={1}
+            hoverEffect
+            className="bg-white rounded-3xl p-7 border-2 border-[#2563EB] shadow-lg relative flex flex-col justify-between space-y-4"
+          >
             <div className="absolute -top-3.5 left-1/2 -translate-x-1/2 px-3 py-0.5 rounded-full bg-[#2563EB] text-white text-[11px] font-bold uppercase tracking-wider shadow-2xs">
               Live Synchronized
             </div>
@@ -740,10 +802,14 @@ export const LandingPage: React.FC<LandingPageProps> = ({
             <div className="p-3 bg-blue-50/60 rounded-xl text-[11px] font-mono text-[#004AC6] border border-blue-100">
               ✓ Auto-updates during flight delay cascades
             </div>
-          </div>
+          </BlurFadeCard>
 
           {/* Vault Pillar 3 */}
-          <div className="bg-white rounded-3xl p-7 border border-[#E5E7EB] shadow-xs flex flex-col justify-between space-y-4">
+          <BlurFadeCard
+            index={2}
+            hoverEffect
+            className="bg-white rounded-3xl p-7 border border-[#E5E7EB] shadow-xs flex flex-col justify-between space-y-4"
+          >
             <div className="space-y-3">
               <span className="w-12 h-12 rounded-xl bg-purple-50 text-purple-800 border border-purple-200 flex items-center justify-center">
                 <span className="material-symbols-outlined text-2xl">health_and_safety</span>
@@ -759,11 +825,14 @@ export const LandingPage: React.FC<LandingPageProps> = ({
             <div className="p-3 bg-[#F9FAFB] rounded-xl text-[11px] font-mono text-[#374151] border border-[#E5E7EB]">
               ✓ Cashless hospital admission active
             </div>
-          </div>
+          </BlurFadeCard>
         </div>
 
         {/* Vault Interactive CTA Card */}
-        <div className="bg-linear-to-r from-[#F0F3FF] via-white to-[#F7F8FA] border border-[#BFDBFE] rounded-3xl p-8 shadow-xs flex flex-col md:flex-row items-center justify-between gap-6">
+        <BlurFadeCard
+          index={3}
+          className="bg-linear-to-r from-[#F0F3FF] via-white to-[#F7F8FA] border border-[#BFDBFE] rounded-3xl p-8 shadow-xs flex flex-col md:flex-row items-center justify-between gap-6"
+        >
           <div className="space-y-2 text-center md:text-left">
             <div className="flex items-center justify-center md:justify-start gap-2">
               <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse"></span>
@@ -780,15 +849,17 @@ export const LandingPage: React.FC<LandingPageProps> = ({
           </div>
 
           <div className="flex items-center gap-3 shrink-0">
-            <button
+            <motion.button
+              whileHover={{ scale: 1.03 }}
+              whileTap={{ scale: 0.97 }}
               onClick={onExploreDemo}
               className="px-5 py-3 rounded-full bg-[#2563EB] hover:bg-[#1D4ED8] text-white text-xs font-bold transition-all shadow-xs flex items-center gap-2 cursor-pointer"
             >
               <span className="material-symbols-outlined text-sm">lock</span>
               <span>Open Travel Vault in App</span>
-            </button>
+            </motion.button>
           </div>
-        </div>
+        </BlurFadeCard>
       </section>
 
       {/* ------------------------------------------------------------- */}
@@ -806,7 +877,11 @@ export const LandingPage: React.FC<LandingPageProps> = ({
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            <div className="p-6 rounded-2xl bg-[#F7F8FA] border border-[#E5E7EB] space-y-4">
+            <BlurFadeCard
+              index={0}
+              hoverEffect
+              className="p-6 rounded-2xl bg-[#F7F8FA] border border-[#E5E7EB] space-y-4"
+            >
               <div className="flex items-center gap-1 text-amber-500">
                 <span className="material-symbols-outlined text-sm">star</span>
                 <span className="material-symbols-outlined text-sm">star</span>
@@ -832,9 +907,13 @@ export const LandingPage: React.FC<LandingPageProps> = ({
                   </div>
                 </div>
               </div>
-            </div>
+            </BlurFadeCard>
 
-            <div className="p-6 rounded-2xl bg-[#F7F8FA] border border-[#E5E7EB] space-y-4">
+            <BlurFadeCard
+              index={1}
+              hoverEffect
+              className="p-6 rounded-2xl bg-[#F7F8FA] border border-[#E5E7EB] space-y-4"
+            >
               <div className="flex items-center gap-1 text-amber-500">
                 <span className="material-symbols-outlined text-sm">star</span>
                 <span className="material-symbols-outlined text-sm">star</span>
@@ -858,9 +937,13 @@ export const LandingPage: React.FC<LandingPageProps> = ({
                   </div>
                 </div>
               </div>
-            </div>
+            </BlurFadeCard>
 
-            <div className="p-6 rounded-2xl bg-[#F7F8FA] border border-[#E5E7EB] space-y-4">
+            <BlurFadeCard
+              index={2}
+              hoverEffect
+              className="p-6 rounded-2xl bg-[#F7F8FA] border border-[#E5E7EB] space-y-4"
+            >
               <div className="flex items-center gap-1 text-amber-500">
                 <span className="material-symbols-outlined text-sm">star</span>
                 <span className="material-symbols-outlined text-sm">star</span>
@@ -884,7 +967,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({
                   </div>
                 </div>
               </div>
-            </div>
+            </BlurFadeCard>
           </div>
         </div>
       </section>
@@ -921,8 +1004,9 @@ export const LandingPage: React.FC<LandingPageProps> = ({
               a: 'The Operations Hub is our dedicated controller surface used by regional dispatch managers. It shows real-time fleet radar, vehicle manifests, and enables instantaneous one-click resolution of disruptions.',
             },
           ].map((item, idx) => (
-            <div
+            <BlurFadeCard
               key={idx}
+              index={idx}
               className="bg-white rounded-xl border border-[#E5E7EB] overflow-hidden"
             >
               <button
@@ -931,19 +1015,29 @@ export const LandingPage: React.FC<LandingPageProps> = ({
               >
                 <span>{item.q}</span>
                 <span
-                  className={`material-symbols-outlined text-base text-[#6B7280] transition-transform ${
-                    activeFaq === idx ? 'rotate-180' : ''
+                  className={`material-symbols-outlined text-base text-[#6B7280] transition-transform duration-300 ${
+                    activeFaq === idx ? 'rotate-180 text-blue-600' : ''
                   }`}
                 >
                   expand_more
                 </span>
               </button>
-              {activeFaq === idx && (
-                <div className="px-5 pb-5 text-xs text-[#4B5563] leading-relaxed border-t border-gray-100 pt-3">
-                  {item.a}
-                </div>
-              )}
-            </div>
+              <AnimatePresence>
+                {activeFaq === idx && (
+                  <motion.div
+                    initial={{ opacity: 0, height: 0, filter: 'blur(4px)' }}
+                    animate={{ opacity: 1, height: 'auto', filter: 'blur(0px)' }}
+                    exit={{ opacity: 0, height: 0, filter: 'blur(4px)' }}
+                    transition={{ duration: 0.28, ease: 'easeOut' }}
+                    className="overflow-hidden"
+                  >
+                    <div className="px-5 pb-5 text-xs text-[#4B5563] leading-relaxed border-t border-gray-100 pt-3">
+                      {item.a}
+                    </div>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </BlurFadeCard>
           ))}
         </div>
       </section>
@@ -954,7 +1048,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({
       <section className="bg-linear-to-r from-[#003B99] via-[#004AC6] to-[#2563EB] text-white py-16 px-4 sm:px-8">
         <div className="max-w-4xl mx-auto text-center space-y-6">
           <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/10 text-white text-xs font-semibold backdrop-blur-xs">
-            <span className="w-2 h-2 rounded-full bg-emerald-400"></span>
+            <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
             <span>Immediate Instant Access Available</span>
           </div>
 
@@ -968,20 +1062,24 @@ export const LandingPage: React.FC<LandingPageProps> = ({
           </p>
 
           <div className="flex flex-wrap items-center justify-center gap-3 pt-2">
-            <button
+            <motion.button
+              whileHover={{ scale: 1.04 }}
+              whileTap={{ scale: 0.96 }}
               onClick={onExploreDemo}
               className="px-6 py-3.5 rounded-full bg-white text-[#004AC6] hover:bg-gray-100 text-xs sm:text-sm font-bold transition-all shadow-md cursor-pointer flex items-center gap-2"
             >
               <span>Launch Traveler Experience (Sarah Mehta)</span>
               <span className="material-symbols-outlined text-base">east</span>
-            </button>
-            <button
+            </motion.button>
+            <motion.button
+              whileHover={{ scale: 1.04 }}
+              whileTap={{ scale: 0.96 }}
               onClick={onExploreOps}
               className="px-6 py-3.5 rounded-full bg-white/15 hover:bg-white/20 text-white border border-white/20 text-xs sm:text-sm font-bold transition-all backdrop-blur-xs cursor-pointer flex items-center gap-2"
             >
               <span className="material-symbols-outlined text-base text-emerald-400">hub</span>
               <span>Launch Operations Command Hub</span>
-            </button>
+            </motion.button>
           </div>
         </div>
       </section>

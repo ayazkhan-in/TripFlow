@@ -1,4 +1,5 @@
 import React, { useState, useMemo, useEffect } from 'react';
+import { motion } from 'framer-motion';
 import { CATALOG_ITEMS } from '../../data/itineraryData';
 import { CatalogItem } from '../../types/itinerary';
 import { clearDragPayload, setDragPayload } from '../../utils/dragDropState';
@@ -474,15 +475,24 @@ export const AddSidebar: React.FC<AddSidebarProps> = ({
                     </div>
                   ) : (
                     /* Draggable Cards List */
-                    items.map((item: any) => (
-                      <div
+                    items.map((item: any, idx: number) => (
+                      <motion.div
                         key={item.id}
-                        draggable
-                        onDragStart={e => handleDragStart(e, item)}
-                        onDragEnd={handleDragEnd}
-                        onClick={() => onSelectItemForDetail && onSelectItemForDetail(item)}
-                        className="group bg-white hover:bg-slate-50/80 border border-slate-200/80 hover:border-blue-300 rounded-xl p-2.5 shadow-2xs hover:shadow-xs transition-all cursor-grab active:cursor-grabbing flex items-center justify-between gap-2.5 select-none relative"
+                        initial={{ opacity: 0, y: 12, filter: 'blur(6px)' }}
+                        animate={{ opacity: 1, y: 0, filter: 'blur(0px)' }}
+                        transition={{
+                          duration: 0.35,
+                          delay: idx * 0.05,
+                          ease: [0.21, 0.47, 0.32, 0.98],
+                        }}
                       >
+                        <div
+                          draggable
+                          onDragStart={e => handleDragStart(e, item)}
+                          onDragEnd={handleDragEnd}
+                          onClick={() => onSelectItemForDetail && onSelectItemForDetail(item)}
+                          className="group bg-white hover:bg-slate-50/80 border border-slate-200/80 hover:border-blue-300 rounded-xl p-2.5 shadow-2xs hover:shadow-xs transition-colors cursor-grab active:cursor-grabbing flex items-center justify-between gap-2.5 select-none relative"
+                        >
                         {/* Drag Handle + Thumbnail + Info */}
                         <div className="flex items-center gap-2.5 min-w-0 flex-1">
                           <span
@@ -541,7 +551,8 @@ export const AddSidebar: React.FC<AddSidebarProps> = ({
                         >
                           <span className="material-symbols-outlined text-sm font-bold">add</span>
                         </button>
-                      </div>
+                        </div>
+                      </motion.div>
                     ))
                   )}
                 </div>

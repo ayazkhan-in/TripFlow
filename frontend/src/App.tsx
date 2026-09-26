@@ -55,6 +55,7 @@ import { OperatorProvider, useOperator } from './context/OperatorContext';
 import { CreateTourPackageModal } from './components/operator/CreateTourPackageModal';
 import { OperatorPackagesScreen } from './components/operator/OperatorPackagesScreen';
 import { ThemedToast } from './components/common/ThemedToast';
+import { SplashScreen } from './components/common/SplashScreen';
 import { parseUrlPath, formatUrlPath } from './utils/router';
 
 function BookitApp() {
@@ -164,46 +165,113 @@ function BookitApp() {
   const [paymentOverlayPrice, setPaymentOverlayPrice] = useState<number>(0);
   const [selectedStoryId, setSelectedStoryId] = useState<string | null>(null);
 
-  // Sync with live Neon PostgreSQL backend
+  // Splash Screen & Background Loading State
+  const [splashProgress, setSplashProgress] = useState<number>(18);
+  const [isSplashVisible, setIsSplashVisible] = useState<boolean>(true);
+
+  // Sync with live Neon PostgreSQL backend and preload background resources
   useEffect(() => {
-    // Restore session if user token exists, then load their data
-    TripFlowApi.getMe().then(user => {
-      if (user) {
-        const isOp = user.role?.toUpperCase() === 'OPERATOR';
-        setAuthUser({
-          id: user.id,
-          name: user.name,
-          email: user.email,
-          role: isOp ? 'operator' : 'traveler',
-          avatar: user.avatarUrl || (isOp ? ALEX_DISPATCH_AVATAR : USER_AVATAR),
-          membership: user.membershipTier || (isOp ? 'Chief Dispatch Controller' : 'Concierge Member'),
-          agencyName: user.agencyName,
-          agencyCode: user.agencyCode,
-        });
+    let isCancelled = false;
 
-        // Only load user's own trips and vault after confirming they are authenticated
-        TripFlowApi.getMyTrips().then(trips => {
-          if (trips && trips.length > 0) {
-            setBookedTrips(trips);
-            setActiveBookedTripId(trips[0].id);
-            if (trips[0].itinerary) {
-              setCurrentItinerary(trips[0].itinerary);
+    // Smooth incremental progress while background promises are in flight
+    const progressInterval = setInterval(() => {
+      setSplashProgress(prev => {
+        if (prev < 88) {
+          const next = prev + (88 - prev) * 0.14;
+          return next;
+        }
+        return prev;
+      });
+    }, 60);
+
+    const minSplashDuration = 900; // ensures smooth and visible bar progression
+    const startTime = Date.now();
+
+    const loadBackgroundData = async () => {
+      try {
+        // Run parallel tasks: Fonts/Logo asset readiness, Auth check, Catalog items
+        const assetPromise = Promise.allSettled([
+          document.fonts ? document.fonts.ready : Promise.resolve(),
+          new Promise(res => {
+            const img = new Image();
+            img.onload = img.onerror = res;
+            img.src = '/bookit.png';
+          }),
+        ]);
+
+        const catalogPromise = TripFlowApi.getCatalogItems().catch(() => []);
+        const authUserPromise = TripFlowApi.getMe().catch(() => null);
+
+        const [, , user] = await Promise.all([
+          assetPromise,
+          catalogPromise,
+          authUserPromise,
+        ]);
+
+        if (user && !isCancelled) {
+          const isOp = user.role?.toUpperCase() === 'OPERATOR';
+          setAuthUser({
+            id: user.id,
+            name: user.name,
+            email: user.email,
+            role: isOp ? 'operator' : 'traveler',
+            avatar: user.avatarUrl || (isOp ? ALEX_DISPATCH_AVATAR : USER_AVATAR),
+            membership: user.membershipTier || (isOp ? 'Chief Dispatch Controller' : 'Concierge Member'),
+            agencyName: user.agencyName,
+            agencyCode: user.agencyCode,
+          });
+
+          // Concurrently fetch user's trips and vault
+          const [trips, docs] = await Promise.all([
+            TripFlowApi.getMyTrips().catch(() => []),
+            TripFlowApi.getVaultDocuments().catch(() => []),
+          ]);
+
+          if (!isCancelled) {
+            if (trips && trips.length > 0) {
+              setBookedTrips(trips);
+              setActiveBookedTripId(trips[0].id);
+              if (trips[0].itinerary) {
+                setCurrentItinerary(trips[0].itinerary);
+              }
+            } else {
+              setBookedTrips([]);
+              setActiveBookedTripId(null);
             }
-          } else {
-            // No trips yet — keep empty state
-            setBookedTrips([]);
-            setActiveBookedTripId(null);
-          }
-        });
 
-        TripFlowApi.getVaultDocuments().then(docs => {
-          if (docs && docs.length > 0) {
-            setVaultDocuments(docs);
+            if (docs && docs.length > 0) {
+              setVaultDocuments(docs);
+            }
           }
-        });
+        }
+      } catch (err) {
+        console.error('Splash background initialization error:', err);
+      } finally {
+        clearInterval(progressInterval);
+
+        // Ensure minimum visual duration for smooth loading bar completion
+        const elapsed = Date.now() - startTime;
+        const remainingDelay = Math.max(0, minSplashDuration - elapsed);
+
+        setTimeout(() => {
+          if (!isCancelled) {
+            setSplashProgress(100);
+            setTimeout(() => {
+              if (!isCancelled) {
+                setIsSplashVisible(false);
+              }
+            }, 250);
+          }
+        }, remainingDelay);
       }
-      // No user = no token = stay with empty state (HomeScreen shows onboarding)
-    });
+    };
+
+    loadBackgroundData();
+
+    return () => {
+      isCancelled = true;
+      clearInterval(progressInterval);
+    };
   }, []);
 
   // Global Interactive Disruption State (Synchronized across Consumer & Operator)
@@ -933,6 +1001,9 @@ function BookitApp() {
         message={toastNotification}
         onClose={() => setToastNotification(null)}
       />
+
+      {/* Minimal Splash Screen with Logo and Loading Bar (No text) */}
+      <SplashScreen isVisible={isSplashVisible} progress={splashProgress} />
     </div>
   );
 }

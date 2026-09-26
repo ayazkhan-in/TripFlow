@@ -1,4 +1,5 @@
 import React from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { USER_AVATAR, CONCIERGE_AVATAR } from '../../data/mockData';
 import { ViewMode } from '../../types/travel';
 import { AuthUser } from '../auth/AuthModal';
@@ -24,19 +25,29 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({
   onOpenWhatsApp,
   onSignOut,
 }) => {
-  if (!isOpen) return null;
-
   const userName = user?.name || 'Sarah Mehta';
   const userAvatar = user?.avatar || USER_AVATAR;
   const userEmail = user?.email || 'sarah.mehta@concierge.tripflow.io';
   const userMembership = user?.membership || 'Concierge Elite Member';
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-xs animate-in fade-in duration-200">
-      <div
-        className="bg-white rounded-3xl max-w-xl w-full max-h-[90dvh] overflow-y-auto shadow-2xl border border-[#E5E7EB] text-left animate-in zoom-in-95 duration-200"
-        onClick={e => e.stopPropagation()}
-      >
+    <AnimatePresence>
+      {isOpen && (
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-xs"
+          onClick={onClose}
+        >
+          <motion.div
+            initial={{ opacity: 0, scale: 0.95, y: 16, filter: 'blur(8px)' }}
+            animate={{ opacity: 1, scale: 1, y: 0, filter: 'blur(0px)' }}
+            exit={{ opacity: 0, scale: 0.95, y: 16, filter: 'blur(8px)' }}
+            transition={{ duration: 0.28, ease: [0.16, 1, 0.3, 1] }}
+            className="bg-white rounded-3xl max-w-xl w-full max-h-[90dvh] overflow-y-auto shadow-2xl border border-[#E5E7EB] text-left"
+            onClick={e => e.stopPropagation()}
+          >
         {/* Header with Close */}
         <div className="sticky top-0 bg-white/95 backdrop-blur-md px-6 py-4 border-b border-[#E5E7EB] flex items-center justify-between z-10">
           <div className="flex items-center gap-2">
@@ -228,7 +239,9 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({
             )}
           </div>
         </div>
-      </div>
-    </div>
+          </motion.div>
+        </motion.div>
+      )}
+    </AnimatePresence>
   );
 };

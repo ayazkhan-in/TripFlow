@@ -1,4 +1,5 @@
 import React, { useState, useMemo, useEffect } from 'react';
+import { motion } from 'framer-motion';
 import { CATALOG_ITEMS } from '../../data/itineraryData';
 import { CatalogItem, ItineraryCategory } from '../../types/itinerary';
 import { CATEGORY_CONFIG, formatCurrency } from '../../utils/pricing';
@@ -73,7 +74,12 @@ export const AddBottomSheet: React.FC<AddBottomSheetProps> = ({
       <div className="flex-1" onClick={onClose} />
 
       {/* Sheet Container */}
-      <div className="bg-white rounded-t-3xl max-h-[85vh] flex flex-col shadow-2xl border-t border-slate-200 animate-in slide-in-from-bottom duration-300">
+      <motion.div
+        initial={{ y: '100%', opacity: 0, filter: 'blur(8px)' }}
+        animate={{ y: 0, opacity: 1, filter: 'blur(0px)' }}
+        transition={{ duration: 0.32, ease: [0.16, 1, 0.3, 1] }}
+        className="bg-white rounded-t-3xl max-h-[85vh] flex flex-col shadow-2xl border-t border-slate-200"
+      >
         {/* Drag handle pill */}
         <div className="pt-3 pb-2 flex justify-center cursor-grab" onClick={onClose}>
           <div className="w-12 h-1.5 rounded-full bg-slate-300" />
@@ -168,9 +174,16 @@ export const AddBottomSheet: React.FC<AddBottomSheetProps> = ({
 
         {/* Items List */}
         <div className="flex-1 overflow-y-auto p-3 space-y-1.5 custom-scrollbar">
-          {filteredItems.map(item => (
-            <div
+          {filteredItems.map((item, idx) => (
+            <motion.div
               key={item.id}
+              initial={{ opacity: 0, y: 12, filter: 'blur(6px)' }}
+              animate={{ opacity: 1, y: 0, filter: 'blur(0px)' }}
+              transition={{
+                duration: 0.35,
+                delay: idx * 0.04,
+                ease: [0.21, 0.47, 0.32, 0.98],
+              }}
               className="bg-white border border-neutral-200/80 hover:bg-neutral-50/50 rounded-lg p-2.5 flex items-center justify-between gap-2.5"
             >
               <div className="min-w-0 flex-1">
@@ -198,10 +211,10 @@ export const AddBottomSheet: React.FC<AddBottomSheetProps> = ({
                   <span className="material-symbols-outlined text-xs">add</span>
                 </button>
               </div>
-            </div>
+            </motion.div>
           ))}
         </div>
-      </div>
+      </motion.div>
     </div>
   );
 };

@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { BookedTrip, TimelineEvent, ConsumerTab } from '../../types/travel';
 import {
   CONCIERGE_AVATAR,
@@ -10,6 +11,7 @@ import {
   ROUTE_MAP_IMAGE,
 } from '../../data/mockData';
 import { LuxuryCard } from '../common/LuxuryCard';
+import { BlurFadeCard } from '../ui/MotionComponents';
 
 interface TripsAndBookingsScreenProps {
   initialView?: 'timeline' | 'bookings';
@@ -398,12 +400,12 @@ export const TripsAndBookingsScreen: React.FC<TripsAndBookingsScreenProps> = ({
   const renderEventList = (events: TimelineEvent[]) => {
     return (
       <div className="relative border-l-2 border-slate-200/80 ml-5 sm:ml-6 space-y-6">
-        {events.map(event => {
+        {events.map((event, index) => {
           const catStyle = getTimelineCategoryStyle(event.category);
           const iconToRender = event.icon || catStyle.icon;
 
           return (
-            <div key={event.id} className="relative pl-7 sm:pl-8 group">
+            <BlurFadeCard key={event.id} index={index} className="relative pl-7 sm:pl-8 group">
               {/* Perfectly Centered Category Badge */}
               <div
                 className={`absolute -left-[17px] top-3.5 w-8 h-8 rounded-full border ${catStyle.bg} flex items-center justify-center shadow-xs transition-all duration-200 group-hover:scale-110 group-hover:shadow-md z-10`}
@@ -541,7 +543,7 @@ export const TripsAndBookingsScreen: React.FC<TripsAndBookingsScreenProps> = ({
                   </div>
                 </div>
               </div>
-            </div>
+            </BlurFadeCard>
           );
         })}
       </div>
@@ -742,7 +744,7 @@ export const TripsAndBookingsScreen: React.FC<TripsAndBookingsScreenProps> = ({
         ) : (
         <main className="max-w-[1280px] w-full mx-auto px-4 sm:px-6 lg:px-8 py-8 md:py-10 pb-24 md:pb-12 text-left space-y-8 animate-in fade-in duration-200">
           {/* Hero Banner: Luxury Visual with Live Status */}
-          <div className="relative rounded-3xl overflow-hidden min-h-[320px] bg-slate-900 shadow-md group flex flex-col justify-between p-4 sm:p-8 text-white">
+          <BlurFadeCard index={0} className="relative rounded-3xl overflow-hidden min-h-[320px] bg-slate-900 shadow-md group flex flex-col justify-between p-4 sm:p-8 text-white">
             <div className="absolute inset-0 pointer-events-none">
               <img
                 alt={currentTrip.title || 'Trip hero'}
@@ -834,7 +836,7 @@ export const TripsAndBookingsScreen: React.FC<TripsAndBookingsScreenProps> = ({
                 </div>
               </div>
             </div>
-          </div>
+          </BlurFadeCard>
 
           {/* ========================================================= */}
           {/* TRIP LOGISTICS & DETAILS HUB (FLIGHT, HOTEL, CAR, VAULT)   */}
@@ -859,7 +861,7 @@ export const TripsAndBookingsScreen: React.FC<TripsAndBookingsScreenProps> = ({
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               {/* Card 1: Flight Details */}
-              <div className="bg-white rounded-2xl border border-slate-200 p-5 shadow-2xs space-y-3 flex flex-col justify-between">
+              <BlurFadeCard index={0} className="bg-white rounded-2xl border border-slate-200 p-5 shadow-2xs space-y-3 flex flex-col justify-between">
                 <div className="space-y-2">
                   <div className="flex items-center justify-between">
                     <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-indigo-50 border border-indigo-200 text-indigo-700 text-[11px] font-bold">
@@ -926,10 +928,10 @@ export const TripsAndBookingsScreen: React.FC<TripsAndBookingsScreenProps> = ({
                     <span>View Boarding Pass in Vault</span>
                   </button>
                 </div>
-              </div>
+              </BlurFadeCard>
 
               {/* Card 2: Hotel Check-In Details */}
-              <div className="bg-white rounded-2xl border border-slate-200 p-5 shadow-2xs space-y-3 flex flex-col justify-between">
+              <BlurFadeCard index={1} className="bg-white rounded-2xl border border-slate-200 p-5 shadow-2xs space-y-3 flex flex-col justify-between">
                 <div className="space-y-2">
                   <div className="flex items-center justify-between">
                     <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-purple-50 border border-purple-200 text-purple-700 text-[11px] font-bold">
@@ -996,10 +998,10 @@ export const TripsAndBookingsScreen: React.FC<TripsAndBookingsScreenProps> = ({
                     <span>View Hotel Voucher in Vault</span>
                   </button>
                 </div>
-              </div>
+              </BlurFadeCard>
 
               {/* Card 3: Car & Chauffeur Details */}
-              <div className="bg-white rounded-2xl border border-slate-200 p-5 shadow-2xs space-y-3 flex flex-col justify-between">
+              <BlurFadeCard index={2} className="bg-white rounded-2xl border border-slate-200 p-5 shadow-2xs space-y-3 flex flex-col justify-between">
                 <div className="space-y-2">
                   <div className="flex items-center justify-between">
                     <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-sky-50 border border-sky-200 text-sky-700 text-[11px] font-bold">
@@ -1070,11 +1072,11 @@ export const TripsAndBookingsScreen: React.FC<TripsAndBookingsScreenProps> = ({
                     <span>Car Manifest</span>
                   </button>
                 </div>
-              </div>
+              </BlurFadeCard>
             </div>
 
             {/* Trip Modification Callout Banner */}
-            <div className="p-4 rounded-2xl bg-white border border-slate-200 shadow-2xs flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <BlurFadeCard index={3} className="p-4 rounded-2xl bg-white border border-slate-200 shadow-2xs flex flex-col sm:flex-row sm:items-center justify-between gap-4">
               <div className="flex items-center gap-3.5">
                 <div className="w-10 h-10 rounded-2xl bg-amber-50 text-amber-600 flex items-center justify-center shrink-0 border border-amber-200">
                   <span className="material-symbols-outlined text-xl">tune</span>
@@ -1104,12 +1106,12 @@ export const TripsAndBookingsScreen: React.FC<TripsAndBookingsScreenProps> = ({
                   <span>Modify Trip in Builder</span>
                 </button>
               )}
-            </div>
+            </BlurFadeCard>
           </section>
 
           {/* Dynamic Disruption Reconcile Notice */}
           {isDisruptionResolved && (
-            <div className="p-4 rounded-2xl bg-blue-50 border border-blue-200/80 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs text-blue-900 shadow-2xs">
+            <BlurFadeCard index={4} className="p-4 rounded-2xl bg-blue-50 border border-blue-200/80 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs text-blue-900 shadow-2xs">
               <div className="flex items-center gap-3">
                 <span className="w-8 h-8 rounded-full bg-blue-600 text-white flex items-center justify-center shrink-0 shadow-xs">
                   <span className="material-symbols-outlined text-base">auto_fix_high</span>
@@ -1125,7 +1127,7 @@ export const TripsAndBookingsScreen: React.FC<TripsAndBookingsScreenProps> = ({
               <span className="font-mono text-[11px] font-bold bg-white text-blue-800 px-3 py-1 rounded-full border border-blue-200 shrink-0 self-start sm:self-auto">
                 Zero Friction Guaranteed
               </span>
-            </div>
+            </BlurFadeCard>
           )}
 
           {/* Layout Grid: Living Chronological Timeline + Right Intelligence Inspector */}
@@ -1337,7 +1339,7 @@ export const TripsAndBookingsScreen: React.FC<TripsAndBookingsScreenProps> = ({
             {/* Right Column: Contextual Intelligence & Concierge Inspector (4 cols) */}
             <aside className="lg:col-span-4 space-y-6">
               {/* Card 1: Trip Health & Intelligence Card */}
-              <div className="bg-white rounded-2xl border border-slate-200 p-5 shadow-2xs space-y-4 text-left">
+              <BlurFadeCard index={0} className="bg-white rounded-2xl border border-slate-200 p-5 shadow-2xs space-y-4 text-left">
                 <div className="flex items-center justify-between pb-3 border-b border-slate-200">
                   <div className="flex items-center gap-2">
                     <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-ping"></span>
@@ -1397,10 +1399,10 @@ export const TripsAndBookingsScreen: React.FC<TripsAndBookingsScreenProps> = ({
                     <span className="font-bold text-slate-900">Local Concierge Note:</span> Fort Kochi Chinese Fishing Net restoration was completed yesterday; full evening demonstrations are operating seamlessly.
                   </div>
                 </div>
-              </div>
+              </BlurFadeCard>
 
               {/* Card 2: Transparent Budget Breakdown */}
-              <div className="bg-white rounded-2xl border border-slate-200 p-5 shadow-2xs space-y-4 text-left">
+              <BlurFadeCard index={1} className="bg-white rounded-2xl border border-slate-200 p-5 shadow-2xs space-y-4 text-left">
                 <div className="flex items-center justify-between pb-3 border-b border-slate-200">
                   <h4 className="text-sm font-bold text-slate-900">Budget Breakdown</h4>
                   <span className="font-mono text-xs font-bold text-blue-600">₹42,800 Total</span>
@@ -1450,10 +1452,10 @@ export const TripsAndBookingsScreen: React.FC<TripsAndBookingsScreenProps> = ({
                     </button>
                   </div>
                 </div>
-              </div>
+              </BlurFadeCard>
 
               {/* Card 3: Assigned Concierge Specialist */}
-              <div className="bg-white rounded-2xl border border-slate-200 p-5 shadow-2xs space-y-4 text-left">
+              <BlurFadeCard index={2} className="bg-white rounded-2xl border border-slate-200 p-5 shadow-2xs space-y-4 text-left">
                 <div className="flex items-center justify-between">
                   <span className="text-[10px] uppercase font-mono text-slate-500 tracking-wider font-bold">
                     Assigned Operations Concierge
@@ -1499,10 +1501,10 @@ export const TripsAndBookingsScreen: React.FC<TripsAndBookingsScreenProps> = ({
                     <span>Call Desk</span>
                   </button>
                 </div>
-              </div>
+              </BlurFadeCard>
 
               {/* Card 4: Quick Navigation Route Map Preview */}
-              <div className="bg-white rounded-2xl border border-slate-200 overflow-hidden shadow-2xs text-left">
+              <BlurFadeCard index={3} className="bg-white rounded-2xl border border-slate-200 overflow-hidden shadow-2xs text-left">
                 <div className="p-4 border-b border-slate-200 flex items-center justify-between">
                   <div className="text-xs font-bold text-slate-900">Route Visualizer</div>
                   <span className="font-mono text-[11px] text-blue-600 font-bold">242 km total circuit</span>
@@ -1520,7 +1522,7 @@ export const TripsAndBookingsScreen: React.FC<TripsAndBookingsScreenProps> = ({
                     </span>
                   </div>
                 </div>
-              </div>
+              </BlurFadeCard>
             </aside>
           </div>
         </main>
@@ -1613,9 +1615,10 @@ export const TripsAndBookingsScreen: React.FC<TripsAndBookingsScreenProps> = ({
                 </div>
               </div>
               <div className="flex gap-5 overflow-x-auto pb-4 pt-1 px-1 custom-scrollbar snap-x snap-mandatory scroll-smooth items-stretch">
-                {bookedTrips.map(trip => (
+                {bookedTrips.map((trip, tripIdx) => (
                   <div key={trip.id} className="flex flex-col">
                     <LuxuryCard
+                      index={tripIdx}
                       id={trip.id}
                       title={trip.title}
                       description={`${trip.duration} with confirmed ${trip.flightDetails.airline} flight, ${trip.hotelCheckIn.hotelName.split('—')[0].trim()}, and dedicated ${trip.carDetails.vehicleModel.split('(')[0].trim()}.`}
@@ -1705,6 +1708,7 @@ export const TripsAndBookingsScreen: React.FC<TripsAndBookingsScreenProps> = ({
           <div className="flex gap-5 overflow-x-auto pb-4 pt-1 px-1 custom-scrollbar snap-x snap-mandatory scroll-smooth items-stretch">
             {/* Booking 1: Kerala Escape */}
             <LuxuryCard
+              index={0}
               id="booking-kerala"
               title="Kerala Escape — Luxury Circuit"
               description="6-day luxury circuit with confirmed IndiGo flights, Old Harbour boutique hotel, and private houseboat."
@@ -1752,6 +1756,7 @@ export const TripsAndBookingsScreen: React.FC<TripsAndBookingsScreenProps> = ({
 
             {/* Booking 2: Rajasthan Royal Heritage */}
             <LuxuryCard
+              index={1}
               id="booking-rajasthan"
               title="Rajasthan Royal Heritage"
               description="6 nights & 7 days palace circuit with private guide, heritage Havelis, and sunset desert dining."
@@ -1798,6 +1803,7 @@ export const TripsAndBookingsScreen: React.FC<TripsAndBookingsScreenProps> = ({
 
             {/* Booking 3: Bali Cultural Retreat */}
             <LuxuryCard
+              index={2}
               id="booking-bali"
               title="Bali Cultural Retreat"
               description="7 nights & 8 days wellness journey with rainforest yoga pavilions, artisanal coffee plantations, and ocean sunsets."
@@ -1844,7 +1850,7 @@ export const TripsAndBookingsScreen: React.FC<TripsAndBookingsScreenProps> = ({
           </div>
 
           {/* Quick Informational Notice */}
-          <div className="p-5 rounded-2xl bg-white border border-slate-200 shadow-2xs flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <BlurFadeCard index={3} className="p-5 rounded-2xl bg-white border border-slate-200 shadow-2xs flex flex-col sm:flex-row sm:items-center justify-between gap-4">
             <div className="flex items-center gap-3.5">
               <div className="w-11 h-11 rounded-2xl bg-blue-50 text-blue-600 flex items-center justify-center shrink-0 border border-blue-100">
                 <span className="material-symbols-outlined text-2xl">qr_code_2</span>
@@ -1865,7 +1871,7 @@ export const TripsAndBookingsScreen: React.FC<TripsAndBookingsScreenProps> = ({
             >
               Download All Vouchers (PDF)
             </button>
-          </div>
+          </BlurFadeCard>
         </main>
       )}
 

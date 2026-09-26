@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { motion } from 'framer-motion';
 import { CatalogItem, ItineraryCategory, ItineraryItem } from '../../types/itinerary';
 import { CATEGORY_CONFIG, formatCurrency } from '../../utils/pricing';
 
@@ -73,7 +74,12 @@ export const CardDetailOverlay: React.FC<CardDetailOverlayProps> = ({
         aria-hidden="true"
       />
 
-      <div className="relative z-10 bg-white rounded-3xl max-w-lg w-full shadow-2xl border border-neutral-200 overflow-hidden animate-in zoom-in-95 duration-200 max-h-[90dvh] flex flex-col">
+      <motion.div
+        initial={{ opacity: 0, scale: 0.95, y: 16, filter: 'blur(8px)' }}
+        animate={{ opacity: 1, scale: 1, y: 0, filter: 'blur(0px)' }}
+        transition={{ duration: 0.28, ease: [0.16, 1, 0.3, 1] }}
+        className="relative z-10 bg-white rounded-3xl max-w-lg w-full shadow-2xl border border-neutral-200 overflow-hidden max-h-[90dvh] flex flex-col"
+      >
         {/* Hero Photo Banner */}
         <div className="relative h-48 sm:h-56 w-full bg-neutral-900 overflow-hidden shrink-0">
           <img
@@ -322,7 +328,7 @@ export const CardDetailOverlay: React.FC<CardDetailOverlayProps> = ({
             </div>
           )}
         </div>
-      </div>
+      </motion.div>
     </div>
   );
 };

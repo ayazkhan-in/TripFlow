@@ -4,6 +4,7 @@ import { BookedTrip } from '../../types/travel';
 import { INITIAL_VAULT_DOCUMENTS, EMERGENCY_CONTACTS } from '../../data/vaultData';
 import { DocumentScannerModal } from './DocumentScannerModal';
 import { TripFlowApi } from '../../services/api';
+import { BlurFadeCard } from '../ui/MotionComponents';
 
 interface TravelVaultScreenProps {
   onOpenWhatsApp?: () => void;
@@ -302,7 +303,7 @@ export const TravelVaultScreen: React.FC<TravelVaultScreenProps> = ({
       {/* ------------------------------------------------------------- */}
       {/* AI CAMERA DOCUMENT SCANNER HERO BANNER                        */}
       {/* ------------------------------------------------------------- */}
-      <div className="bg-slate-900 rounded-3xl p-6 text-white shadow-lg relative overflow-hidden flex flex-col md:flex-row items-start md:items-center justify-between gap-6 border border-slate-800">
+      <BlurFadeCard index={0} className="bg-slate-900 rounded-3xl p-6 text-white shadow-lg relative overflow-hidden flex flex-col md:flex-row items-start md:items-center justify-between gap-6 border border-slate-800">
         <div className="space-y-2 z-10 max-w-xl">
           <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-blue-500/20 border border-blue-400/30 text-blue-300 text-xs font-bold">
             <span className="w-2 h-2 rounded-full bg-cyan-400 animate-ping"></span>
@@ -330,57 +331,57 @@ export const TravelVaultScreen: React.FC<TravelVaultScreenProps> = ({
         </div>
 
         <div className="absolute right-0 top-0 w-80 h-full bg-blue-600/15 rounded-full blur-3xl pointer-events-none" />
-      </div>
+      </BlurFadeCard>
 
       {/* ------------------------------------------------------------- */}
       {/* SECURITY TELEMETRY BENTO STRIP                                */}
       {/* ------------------------------------------------------------- */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         {/* Metric 1 */}
-        <div className="bg-white p-4 rounded-2xl border border-slate-200 shadow-2xs space-y-1">
+        <BlurFadeCard index={0} className="bg-white p-4 rounded-2xl border border-slate-200 shadow-2xs space-y-1">
           <div className="flex items-center justify-between">
             <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Encryption Protocol</span>
             <span className="material-symbols-outlined text-emerald-600 text-base">verified_user</span>
           </div>
           <div className="text-base font-extrabold text-slate-900">AES-256 Bit Local</div>
           <div className="text-[11px] text-slate-500">Zero-knowledge device sandbox</div>
-        </div>
+        </BlurFadeCard>
 
         {/* Metric 2 */}
-        <div className="bg-white p-4 rounded-2xl border border-slate-200 shadow-2xs space-y-1">
+        <BlurFadeCard index={1} className="bg-white p-4 rounded-2xl border border-slate-200 shadow-2xs space-y-1">
           <div className="flex items-center justify-between">
             <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Offline Cache</span>
             <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
           </div>
           <div className="text-base font-extrabold text-emerald-700">100% Synchronized</div>
           <div className="text-[11px] text-slate-500">12 of 12 documents cached offline</div>
-        </div>
+        </BlurFadeCard>
 
         {/* Metric 3 */}
-        <div className="bg-white p-4 rounded-2xl border border-slate-200 shadow-2xs space-y-1">
+        <BlurFadeCard index={2} className="bg-white p-4 rounded-2xl border border-slate-200 shadow-2xs space-y-1">
           <div className="flex items-center justify-between">
             <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Credential Validity</span>
             <span className="material-symbols-outlined text-blue-600 text-base">task_alt</span>
           </div>
           <div className="text-base font-extrabold text-slate-900">All Credentials Valid</div>
           <div className="text-[11px] text-slate-500">Next renewal: Nov 2032 (Passport)</div>
-        </div>
+        </BlurFadeCard>
 
         {/* Metric 4 */}
-        <div className="bg-white p-4 rounded-2xl border border-slate-200 shadow-2xs space-y-1">
+        <BlurFadeCard index={3} className="bg-white p-4 rounded-2xl border border-slate-200 shadow-2xs space-y-1">
           <div className="flex items-center justify-between">
             <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Emergency Hotlines</span>
             <span className="material-symbols-outlined text-rose-600 text-base">emergency</span>
           </div>
           <div className="text-base font-extrabold text-slate-900">4 Fast-Dials Verified</div>
           <div className="text-[11px] text-slate-500">Kerala circuit lead doctor on duty</div>
-        </div>
+        </BlurFadeCard>
       </div>
 
       {/* ------------------------------------------------------------- */}
       {/* LINKED CIRCUIT SELECTOR                                       */}
       {/* ------------------------------------------------------------- */}
-      <div className="bg-white p-4 rounded-2xl border border-slate-200 shadow-2xs flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+      <BlurFadeCard index={4} className="bg-white p-4 rounded-2xl border border-slate-200 shadow-2xs flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div className="flex items-center gap-3">
           <span className="w-10 h-10 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center shrink-0 border border-blue-100">
             <span className="material-symbols-outlined text-xl">luggage</span>
@@ -422,12 +423,12 @@ export const TravelVaultScreen: React.FC<TravelVaultScreenProps> = ({
             )}
           </select>
         </div>
-      </div>
+      </BlurFadeCard>
 
       {/* ------------------------------------------------------------- */}
       {/* FAST-DIAL EMERGENCY & TRIP CONTACTS RIBBON                    */}
       {/* ------------------------------------------------------------- */}
-      <div className="bg-white rounded-3xl border border-slate-200 p-5 shadow-2xs space-y-4">
+      <BlurFadeCard index={5} className="bg-white rounded-3xl border border-slate-200 p-5 shadow-2xs space-y-4">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
             <span className="material-symbols-outlined text-rose-600 text-lg">
@@ -490,7 +491,7 @@ export const TravelVaultScreen: React.FC<TravelVaultScreenProps> = ({
             </div>
           ))}
         </div>
-      </div>
+      </BlurFadeCard>
 
       {/* ------------------------------------------------------------- */}
       {/* CATEGORY FILTER TABS & INSTANT SEARCH BAR                     */}
@@ -571,9 +572,10 @@ export const TravelVaultScreen: React.FC<TravelVaultScreenProps> = ({
       {/* ------------------------------------------------------------- */}
       {activeCategory === 'emergency' && (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 animate-in fade-in duration-150">
-          {emergencyContacts.map(contact => (
-            <div
+          {emergencyContacts.map((contact, idx) => (
+            <BlurFadeCard
               key={contact.id}
+              index={idx}
               className="bg-white rounded-3xl p-5 border border-slate-200 shadow-2xs space-y-3"
             >
               <div className="flex items-start justify-between">
@@ -635,7 +637,7 @@ export const TravelVaultScreen: React.FC<TravelVaultScreenProps> = ({
                   </a>
                 </div>
               </div>
-            </div>
+            </BlurFadeCard>
           ))}
         </div>
       )}
@@ -645,13 +647,14 @@ export const TravelVaultScreen: React.FC<TravelVaultScreenProps> = ({
       {/* ------------------------------------------------------------- */}
       {activeCategory !== 'emergency' && (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5 animate-in fade-in duration-150">
-          {filteredDocuments.map(doc => {
+          {filteredDocuments.map((doc, idx) => {
             const catColor = getCategoryColor(doc.category);
             const catIcon = getCategoryIcon(doc.category);
 
             return (
-              <div
+              <BlurFadeCard
                 key={doc.id}
+                index={idx}
                 onClick={() => setSelectedDocument(doc)}
                 className="group bg-white rounded-3xl border border-slate-200 hover:border-blue-500/80 shadow-2xs hover:shadow-md transition-all cursor-pointer p-5 flex flex-col justify-between space-y-4 text-left"
               >
@@ -768,7 +771,7 @@ export const TravelVaultScreen: React.FC<TravelVaultScreenProps> = ({
                     </button>
                   </div>
                 </div>
-              </div>
+              </BlurFadeCard>
             );
           })}
         </div>

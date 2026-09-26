@@ -1,4 +1,5 @@
 import React, { useState, useRef, useMemo } from 'react';
+import { motion } from 'framer-motion';
 import { CatalogItem, ItineraryDay, ItineraryItem, PriceBreakdown, TripItinerary } from '../../types/itinerary';
 import { clearDragPayload, getDragPayload, setDragPayload } from '../../utils/dragDropState';
 import { formatCurrency } from '../../utils/pricing';
@@ -320,11 +321,17 @@ export const ItineraryBoard: React.FC<ItineraryBoardProps> = ({
             />
 
             {/* 2. WHITE CARD CONTAINER: DIVIDED CARDS & TIMELINE */}
-            <div className={`w-full bg-white rounded-3xl p-5 sm:p-7 shadow-xs border transition-colors flex flex-col gap-3 relative ${
-              dragOverDayNumber === currentDay.dayNumber
-                ? 'border-blue-500 bg-blue-50/20 ring-2 ring-blue-300'
-                : 'border-slate-100'
-            }`}>
+            <motion.div
+              key={`day-container-${currentDay.dayNumber}`}
+              initial={{ opacity: 0, y: 14, filter: 'blur(8px)' }}
+              animate={{ opacity: 1, y: 0, filter: 'blur(0px)' }}
+              transition={{ duration: 0.35, ease: 'easeOut' }}
+              className={`w-full bg-white rounded-3xl p-5 sm:p-7 shadow-xs border transition-colors flex flex-col gap-3 relative ${
+                dragOverDayNumber === currentDay.dayNumber
+                  ? 'border-blue-500 bg-blue-50/20 ring-2 ring-blue-300'
+                  : 'border-slate-100'
+              }`}
+            >
               {/* Day Header Info */}
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3.5 border-b border-slate-100">
                 <div className="flex flex-col min-w-0">
@@ -374,108 +381,119 @@ export const ItineraryBoard: React.FC<ItineraryBoardProps> = ({
 
                     return (
                       <React.Fragment key={item.id}>
-                        {/* The Divided Card */}
-                        <div
-                          draggable
-                          onDragStart={e => handleCardDragStart(e, item.id, currentDay.dayNumber)}
-                          onDragOver={e => handleItemDragOver(e, idx)}
-                          onDragLeave={() => setDragOverItemIndex(null)}
-                          onDrop={e => handleItemDrop(e, idx, currentDay.dayNumber)}
-                          className={`flex items-start justify-between gap-3 sm:gap-4 p-3.5 sm:p-4 rounded-2xl border transition-all cursor-grab active:cursor-grabbing group relative select-none ${
-                            isItemHovered
-                              ? 'border-blue-500 bg-blue-50/50 ring-2 ring-blue-300 scale-[1.01]'
-                              : isDragging
-                              ? 'opacity-40 border-slate-300 bg-slate-50'
-                              : 'bg-white hover:bg-slate-50/60 border-slate-200/80 hover:border-blue-300 shadow-2xs hover:shadow-xs'
-                          }`}
+                        {/* The Divided Card with staggered blur appear */}
+                        <motion.div
+                          key={`item-${currentDay.dayNumber}-${item.id}`}
+                          initial={{ opacity: 0, y: 16, filter: 'blur(8px)' }}
+                          animate={{ opacity: 1, y: 0, filter: 'blur(0px)' }}
+                          transition={{
+                            duration: 0.38,
+                            delay: idx * 0.07,
+                            ease: [0.21, 0.47, 0.32, 0.98],
+                          }}
                         >
-                          {/* Left Side: Drag Grip & Category Icon */}
-                          <div className="flex items-start gap-2 sm:gap-3.5 min-w-0 flex-1">
-                            <div className="flex items-center gap-1 shrink-0 pt-0.5">
-                              {/* Grip Indicator */}
-                              <span
-                                className="hidden sm:inline-flex material-symbols-outlined text-slate-300 group-hover:text-slate-500 text-sm cursor-grab active:cursor-grabbing transition-colors -ml-1"
-                                title="Drag to reorder or move to another day"
-                              >
-                                drag_indicator
-                              </span>
-
-                              {/* Circular Icon matching Reference */}
-                              <div
-                                className={`w-9 h-9 sm:w-10 sm:h-10 rounded-full flex items-center justify-center shrink-0 border-2 border-white shadow-2xs z-10 ${theme.iconBg}`}
-                              >
-                                <span className="material-symbols-outlined text-base sm:text-lg">
-                                  {theme.iconName}
-                                </span>
-                              </div>
-                            </div>
-
-                            {/* Middle Details */}
-                            <div className="min-w-0 pt-0.5 flex-1 pr-1">
-                              <span className="text-[10px] sm:text-[11px] font-semibold text-slate-400 block tracking-wide uppercase">
-                                {item.time || '11:30 AM'}
-                              </span>
-                              <h3
-                                onClick={() => onSelectItemForDetail && onSelectItemForDetail(item, currentDay.dayNumber)}
-                                className="font-bold text-xs sm:text-sm text-slate-900 group-hover:text-blue-600 cursor-pointer transition-colors leading-snug line-clamp-2"
-                              >
-                                {item.title}
-                              </h3>
-                              <div className="flex items-center gap-1 text-slate-500 text-[11px] sm:text-xs mt-0.5 truncate">
-                                <span className="material-symbols-outlined text-xs text-slate-400 shrink-0">
-                                  location_on
-                                </span>
-                                <span className="truncate">{item.location || 'Central Location'}</span>
-                              </div>
-                              <div className="flex items-center gap-1.5 mt-1.5 flex-wrap">
+                          <div
+                            draggable
+                            onDragStart={e => handleCardDragStart(e, item.id, currentDay.dayNumber)}
+                            onDragOver={e => handleItemDragOver(e, idx)}
+                            onDragLeave={() => setDragOverItemIndex(null)}
+                            onDrop={e => handleItemDrop(e, idx, currentDay.dayNumber)}
+                            className={`flex items-start justify-between gap-3 sm:gap-4 p-3.5 sm:p-4 rounded-2xl border transition-all cursor-grab active:cursor-grabbing group relative select-none ${
+                              isItemHovered
+                                ? 'border-blue-500 bg-blue-50/50 ring-2 ring-blue-300 scale-[1.01]'
+                                : isDragging
+                                ? 'opacity-40 border-slate-300 bg-slate-50'
+                                : 'bg-white hover:bg-slate-50/60 border-slate-200/80 hover:border-blue-300 shadow-2xs hover:shadow-xs'
+                            }`}
+                          >
+                            {/* Left Side: Drag Grip & Category Icon */}
+                            <div className="flex items-start gap-2 sm:gap-3.5 min-w-0 flex-1">
+                              <div className="flex items-center gap-1 shrink-0 pt-0.5">
+                                {/* Grip Indicator */}
                                 <span
-                                  className={`px-2 py-0.5 rounded-md text-[10px] font-semibold ${theme.badgeBg}`}
+                                  className="hidden sm:inline-flex material-symbols-outlined text-slate-300 group-hover:text-slate-500 text-sm cursor-grab active:cursor-grabbing transition-colors -ml-1"
+                                  title="Drag to reorder or move to another day"
                                 >
-                                  {theme.label}
+                                  drag_indicator
                                 </span>
-                                <span className="text-slate-300">•</span>
-                                <span className="text-[11px] sm:text-xs text-slate-400 font-medium">
-                                  {item.duration || '2 hrs'}
+
+                                {/* Circular Icon matching Reference */}
+                                <div
+                                  className={`w-9 h-9 sm:w-10 sm:h-10 rounded-full flex items-center justify-center shrink-0 border-2 border-white shadow-2xs z-10 ${theme.iconBg}`}
+                                >
+                                  <span className="material-symbols-outlined text-base sm:text-lg">
+                                    {theme.iconName}
+                                  </span>
+                                </div>
+                              </div>
+
+                              {/* Middle Details */}
+                              <div className="min-w-0 pt-0.5 flex-1 pr-1">
+                                <span className="text-[10px] sm:text-[11px] font-semibold text-slate-400 block tracking-wide uppercase">
+                                  {item.time || '11:30 AM'}
                                 </span>
-                                {item.price > 0 && (
-                                  <>
-                                    <span className="text-slate-300">•</span>
-                                    <span className="text-[11px] sm:text-xs font-bold text-slate-800">
-                                      {formatCurrency(item.price)}
-                                    </span>
-                                  </>
-                                )}
+                                <h3
+                                  onClick={() => onSelectItemForDetail && onSelectItemForDetail(item, currentDay.dayNumber)}
+                                  className="font-bold text-xs sm:text-sm text-slate-900 group-hover:text-blue-600 cursor-pointer transition-colors leading-snug line-clamp-2"
+                                >
+                                  {item.title}
+                                </h3>
+                                <div className="flex items-center gap-1 text-slate-500 text-[11px] sm:text-xs mt-0.5 truncate">
+                                  <span className="material-symbols-outlined text-xs text-slate-400 shrink-0">
+                                    location_on
+                                  </span>
+                                  <span className="truncate">{item.location || 'Central Location'}</span>
+                                </div>
+                                <div className="flex items-center gap-1.5 mt-1.5 flex-wrap">
+                                  <span
+                                    className={`px-2 py-0.5 rounded-md text-[10px] font-semibold ${theme.badgeBg}`}
+                                  >
+                                    {theme.label}
+                                  </span>
+                                  <span className="text-slate-300">•</span>
+                                  <span className="text-[11px] sm:text-xs text-slate-400 font-medium">
+                                    {item.duration || '2 hrs'}
+                                  </span>
+                                  {item.price > 0 && (
+                                    <>
+                                      <span className="text-slate-300">•</span>
+                                      <span className="text-[11px] sm:text-xs font-bold text-slate-800">
+                                        {formatCurrency(item.price)}
+                                      </span>
+                                    </>
+                                  )}
+                                </div>
                               </div>
                             </div>
-                          </div>
 
-                          {/* Right Side: Thumbnail Image */}
-                          <div className="flex items-center gap-2 shrink-0">
-                            <div
-                              onClick={() => onSelectItemForDetail && onSelectItemForDetail(item, currentDay.dayNumber)}
-                              className="w-20 sm:w-28 h-16 sm:h-20 rounded-xl overflow-hidden shadow-2xs border border-slate-100 shrink-0 cursor-pointer group-hover:scale-105 transition-transform duration-300 relative"
-                            >
-                              <img
-                                src={itemThumbnail}
-                                alt={item.title}
-                                className="w-full h-full object-cover"
-                              />
+                            {/* Right Side: Thumbnail Image */}
+                            <div className="flex items-center gap-2 shrink-0">
+                              <div
+                                onClick={() => onSelectItemForDetail && onSelectItemForDetail(item, currentDay.dayNumber)}
+                                className="w-20 sm:w-28 h-16 sm:h-20 rounded-xl overflow-hidden shadow-2xs border border-slate-100 shrink-0 cursor-pointer group-hover:scale-105 transition-transform duration-300 relative"
+                              >
+                                <img
+                                  src={itemThumbnail}
+                                  alt={item.title}
+                                  className="w-full h-full object-cover"
+                                />
+                              </div>
+
+                              {/* Quick delete button on hover */}
+                              <button
+                                type="button"
+                                onClick={e => {
+                                  e.stopPropagation();
+                                  onRemoveItem(currentDay.dayNumber, item.id);
+                                }}
+                                className="opacity-0 group-hover:opacity-100 transition-opacity w-6 h-6 rounded-full bg-slate-100 hover:bg-rose-50 hover:text-rose-600 text-slate-400 flex items-center justify-center text-xs cursor-pointer"
+                                title="Remove from day"
+                              >
+                                ✕
+                              </button>
                             </div>
-
-                            {/* Quick delete button on hover */}
-                            <button
-                              type="button"
-                              onClick={e => {
-                                e.stopPropagation();
-                                onRemoveItem(currentDay.dayNumber, item.id);
-                              }}
-                              className="opacity-0 group-hover:opacity-100 transition-opacity w-6 h-6 rounded-full bg-slate-100 hover:bg-rose-50 hover:text-rose-600 text-slate-400 flex items-center justify-center text-xs cursor-pointer"
-                              title="Remove from day"
-                            >
-                              ✕
-                            </button>
                           </div>
-                        </div>
+                        </motion.div>
 
                         {/* Timeline Connecting Stem between consecutive divided cards */}
                         {idx < currentDay.items.length - 1 && (
@@ -490,7 +508,10 @@ export const ItineraryBoard: React.FC<ItineraryBoardProps> = ({
               </div>
 
               {/* Drop Target Invitation Button */}
-              <div
+              <motion.div
+                initial={{ opacity: 0, y: 10, filter: 'blur(6px)' }}
+                animate={{ opacity: 1, y: 0, filter: 'blur(0px)' }}
+                transition={{ duration: 0.35, delay: currentDay.items.length * 0.05 }}
                 onDragOver={e => handleItemDragOver(e, currentDay.items.length)}
                 onDrop={e => handleItemDrop(e, currentDay.items.length, currentDay.dayNumber)}
                 onClick={() => onOpenAddModalForDay && onOpenAddModalForDay(currentDay.dayNumber)}
@@ -502,12 +523,15 @@ export const ItineraryBoard: React.FC<ItineraryBoardProps> = ({
               >
                 <span className="material-symbols-outlined text-base">add_circle</span>
                 <span>Drop items from catalog here, or click to add custom</span>
-              </div>
+              </motion.div>
 
               {/* ------------------------------------------------------- */}
               {/* DAY TOTAL BANNER (Exact Reference Match)                */}
               {/* ------------------------------------------------------- */}
-              <div
+              <motion.div
+                initial={{ opacity: 0, y: 12, filter: 'blur(6px)' }}
+                animate={{ opacity: 1, y: 0, filter: 'blur(0px)' }}
+                transition={{ duration: 0.35, delay: (currentDay.items.length + 1) * 0.05 }}
                 onClick={() => onOpenBookingModal && onOpenBookingModal()}
                 className="w-full bg-[#F3F6FD] hover:bg-[#EBF1FD] border border-blue-100/80 rounded-2xl p-4 flex items-center justify-between cursor-pointer transition-all mt-2 shadow-2xs group"
               >
@@ -528,8 +552,8 @@ export const ItineraryBoard: React.FC<ItineraryBoardProps> = ({
                 <div className="flex items-center text-slate-400 group-hover:text-blue-600 transition-colors">
                   <span className="material-symbols-outlined text-xl">chevron_right</span>
                 </div>
-              </div>
-            </div>
+              </motion.div>
+            </motion.div>
 
             {/* --------------------------------------------------------- */}
             {/* BOTTOM CAROUSEL DAY PAGINATION (Exact Reference Match)    */}
@@ -654,14 +678,21 @@ export const ItineraryBoard: React.FC<ItineraryBoardProps> = ({
 
           <div className="flex-1 min-h-0 overflow-x-auto overflow-y-hidden px-4 py-2 custom-scrollbar">
             <div className="flex items-stretch gap-3.5 h-full max-h-full min-h-0 pb-2 min-w-max">
-            {itinerary.days.map(day => {
+            {itinerary.days.map((day, dayIndex) => {
               const daySubtotal = day.items.reduce((sum, item) => sum + (Number(item.price) || 0), 0);
               const isDragOver = dragOverDayNumber === day.dayNumber;
               const isCurrentDay = day.dayNumber === activeDayNumber;
 
               return (
-                <div
+                <motion.div
                   key={day.id || `day-${day.dayNumber}`}
+                  initial={{ opacity: 0, y: 18, filter: 'blur(8px)' }}
+                  animate={{ opacity: 1, y: 0, filter: 'blur(0px)' }}
+                  transition={{
+                    duration: 0.45,
+                    delay: dayIndex * 0.08,
+                    ease: [0.21, 0.47, 0.32, 0.98],
+                  }}
                   onDragEnter={e => handleDragEnter(e, day.dayNumber)}
                   onDragOver={e => handleDragOver(e, day.dayNumber)}
                   onDragLeave={e => handleDragLeave(e, day.dayNumber)}
@@ -720,6 +751,7 @@ export const ItineraryBoard: React.FC<ItineraryBoardProps> = ({
                     {day.items.map((item, itemIdx) => (
                       <ItineraryCard
                         key={item.id}
+                        index={itemIdx}
                         item={item}
                         dayNumber={day.dayNumber}
                         totalDays={itinerary.days.length}
@@ -756,7 +788,7 @@ export const ItineraryBoard: React.FC<ItineraryBoardProps> = ({
                       <span>{isDragOver ? 'Drop item here' : 'Drop item or click to add'}</span>
                     </button>
                   </div>
-                </div>
+                </motion.div>
               );
             })}
 

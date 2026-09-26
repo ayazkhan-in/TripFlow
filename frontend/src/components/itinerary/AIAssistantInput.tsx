@@ -1,4 +1,5 @@
 import React, { useState, useMemo, useRef, useEffect } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 
 interface AIAssistantInputProps {
   onSubmitPrompt: (prompt: string) => Promise<void>;
@@ -139,32 +140,46 @@ export const AIAssistantInput: React.FC<AIAssistantInputProps> = ({
         )}
 
         {/* Suggestion Chips */}
-        {showSuggestions && (
-          <div className="mb-2 bg-white/95 backdrop-blur-md border border-slate-200 p-2.5 rounded-2xl shadow-xl flex flex-col gap-1.5 animate-in fade-in zoom-in-95 duration-150">
-            <div className="flex items-center justify-between px-1 text-[11px] font-semibold text-slate-500 uppercase tracking-wider">
-              <span className="flex items-center gap-1">
-                <span className="material-symbols-outlined text-xs text-indigo-600">magic_button</span>
-                Instant AI Modifications ({destination || 'Trip'})
-              </span>
-              <span className="text-[10px] text-slate-400 font-normal">Click to add directly</span>
-            </div>
-            <div className="flex flex-wrap gap-1.5">
-              {samplePrompts.map((p, i) => (
-                <button
-                  key={i}
-                  type="button"
-                  onClick={() => handleSelectPrompt(p)}
-                  className="text-xs font-medium text-slate-700 bg-slate-100/80 hover:bg-indigo-50 hover:text-indigo-700 hover:border-indigo-200 border border-slate-200/60 px-2.5 py-1 rounded-lg cursor-pointer transition-all active:scale-98 text-left"
-                >
-                  {p}
-                </button>
-              ))}
-            </div>
-          </div>
-        )}
+        <AnimatePresence>
+          {showSuggestions && (
+            <motion.div
+              initial={{ opacity: 0, y: 8, filter: 'blur(6px)' }}
+              animate={{ opacity: 1, y: 0, filter: 'blur(0px)' }}
+              exit={{ opacity: 0, y: 8, filter: 'blur(6px)' }}
+              transition={{ duration: 0.2 }}
+              className="mb-2 bg-white/95 backdrop-blur-md border border-slate-200 p-2.5 rounded-2xl shadow-xl flex flex-col gap-1.5"
+            >
+              <div className="flex items-center justify-between px-1 text-[11px] font-semibold text-slate-500 uppercase tracking-wider">
+                <span className="flex items-center gap-1">
+                  <span className="material-symbols-outlined text-xs text-indigo-600">magic_button</span>
+                  Instant AI Modifications ({destination || 'Trip'})
+                </span>
+                <span className="text-[10px] text-slate-400 font-normal">Click to add directly</span>
+              </div>
+              <div className="flex flex-wrap gap-1.5">
+                {samplePrompts.map((p, i) => (
+                  <motion.button
+                    key={i}
+                    type="button"
+                    initial={{ opacity: 0, scale: 0.95, filter: 'blur(4px)' }}
+                    animate={{ opacity: 1, scale: 1, filter: 'blur(0px)' }}
+                    transition={{ delay: i * 0.03, duration: 0.25 }}
+                    onClick={() => handleSelectPrompt(p)}
+                    className="text-xs font-medium text-slate-700 bg-slate-100/80 hover:bg-indigo-50 hover:text-indigo-700 hover:border-indigo-200 border border-slate-200/60 px-2.5 py-1 rounded-lg cursor-pointer transition-all active:scale-98 text-left"
+                  >
+                    {p}
+                  </motion.button>
+                ))}
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
 
         {/* Main Floating Concierge AI Pill */}
-        <form
+        <motion.form
+          initial={{ opacity: 0, y: 14, filter: 'blur(8px)' }}
+          animate={{ opacity: 1, y: 0, filter: 'blur(0px)' }}
+          transition={{ duration: 0.4, delay: 0.25, ease: [0.21, 0.47, 0.32, 0.98] }}
           onSubmit={handleSubmit}
           className="flex items-center bg-white/95 backdrop-blur-md border border-slate-200/90 rounded-2xl shadow-xl px-3 py-1.5 gap-2 focus-within:border-indigo-500 focus-within:ring-3 focus-within:ring-indigo-500/15 transition-all"
         >
@@ -208,7 +223,7 @@ export const AIAssistantInput: React.FC<AIAssistantInputProps> = ({
               </>
             )}
           </button>
-        </form>
+        </motion.form>
       </div>
     </div>
   );

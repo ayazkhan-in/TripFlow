@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { motion } from 'framer-motion';
 import { RouteStop, TripItinerary } from '../../types/itinerary';
 
 interface TripHeroHeaderProps {
@@ -118,7 +119,10 @@ export const TripHeroHeader: React.FC<TripHeroHeaderProps> = ({
   const isSingle = viewMode === 'single';
 
   return (
-    <div
+    <motion.div
+      initial={{ opacity: 0, y: -10, filter: 'blur(8px)' }}
+      animate={{ opacity: 1, y: 0, filter: 'blur(0px)' }}
+      transition={{ duration: 0.45, ease: [0.21, 0.47, 0.32, 0.98] }}
       className={`relative w-full text-white bg-neutral-950 border shadow-sm select-none overflow-hidden transition-all duration-300 ease-in-out ${
         isSingle
           ? 'rounded-2xl sm:rounded-3xl border-slate-100/30 p-3.5 sm:p-4.5 flex flex-col justify-between gap-3'
@@ -329,8 +333,11 @@ export const TripHeroHeader: React.FC<TripHeroHeaderProps> = ({
           {routeStops.map((stop, idx) => {
             const isStopForCurrentDay = isSingle && idx === activeDayNumber - 1;
             return (
-              <div
+              <motion.div
                 key={stop.id}
+                initial={{ opacity: 0, x: -8, filter: 'blur(4px)' }}
+                animate={{ opacity: 1, x: 0, filter: 'blur(0px)' }}
+                transition={{ duration: 0.3, delay: idx * 0.05 }}
                 className={`inline-flex items-center gap-1.5 sm:gap-2 backdrop-blur-md rounded-full px-2.5 sm:px-3 py-1 text-xs text-white shadow-2xs transition-all ${
                   isStopForCurrentDay
                     ? 'bg-blue-600/85 border border-blue-300 ring-2 ring-blue-400/50 scale-[1.02]'
@@ -363,7 +370,7 @@ export const TripHeroHeader: React.FC<TripHeroHeaderProps> = ({
                     ✕
                   </button>
                 )}
-              </div>
+              </motion.div>
             );
           })}
 
@@ -407,6 +414,6 @@ export const TripHeroHeader: React.FC<TripHeroHeaderProps> = ({
           )}
         </div>
       </div>
-    </div>
+    </motion.div>
   );
 };

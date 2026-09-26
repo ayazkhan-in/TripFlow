@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { motion } from 'framer-motion';
 
 export interface CardAmenity {
   icon: string;
@@ -7,6 +8,8 @@ export interface CardAmenity {
 
 export interface LuxuryCardProps {
   id?: string;
+  index?: number;
+  delay?: number;
   title: string;
   description?: string;
   image: string;
@@ -45,6 +48,8 @@ export const DEFAULT_AMENITIES: CardAmenity[] = [
 
 export const LuxuryCard: React.FC<LuxuryCardProps> = ({
   id,
+  index = 0,
+  delay,
   title,
   description,
   image,
@@ -83,9 +88,19 @@ export const LuxuryCard: React.FC<LuxuryCardProps> = ({
     ? ''
     : 'w-[320px] sm:w-[340px] shrink-0';
 
+  const calculatedDelay = delay !== undefined ? delay : index * 0.08;
+
   return (
-    <article
+    <motion.article
       onClick={onClick}
+      initial={{ opacity: 0, y: 22, filter: 'blur(10px)' }}
+      whileInView={{ opacity: 1, y: 0, filter: 'blur(0px)' }}
+      viewport={{ once: true, margin: '-20px' }}
+      transition={{
+        duration: 0.5,
+        delay: calculatedDelay,
+        ease: [0.21, 0.47, 0.32, 0.98],
+      }}
       className={`relative ${widthClasses} aspect-[1/1.54] rounded-[26px] sm:rounded-[28px] p-1.5 transition-all duration-300 select-none cursor-pointer border hover:scale-[1.03] hover:-translate-y-1 hover:shadow-xl will-change-transform z-0 hover:z-20 ${
         isDark
           ? isSelected
@@ -306,6 +321,6 @@ export const LuxuryCard: React.FC<LuxuryCardProps> = ({
           </div>
         </div>
       </div>
-    </article>
+    </motion.article>
   );
 };

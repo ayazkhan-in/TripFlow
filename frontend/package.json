@@ -21,6 +21,7 @@
     "vite": "^8.3.0",
     "express": "^4.21.2",
     "dotenv": "^17.2.3",
+    "framer-motion": "^12.43.0",
     "motion": "^12.23.24"
   },
   "devDependencies": {

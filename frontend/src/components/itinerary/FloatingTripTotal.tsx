@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { PriceBreakdown, TripItinerary } from '../../types/itinerary';
 import { CATEGORY_CONFIG, formatCurrency } from '../../utils/pricing';
 
@@ -23,8 +24,15 @@ export const FloatingTripTotal: React.FC<FloatingTripTotalProps> = ({
   return (
     <div className="fixed bottom-0 left-0 right-0 z-40 bg-white/95 backdrop-blur-md border-t border-slate-200/90 px-3 py-2 sm:px-4 sm:py-2.5 pb-[max(0.625rem,env(safe-area-inset-bottom))] shadow-[0_-4px_20px_rgba(0,0,0,0.06)] md:shadow-none md:border-0 md:p-0 md:bottom-3 md:right-6 md:left-auto md:w-auto md:bg-transparent select-none">
       {/* Expanded Breakdown Popover */}
-      {isExpanded && (
-        <div className="absolute md:static bottom-full mb-2 left-3 right-3 md:left-auto md:right-0 md:w-72 bg-white rounded-2xl shadow-2xl border border-neutral-200/90 p-3.5 text-xs animate-in fade-in zoom-in-95 duration-100 z-50">
+      <AnimatePresence>
+        {isExpanded && (
+          <motion.div
+            initial={{ opacity: 0, scale: 0.95, y: 10, filter: 'blur(6px)' }}
+            animate={{ opacity: 1, scale: 1, y: 0, filter: 'blur(0px)' }}
+            exit={{ opacity: 0, scale: 0.95, y: 10, filter: 'blur(6px)' }}
+            transition={{ duration: 0.2 }}
+            className="absolute md:static bottom-full mb-2 left-3 right-3 md:left-auto md:right-0 md:w-72 bg-white rounded-2xl shadow-2xl border border-neutral-200/90 p-3.5 text-xs z-50"
+          >
           <div className="flex items-center justify-between pb-2 border-b border-neutral-100 font-bold text-neutral-800">
             <div className="flex items-center gap-1.5">
               <span className="material-symbols-outlined text-base text-blue-600">
@@ -82,11 +90,17 @@ export const FloatingTripTotal: React.FC<FloatingTripTotalProps> = ({
           >
             Review & Reserve Trip
           </button>
-        </div>
+        </motion.div>
       )}
+      </AnimatePresence>
 
       {/* Floating Card on Desktop / Bottom Bar Content on Mobile */}
-      <div className="flex items-center justify-between md:justify-start bg-transparent md:bg-white/95 md:backdrop-blur-md rounded-2xl md:shadow-xl md:border md:border-neutral-200/90 px-0 md:px-3.5 py-0 md:py-2 gap-2 sm:gap-3 text-xs">
+      <motion.div
+        initial={{ opacity: 0, y: 14, filter: 'blur(8px)' }}
+        animate={{ opacity: 1, y: 0, filter: 'blur(0px)' }}
+        transition={{ duration: 0.4, delay: 0.2, ease: [0.21, 0.47, 0.32, 0.98] }}
+        className="flex items-center justify-between md:justify-start bg-transparent md:bg-white/95 md:backdrop-blur-md rounded-2xl md:shadow-xl md:border md:border-neutral-200/90 px-0 md:px-3.5 py-0 md:py-2 gap-2 sm:gap-3 text-xs"
+      >
         <button
           type="button"
           onClick={() => setIsExpanded(!isExpanded)}
@@ -147,7 +161,7 @@ export const FloatingTripTotal: React.FC<FloatingTripTotalProps> = ({
             <span className="material-symbols-outlined text-sm">arrow_forward</span>
           </button>
         </div>
-      </div>
+      </motion.div>
     </div>
   );
 };

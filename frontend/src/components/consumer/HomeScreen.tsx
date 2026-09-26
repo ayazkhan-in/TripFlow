@@ -1,4 +1,5 @@
 import React, { useState, useRef } from 'react';
+import { motion } from 'framer-motion';
 import { ConsumerTab, SavedJourney, BookedTrip } from '../../types/travel';
 import { TripItinerary } from '../../types/itinerary';
 import { KERALA_HERO_IMAGE } from '../../data/mockData';
@@ -9,6 +10,7 @@ import {
 } from '../../data/operatorPackagesData';
 import { useOperator } from '../../context/OperatorContext';
 import { LuxuryCard } from '../common/LuxuryCard';
+import { BlurFadeCard } from '../ui/MotionComponents';
 
 interface HomeScreenProps {
   onNavigateTab: (tab: ConsumerTab) => void;
@@ -104,7 +106,12 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
     return (
       <div className="w-full max-w-[1280px] mx-auto px-4 sm:px-6 lg:px-8 py-8 md:py-10 pb-24 md:pb-12 text-left space-y-10 font-sans">
         {/* Welcome Header */}
-        <section className="flex flex-col md:flex-row md:items-end justify-between gap-6 pb-6 border-b border-slate-200">
+        <motion.section
+          initial={{ opacity: 0, y: 16, filter: 'blur(8px)' }}
+          animate={{ opacity: 1, y: 0, filter: 'blur(0px)' }}
+          transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
+          className="flex flex-col md:flex-row md:items-end justify-between gap-6 pb-6 border-b border-slate-200"
+        >
           <div>
             <div className="flex items-center gap-2 mb-2">
               <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-blue-50 border border-blue-200 text-blue-700 text-xs font-bold uppercase tracking-wider">
@@ -120,27 +127,34 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
             </p>
           </div>
           <div className="flex items-center gap-2.5 shrink-0 flex-wrap">
-            <button
+            <motion.button
+              whileHover={{ scale: 1.03 }}
+              whileTap={{ scale: 0.97 }}
               type="button"
               onClick={() => onNavigateTab('discover')}
               className="px-5 py-2.5 rounded-full bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold flex items-center gap-2 transition-all shadow-sm active:scale-98 cursor-pointer ring-2 ring-blue-300/40"
             >
               <span className="material-symbols-outlined text-base">explore</span>
               <span>Explore Circuits</span>
-            </button>
-            <button
+            </motion.button>
+            <motion.button
+              whileHover={{ scale: 1.03 }}
+              whileTap={{ scale: 0.97 }}
               type="button"
               onClick={() => onNavigateTab('assistant')}
               className="px-4 py-2.5 rounded-full border border-slate-200 bg-white hover:bg-slate-50 text-slate-800 text-xs font-bold flex items-center gap-2 transition-all shadow-2xs active:scale-98 cursor-pointer"
             >
               <span className="material-symbols-outlined text-base text-indigo-600">auto_awesome</span>
               <span>AI Trip Planner</span>
-            </button>
+            </motion.button>
           </div>
-        </section>
+        </motion.section>
 
         {/* Hero CTA Banner */}
-        <section className="relative rounded-3xl overflow-hidden min-h-[280px] flex items-end bg-slate-900 shadow-xl">
+        <BlurFadeCard
+          index={0}
+          className="relative rounded-3xl overflow-hidden min-h-[280px] flex items-end bg-slate-900 shadow-xl"
+        >
           <img
             src={KERALA_HERO_IMAGE}
             alt="Explore curated circuits"
@@ -159,25 +173,29 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
               Describe your dream trip and our AI will build a full itinerary with flights, hotels, transfers, and curated experiences — all in seconds.
             </p>
             <div className="flex flex-wrap gap-3">
-              <button
+              <motion.button
+                whileHover={{ scale: 1.03 }}
+                whileTap={{ scale: 0.97 }}
                 type="button"
                 onClick={() => onNavigateTab('assistant')}
                 className="px-5 py-2.5 bg-blue-600 hover:bg-blue-500 text-white rounded-full font-bold text-sm flex items-center gap-2 transition-all cursor-pointer shadow-md active:scale-98"
               >
                 <span className="material-symbols-outlined text-base">auto_awesome</span>
                 Start with AI Assistant
-              </button>
-              <button
+              </motion.button>
+              <motion.button
+                whileHover={{ scale: 1.03 }}
+                whileTap={{ scale: 0.97 }}
                 type="button"
                 onClick={() => onNavigateTab('builder')}
                 className="px-5 py-2.5 bg-white/10 hover:bg-white/20 border border-white/30 text-white rounded-full font-bold text-sm flex items-center gap-2 transition-all cursor-pointer backdrop-blur-sm active:scale-98"
               >
                 <span className="material-symbols-outlined text-base">edit_note</span>
                 Build Manually
-              </button>
+              </motion.button>
             </div>
           </div>
-        </section>
+        </BlurFadeCard>
 
         {/* Quick Action Tiles */}
         <section className="grid grid-cols-2 sm:grid-cols-4 gap-4">
@@ -186,9 +204,11 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
             { icon: 'auto_awesome', label: 'AI Planner', sub: 'Describe your dream trip', tab: 'assistant' as ConsumerTab, color: 'indigo' },
             { icon: 'edit_note', label: 'Trip Builder', sub: 'Build a custom itinerary', tab: 'builder' as ConsumerTab, color: 'emerald' },
             { icon: 'lock', label: 'Travel Vault', sub: 'Store your documents', tab: 'vault' as ConsumerTab, color: 'amber' },
-          ].map(({ icon, label, sub, tab, color }) => (
-            <div
+          ].map(({ icon, label, sub, tab, color }, idx) => (
+            <BlurFadeCard
               key={tab}
+              index={idx}
+              hoverEffect
               onClick={() => onNavigateTab(tab)}
               className="group bg-white p-4 rounded-3xl border border-slate-200 hover:border-blue-400/60 shadow-2xs hover:shadow-md transition-all cursor-pointer space-y-2.5"
             >
@@ -199,7 +219,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
                 <h3 className="text-sm font-bold text-slate-900 group-hover:text-blue-600 transition-colors">{label}</h3>
                 <p className="text-xs text-slate-500 mt-0.5 leading-relaxed">{sub}</p>
               </div>
-            </div>
+            </BlurFadeCard>
           ))}
         </section>
 
@@ -245,10 +265,11 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
               ref={scrollContainerRef}
               className="flex gap-6 overflow-x-auto pb-6 pt-3 px-1 custom-scrollbar snap-x snap-mandatory scroll-smooth items-stretch"
             >
-              {filteredPackages.map(pkg => (
+              {filteredPackages.map((pkg, idx) => (
                 <LuxuryCard
                   key={pkg.id}
                   id={pkg.id}
+                  index={idx}
                   title={pkg.title}
                   description={`${pkg.days} Days · ${pkg.destination} · Curated by ${pkg.operator.name}`}
                   image={pkg.heroImage}
@@ -288,7 +309,12 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
       {/* ------------------------------------------------------------- */}
       {/* GREETING HERO SECTION & LIVE TELEMETRY BAR                    */}
       {/* ------------------------------------------------------------- */}
-      <section className="flex flex-col md:flex-row md:items-end justify-between gap-6 pb-6 border-b border-slate-200">
+      <motion.section
+        initial={{ opacity: 0, y: 16, filter: 'blur(8px)' }}
+        animate={{ opacity: 1, y: 0, filter: 'blur(0px)' }}
+        transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
+        className="flex flex-col md:flex-row md:items-end justify-between gap-6 pb-6 border-b border-slate-200"
+      >
         <div>
           <div className="flex items-center gap-2 mb-2 flex-wrap">
             <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-blue-50 border border-blue-200 text-blue-700 text-xs font-bold uppercase tracking-wider">
@@ -318,7 +344,9 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
 
         {/* Action Cluster */}
         <div className="flex items-center gap-2.5 shrink-0 flex-wrap">
-          <button
+          <motion.button
+            whileHover={{ scale: 1.03 }}
+            whileTap={{ scale: 0.97 }}
             type="button"
             onClick={onOpenPreferences}
             className="px-4 py-2.5 rounded-full border border-slate-200 bg-white hover:bg-slate-50 text-slate-800 text-xs font-bold flex items-center gap-2 transition-all shadow-2xs active:scale-98 cursor-pointer"
@@ -327,8 +355,10 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
               tune
             </span>
             <span>Preferences</span>
-          </button>
-          <button
+          </motion.button>
+          <motion.button
+            whileHover={{ scale: 1.03 }}
+            whileTap={{ scale: 0.97 }}
             type="button"
             onClick={() => onNavigateTab('builder')}
             className="px-4 py-2.5 rounded-full border border-slate-200 bg-white hover:bg-slate-50 text-slate-800 text-xs font-bold flex items-center gap-2 transition-all shadow-2xs active:scale-98 cursor-pointer"
@@ -337,23 +367,29 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
               auto_awesome
             </span>
             <span>AI Itinerary Builder</span>
-          </button>
-          <button
+          </motion.button>
+          <motion.button
+            whileHover={{ scale: 1.03 }}
+            whileTap={{ scale: 0.97 }}
             type="button"
             onClick={() => onNavigateTab('discover')}
             className="px-5 py-2.5 rounded-full bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold flex items-center gap-2 transition-all shadow-sm active:scale-98 cursor-pointer ring-2 ring-blue-300/40"
           >
             <span className="material-symbols-outlined text-base">explore</span>
             <span>Explore Circuits</span>
-          </button>
+          </motion.button>
         </div>
-      </section>
+      </motion.section>
 
       {/* ------------------------------------------------------------- */}
       {/* REAL-TIME TRAVEL TELEMETRY TICKER                             */}
       {/* ------------------------------------------------------------- */}
       <section className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
-        <div className="bg-white p-3.5 rounded-2xl border border-slate-200 shadow-2xs flex items-center gap-3 hover:-translate-y-0.5 hover:border-slate-300 hover:shadow-xs transition-all duration-200">
+        <BlurFadeCard
+          index={0}
+          hoverEffect
+          className="bg-white p-3.5 rounded-2xl border border-slate-200 shadow-2xs flex items-center gap-3 hover:-translate-y-0.5 hover:border-slate-300 hover:shadow-xs transition-all duration-200 cursor-default"
+        >
           <span className="w-10 h-10 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center shrink-0 border border-indigo-100">
             <span className="material-symbols-outlined text-xl">flight</span>
           </span>
@@ -362,9 +398,13 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
             <div className="text-xs font-bold text-slate-900 truncate">{activeTrip?.flightDetails?.airline || 'IndiGo'} · {activeTrip?.flightDetails?.status || 'Confirmed'}</div>
             <div className="text-[11px] text-emerald-600 font-semibold">Priority Baggage Belt 02</div>
           </div>
-        </div>
+        </BlurFadeCard>
 
-        <div className="bg-white p-3.5 rounded-2xl border border-slate-200 shadow-2xs flex items-center gap-3 hover:-translate-y-0.5 hover:border-slate-300 hover:shadow-xs transition-all duration-200">
+        <BlurFadeCard
+          index={1}
+          hoverEffect
+          className="bg-white p-3.5 rounded-2xl border border-slate-200 shadow-2xs flex items-center gap-3 hover:-translate-y-0.5 hover:border-slate-300 hover:shadow-xs transition-all duration-200 cursor-default"
+        >
           <span className="w-10 h-10 rounded-xl bg-sky-50 text-sky-600 flex items-center justify-center shrink-0 border border-sky-100">
             <span className="material-symbols-outlined text-xl">directions_car</span>
           </span>
@@ -373,9 +413,13 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
             <div className="text-xs font-bold text-slate-900 truncate">{activeTrip?.carDetails?.chauffeurName || 'Arun V.'} · On Standby</div>
             <div className="text-[11px] text-slate-500 font-mono">{activeTrip?.carDetails?.vehicleModel || 'Toyota Innova'}</div>
           </div>
-        </div>
+        </BlurFadeCard>
 
-        <div className="bg-white p-3.5 rounded-2xl border border-slate-200 shadow-2xs flex items-center gap-3 hover:-translate-y-0.5 hover:border-slate-300 hover:shadow-xs transition-all duration-200">
+        <BlurFadeCard
+          index={2}
+          hoverEffect
+          className="bg-white p-3.5 rounded-2xl border border-slate-200 shadow-2xs flex items-center gap-3 hover:-translate-y-0.5 hover:border-slate-300 hover:shadow-xs transition-all duration-200 cursor-default"
+        >
           <span className="w-10 h-10 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center shrink-0 border border-amber-100">
             <span className="material-symbols-outlined text-xl">partly_cloudy_day</span>
           </span>
@@ -384,9 +428,13 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
             <div className="text-xs font-bold text-slate-900">24°C · {activeTrip?.destination || 'Munnar'}</div>
             <div className="text-[11px] text-slate-500">Light mist · Scenic visibility</div>
           </div>
-        </div>
+        </BlurFadeCard>
 
-        <div className="bg-white p-3.5 rounded-2xl border border-slate-200 shadow-2xs flex items-center gap-3 hover:-translate-y-0.5 hover:border-slate-300 hover:shadow-xs transition-all duration-200">
+        <BlurFadeCard
+          index={3}
+          hoverEffect
+          className="bg-white p-3.5 rounded-2xl border border-slate-200 shadow-2xs flex items-center gap-3 hover:-translate-y-0.5 hover:border-slate-300 hover:shadow-xs transition-all duration-200 cursor-default"
+        >
           <span className="w-10 h-10 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center shrink-0 border border-emerald-100">
             <span className="material-symbols-outlined text-xl">support_agent</span>
           </span>
@@ -398,7 +446,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
               90-sec response guarantee
             </div>
           </div>
-        </div>
+        </BlurFadeCard>
       </section>
 
       {/* ------------------------------------------------------------- */}
@@ -422,8 +470,11 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
           </button>
         </div>
 
-        {/* Compact Bento Container */}
-        <div className="relative bg-white rounded-2xl md:rounded-3xl border border-slate-200 shadow-xs overflow-hidden flex flex-col lg:flex-row transition-all hover:border-slate-300 hover:shadow-sm">
+        {/* Compact Bento Container with BlurFadeCard */}
+        <BlurFadeCard
+          index={0}
+          className="relative bg-white rounded-2xl md:rounded-3xl border border-slate-200 shadow-xs overflow-hidden flex flex-col lg:flex-row transition-all hover:border-slate-300 hover:shadow-sm"
+        >
           {/* Media Visual Block (Compact Widescreen Accent) */}
           <div className="w-full lg:w-[320px] xl:w-[340px] shrink-0 relative min-h-[160px] sm:min-h-[180px] lg:min-h-full aspect-video lg:aspect-auto bg-slate-900 overflow-hidden group">
             <img
@@ -530,30 +581,36 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
 
               {/* Action Buttons in single clean row */}
               <div className="pt-2 flex flex-wrap items-center gap-2 border-t border-slate-200/60">
-                <button
+                <motion.button
+                  whileHover={{ scale: 1.03 }}
+                  whileTap={{ scale: 0.97 }}
                   type="button"
                   onClick={() => onNavigateTab('trips')}
                   className="px-3.5 py-1.5 rounded-full bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold flex items-center gap-1.5 transition-colors cursor-pointer shadow-xs active:scale-98"
                 >
                   <span className="material-symbols-outlined text-sm">visibility</span>
                   <span>View Timeline</span>
-                </button>
-                <button
+                </motion.button>
+                <motion.button
+                  whileHover={{ scale: 1.03 }}
+                  whileTap={{ scale: 0.97 }}
                   type="button"
                   onClick={onOpenDirections}
                   className="px-3 py-1.5 rounded-full bg-white hover:bg-slate-100 text-slate-800 text-xs font-bold border border-slate-200 flex items-center gap-1.5 transition-colors cursor-pointer shadow-2xs active:scale-98"
                 >
                   <span className="material-symbols-outlined text-sm text-blue-600">directions</span>
                   <span>Directions</span>
-                </button>
-                <button
+                </motion.button>
+                <motion.button
+                  whileHover={{ scale: 1.03 }}
+                  whileTap={{ scale: 0.97 }}
                   type="button"
                   onClick={onOpenContactDriver}
                   className="px-3 py-1.5 rounded-full bg-white hover:bg-slate-100 text-slate-800 text-xs font-semibold border border-slate-200 flex items-center gap-1.5 transition-colors cursor-pointer shadow-2xs active:scale-98"
                 >
                   <span className="material-symbols-outlined text-sm text-emerald-600">call</span>
                   <span>Call Driver</span>
-                </button>
+                </motion.button>
               </div>
             </div>
 
@@ -569,7 +626,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
               </span>
             </div>
           </div>
-        </div>
+        </BlurFadeCard>
       </section>
 
       {/* ------------------------------------------------------------- */}
@@ -577,7 +634,9 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
       {/* ------------------------------------------------------------- */}
       <section className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         {/* Tile 1: Travel Vault */}
-        <div
+        <BlurFadeCard
+          index={0}
+          hoverEffect
           onClick={() => onNavigateTab('vault')}
           className="group bg-white p-5 rounded-3xl border border-slate-200 hover:border-blue-500/80 shadow-2xs hover:shadow-md transition-all cursor-pointer space-y-3"
         >
@@ -601,10 +660,12 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
             <span>Open Vault</span>
             <span className="material-symbols-outlined text-sm group-hover:translate-x-1 transition-transform">arrow_forward</span>
           </div>
-        </div>
+        </BlurFadeCard>
 
         {/* Tile 2: Active Timeline & Living Circuit */}
-        <div
+        <BlurFadeCard
+          index={1}
+          hoverEffect
           onClick={() => onNavigateTab('trips')}
           className="group bg-white p-5 rounded-3xl border border-slate-200 hover:border-blue-500/80 shadow-2xs hover:shadow-md transition-all cursor-pointer space-y-3"
         >
@@ -628,10 +689,12 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
             <span>View Timeline</span>
             <span className="material-symbols-outlined text-sm group-hover:translate-x-1 transition-transform">arrow_forward</span>
           </div>
-        </div>
+        </BlurFadeCard>
 
         {/* Tile 3: Confirmed Bookings & Passes */}
-        <div
+        <BlurFadeCard
+          index={2}
+          hoverEffect
           onClick={() => onNavigateTab('bookings')}
           className="group bg-white p-5 rounded-3xl border border-slate-200 hover:border-blue-500/80 shadow-2xs hover:shadow-md transition-all cursor-pointer space-y-3"
         >
@@ -655,10 +718,12 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
             <span>View Vouchers</span>
             <span className="material-symbols-outlined text-sm group-hover:translate-x-1 transition-transform">arrow_forward</span>
           </div>
-        </div>
+        </BlurFadeCard>
 
         {/* Tile 4: Itinerary Builder */}
-        <div
+        <BlurFadeCard
+          index={3}
+          hoverEffect
           onClick={() => onNavigateTab('builder')}
           className="group bg-white p-5 rounded-3xl border border-slate-200 hover:border-blue-500/80 shadow-2xs hover:shadow-md transition-all cursor-pointer space-y-3"
         >
@@ -682,13 +747,16 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
             <span>Launch Builder</span>
             <span className="material-symbols-outlined text-sm group-hover:translate-x-1 transition-transform">arrow_forward</span>
           </div>
-        </div>
+        </BlurFadeCard>
       </section>
 
       {/* ------------------------------------------------------------- */}
       {/* 24/7 TRAVEL MESH GUARANTEE BANNER                             */}
       {/* ------------------------------------------------------------- */}
-      <section className="bg-slate-900 text-white rounded-3xl p-6 sm:p-7 shadow-lg flex flex-col md:flex-row items-start md:items-center justify-between gap-5 relative overflow-hidden">
+      <BlurFadeCard
+        index={2}
+        className="bg-slate-900 text-white rounded-3xl p-6 sm:p-7 shadow-lg flex flex-col md:flex-row items-start md:items-center justify-between gap-5 relative overflow-hidden"
+      >
         <div className="space-y-1.5 z-10 max-w-2xl">
           <div className="inline-flex items-center gap-2 px-2.5 py-0.5 rounded-full bg-blue-500/20 border border-blue-400/30 text-blue-300 text-[11px] font-bold">
             <span className="w-1.5 h-1.5 rounded-full bg-blue-400 animate-ping"></span>
@@ -706,17 +774,19 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
           <span className="font-mono text-xs text-emerald-400 bg-emerald-950/60 border border-emerald-500/30 px-3.5 py-2 rounded-full font-bold">
             99.8% On-Time Index
           </span>
-          <button
+          <motion.button
+            whileHover={{ scale: 1.04 }}
+            whileTap={{ scale: 0.96 }}
             type="button"
             onClick={onOpenContactDriver}
             className="px-4 py-2.5 rounded-full bg-white hover:bg-slate-100 text-slate-900 text-xs font-bold transition-all shadow-md cursor-pointer"
           >
             Emergency Concierge
-          </button>
+          </motion.button>
         </div>
 
         <div className="absolute right-0 top-0 w-80 h-full bg-blue-500/10 rounded-full blur-3xl pointer-events-none" />
-      </section>
+      </BlurFadeCard>
 
       {/* Footer */}
       <footer className="border-t border-slate-200 pt-8 text-slate-500 text-xs">

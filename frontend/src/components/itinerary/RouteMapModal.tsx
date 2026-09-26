@@ -1,4 +1,5 @@
 import React from 'react';
+import { motion } from 'framer-motion';
 import { TripItinerary, RouteStop } from '../../types/itinerary';
 
 interface RouteMapModalProps {
@@ -26,7 +27,10 @@ export const RouteMapModal: React.FC<RouteMapModalProps> = ({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-150">
-      <div
+      <motion.div
+        initial={{ opacity: 0, scale: 0.95, filter: 'blur(8px)' }}
+        animate={{ opacity: 1, scale: 1, filter: 'blur(0px)' }}
+        transition={{ duration: 0.25, ease: 'easeOut' }}
         className="relative w-full max-w-3xl bg-white rounded-2xl shadow-2xl border border-slate-200 overflow-hidden flex flex-col max-h-[90dvh]"
         onClick={e => e.stopPropagation()}
       >
@@ -72,11 +76,14 @@ export const RouteMapModal: React.FC<RouteMapModalProps> = ({
             {/* Circuit Stops Visualization */}
             <div className="relative z-10 w-full flex items-center justify-between px-6 sm:px-12">
               {routeStops.map((stop, index) => {
-                const isFirst = index === 0;
-                const isLast = index === routeStops.length - 1;
-
                 return (
-                  <div key={stop.id} className="flex flex-col items-center text-center group">
+                  <motion.div
+                    key={stop.id}
+                    initial={{ opacity: 0, y: 14, filter: 'blur(6px)' }}
+                    animate={{ opacity: 1, y: 0, filter: 'blur(0px)' }}
+                    transition={{ duration: 0.35, delay: 0.15 + index * 0.08, ease: 'easeOut' }}
+                    className="flex flex-col items-center text-center group"
+                  >
                     <div className="w-12 h-12 rounded-2xl bg-slate-900 border-2 border-blue-500 text-white flex flex-col items-center justify-center shadow-lg group-hover:scale-105 transition-transform">
                       <span className="text-sm font-extrabold text-blue-400">
                         0{index + 1}
@@ -93,7 +100,7 @@ export const RouteMapModal: React.FC<RouteMapModalProps> = ({
                         🏨 {stop.hotel}
                       </span>
                     )}
-                  </div>
+                  </motion.div>
                 );
               })}
             </div>
@@ -147,8 +154,11 @@ export const RouteMapModal: React.FC<RouteMapModalProps> = ({
             </h4>
             <div className="space-y-2.5">
               {routeStops.map((stop, idx) => (
-                <div
+                <motion.div
                   key={stop.id}
+                  initial={{ opacity: 0, x: -12, filter: 'blur(6px)' }}
+                  animate={{ opacity: 1, x: 0, filter: 'blur(0px)' }}
+                  transition={{ duration: 0.35, delay: 0.2 + idx * 0.06, ease: 'easeOut' }}
                   className="flex items-center justify-between p-3 bg-white border border-slate-200/80 rounded-xl shadow-2xs hover:border-slate-300 transition-colors"
                 >
                   <div className="flex items-center gap-3">
@@ -177,7 +187,7 @@ export const RouteMapModal: React.FC<RouteMapModalProps> = ({
                     </span>
                     <span className="text-[10px] text-emerald-600 font-medium">On Track</span>
                   </div>
-                </div>
+                </motion.div>
               ))}
             </div>
           </div>
@@ -193,7 +203,7 @@ export const RouteMapModal: React.FC<RouteMapModalProps> = ({
             Close Map
           </button>
         </div>
-      </div>
+      </motion.div>
     </div>
   );
 };

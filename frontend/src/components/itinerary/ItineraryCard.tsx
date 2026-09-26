@@ -1,10 +1,12 @@
 import React, { useState } from 'react';
+import { motion } from 'framer-motion';
 import { ItineraryCategory, ItineraryItem } from '../../types/itinerary';
 import { clearDragPayload, setDragPayload } from '../../utils/dragDropState';
 import { formatCurrency } from '../../utils/pricing';
 
 interface ItineraryCardProps {
   item: ItineraryItem;
+  index?: number;
   dayNumber: number;
   totalDays: number;
   onRemove: (itemId: string) => void;
@@ -59,6 +61,7 @@ const NOTION_CATEGORY_META: Record<
 
 export const ItineraryCard: React.FC<ItineraryCardProps> = ({
   item,
+  index = 0,
   dayNumber,
   totalDays,
   onRemove,
@@ -120,17 +123,27 @@ export const ItineraryCard: React.FC<ItineraryCardProps> = ({
   };
 
   return (
-    <div
-      draggable={!isEditing}
-      onDragStart={handleDragStart}
-      onDragEnd={handleDragEnd}
-      onClick={handleCardClick}
-      className={`group relative bg-white border border-neutral-200/80 rounded-lg p-2.5 transition-all duration-150 select-none cursor-pointer ${
-        isDragging
-          ? 'opacity-30 border-dashed border-blue-400 shadow-none'
-          : 'shadow-2xs hover:shadow-xs hover:border-neutral-300'
-      }`}
+    <motion.div
+      initial={{ opacity: 0, y: 16, filter: 'blur(8px)' }}
+      animate={{ opacity: 1, y: 0, filter: 'blur(0px)' }}
+      transition={{
+        duration: 0.4,
+        delay: (index ?? 0) * 0.07,
+        ease: [0.21, 0.47, 0.32, 0.98],
+      }}
+      className="w-full"
     >
+      <div
+        draggable={!isEditing}
+        onDragStart={handleDragStart}
+        onDragEnd={handleDragEnd}
+        onClick={handleCardClick}
+        className={`group relative bg-white border border-neutral-200/80 rounded-lg p-2.5 transition-colors select-none cursor-pointer ${
+          isDragging
+            ? 'opacity-30 border-dashed border-blue-400 shadow-none'
+            : 'shadow-2xs hover:shadow-xs hover:border-neutral-300'
+        }`}
+      >
       {/* Top Row: Icon + Title + Quiet Actions on Hover */}
       <div className="flex items-start justify-between gap-1.5">
         <div className="flex items-start gap-1.5 min-w-0 flex-1">
@@ -313,6 +326,7 @@ export const ItineraryCard: React.FC<ItineraryCardProps> = ({
           </button>
         </form>
       )}
-    </div>
+      </div>
+    </motion.div>
   );
 };

@@ -164,6 +164,7 @@ export const MobileTimelineView: React.FC<MobileTimelineViewProps> = ({
           activeDay.items.map((item, index) => (
             <ItineraryCard
               key={item.id}
+              index={index}
               item={item}
               dayNumber={activeDay.dayNumber}
               totalDays={itinerary.days.length}

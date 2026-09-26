@@ -13,6 +13,7 @@ import {
 import { TripFlowApi } from '../../services/api';
 import { useOperator } from '../../context/OperatorContext';
 import { ThemedToast } from '../common/ThemedToast';
+import { BlurFadeCard } from '../ui/MotionComponents';
 
 const DISPATCH_AVATARS: Record<string, string> = {
   '#1024': 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&w=120&q=80', // Iqra Mulla
@@ -319,7 +320,7 @@ export const OpsCommandHub: React.FC<OpsCommandHubProps> = ({
         {/* Key Metrics Row (5 Clean Cards with Compact Visual Indicators) */}
         <section className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3">
           {/* Metric 1: Active Tours (Bigger Sparkline Centered with Metric) */}
-          <div className="p-3.5 bg-white border border-slate-200/80 rounded-xl flex flex-col justify-between hover:border-slate-300 transition-colors shadow-2xs min-h-[118px]">
+          <BlurFadeCard index={0} className="p-3.5 bg-white border border-slate-200/80 rounded-xl flex flex-col justify-between hover:border-slate-300 transition-colors shadow-2xs min-h-[118px]">
             <span className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider truncate">
               Active Tours
             </span>
@@ -355,10 +356,10 @@ export const OpsCommandHub: React.FC<OpsCommandHubProps> = ({
               </span>
               <span>vs last week</span>
             </div>
-          </div>
+          </BlurFadeCard>
 
           {/* Metric 2: Travelers In-Transit (Capacity Centered with Metric) */}
-          <div className="p-3.5 bg-white border border-slate-200/80 rounded-xl flex flex-col justify-between hover:border-slate-300 transition-colors shadow-2xs min-h-[118px]">
+          <BlurFadeCard index={1} className="p-3.5 bg-white border border-slate-200/80 rounded-xl flex flex-col justify-between hover:border-slate-300 transition-colors shadow-2xs min-h-[118px]">
             <span className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider truncate">
               Travelers In-Transit
             </span>
@@ -377,10 +378,10 @@ export const OpsCommandHub: React.FC<OpsCommandHubProps> = ({
               </div>
               <div className="mt-1 text-[11px] text-slate-400 truncate">42 groups · 100% capacity</div>
             </div>
-          </div>
+          </BlurFadeCard>
 
           {/* Metric 3: Open Issues (Bigger Severity Dots Centered with Metric) */}
-          <div className="p-3.5 bg-white border border-slate-200/80 rounded-xl flex flex-col justify-between hover:border-slate-300 transition-colors shadow-2xs min-h-[118px]">
+          <BlurFadeCard index={2} className="p-3.5 bg-white border border-slate-200/80 rounded-xl flex flex-col justify-between hover:border-slate-300 transition-colors shadow-2xs min-h-[118px]">
             <span className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider truncate">
               Open Issues
             </span>
@@ -400,10 +401,10 @@ export const OpsCommandHub: React.FC<OpsCommandHubProps> = ({
                 Action Req.
               </span>
             </div>
-          </div>
+          </BlurFadeCard>
 
           {/* Metric 4: Today's Transfers (Badge Centered with Metric) */}
-          <div className="p-3.5 bg-white border border-slate-200/80 rounded-xl flex flex-col justify-between hover:border-slate-300 transition-colors shadow-2xs min-h-[118px]">
+          <BlurFadeCard index={3} className="p-3.5 bg-white border border-slate-200/80 rounded-xl flex flex-col justify-between hover:border-slate-300 transition-colors shadow-2xs min-h-[118px]">
             <span className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider truncate">
               Today's Transfers
             </span>
@@ -423,10 +424,10 @@ export const OpsCommandHub: React.FC<OpsCommandHubProps> = ({
               </div>
               <div className="mt-1 text-[11px] text-slate-400 truncate">18 on-time · 4 delayed · 2 active</div>
             </div>
-          </div>
+          </BlurFadeCard>
 
           {/* Metric 5: Managed GMV (Bigger Bar Chart Centered with Metric) */}
-          <div className="p-3.5 bg-white border border-slate-200/80 rounded-xl flex flex-col justify-between hover:border-slate-300 transition-colors shadow-2xs min-h-[118px]">
+          <BlurFadeCard index={4} className="p-3.5 bg-white border border-slate-200/80 rounded-xl flex flex-col justify-between hover:border-slate-300 transition-colors shadow-2xs min-h-[118px]">
             <span className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider truncate">
               Managed GMV
             </span>
@@ -449,7 +450,7 @@ export const OpsCommandHub: React.FC<OpsCommandHubProps> = ({
                 +8.4%
               </span>
             </div>
-          </div>
+          </BlurFadeCard>
         </section>
 
         {/* Main Operational Grid: Attention Required + Real-Time Event Stream + Active Dispatch Queue */}

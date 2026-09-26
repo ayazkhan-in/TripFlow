@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { USER_AVATAR, ALEX_DISPATCH_AVATAR } from '../../data/mockData';
 import { TripFlowApi } from '../../services/api';
+import { BlurFadeCard } from '../ui/MotionComponents';
 
 export interface AuthUser {
   id: string;
@@ -183,11 +185,23 @@ export const AuthModal: React.FC<AuthModalProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-xs animate-in fade-in duration-200">
-      <div
-        className="bg-white rounded-2xl shadow-2xl border border-slate-200 w-full max-w-lg overflow-hidden animate-in zoom-in-95 duration-200"
-        onClick={e => e.stopPropagation()}
-      >
+    <AnimatePresence>
+      {isOpen && (
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-xs"
+          onClick={onClose}
+        >
+          <motion.div
+            initial={{ opacity: 0, scale: 0.95, y: 16, filter: 'blur(8px)' }}
+            animate={{ opacity: 1, scale: 1, y: 0, filter: 'blur(0px)' }}
+            exit={{ opacity: 0, scale: 0.95, y: 16, filter: 'blur(8px)' }}
+            transition={{ duration: 0.28, ease: [0.16, 1, 0.3, 1] }}
+            className="bg-white rounded-2xl shadow-2xl border border-slate-200 w-full max-w-lg overflow-hidden"
+            onClick={e => e.stopPropagation()}
+          >
         {/* Header */}
         <div className="bg-gradient-to-r from-blue-900 to-indigo-900 p-6 text-white flex items-center justify-between">
           <div className="flex items-center gap-3">
@@ -283,63 +297,67 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                 Click any pre-seeded persona to explore with instant live telemetry:
               </p>
 
-              <button
-                type="button"
-                disabled={isLoading}
-                onClick={() => handleQuickLogin('operator')}
-                className="w-full text-left p-4 rounded-xl border border-slate-200 hover:border-blue-600 bg-slate-50 hover:bg-blue-50/50 transition-all flex items-center gap-3.5 group cursor-pointer"
-              >
-                <img
-                  src={ALEX_DISPATCH_AVATAR}
-                  alt="Alex Vance"
-                  className="w-12 h-12 rounded-full object-cover ring-2 ring-blue-500/20 shrink-0"
-                />
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm font-bold text-slate-900 group-hover:text-blue-600 transition-colors">
-                      Alex Vance
-                    </span>
-                    <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-blue-100 text-blue-800">
-                      Tour Operator
-                    </span>
+              <BlurFadeCard index={0}>
+                <button
+                  type="button"
+                  disabled={isLoading}
+                  onClick={() => handleQuickLogin('operator')}
+                  className="w-full text-left p-4 rounded-xl border border-slate-200 hover:border-blue-600 bg-slate-50 hover:bg-blue-50/50 transition-all flex items-center gap-3.5 group cursor-pointer"
+                >
+                  <img
+                    src={ALEX_DISPATCH_AVATAR}
+                    alt="Alex Vance"
+                    className="w-12 h-12 rounded-full object-cover ring-2 ring-blue-500/20 shrink-0"
+                  />
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm font-bold text-slate-900 group-hover:text-blue-600 transition-colors">
+                        Alex Vance
+                      </span>
+                      <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-blue-100 text-blue-800">
+                        Tour Operator
+                      </span>
+                    </div>
+                    <p className="text-xs text-slate-600 truncate font-medium">
+                      Alpine & Beyond Expeditions (OP-ALPS-2026)
+                    </p>
+                    <p className="text-[11px] text-slate-400 mt-0.5">
+                      Pre-seeded with 4 active tours, 6 vendors & disruption alerts
+                    </p>
                   </div>
-                  <p className="text-xs text-slate-600 truncate font-medium">
-                    Alpine & Beyond Expeditions (OP-ALPS-2026)
-                  </p>
-                  <p className="text-[11px] text-slate-400 mt-0.5">
-                    Pre-seeded with 4 active tours, 6 vendors & disruption alerts
-                  </p>
-                </div>
-              </button>
+                </button>
+              </BlurFadeCard>
 
-              <button
-                type="button"
-                disabled={isLoading}
-                onClick={() => handleQuickLogin('traveler')}
-                className="w-full text-left p-4 rounded-xl border border-slate-200 hover:border-blue-600 bg-slate-50 hover:bg-blue-50/50 transition-all flex items-center gap-3.5 group cursor-pointer"
-              >
-                <img
-                  src={USER_AVATAR}
-                  alt="Sarah Mehta"
-                  className="w-12 h-12 rounded-full object-cover ring-2 ring-emerald-500/20 shrink-0"
-                />
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm font-bold text-slate-900 group-hover:text-blue-600 transition-colors">
-                      Sarah Mehta
-                    </span>
-                    <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800">
-                      Traveler
-                    </span>
+              <BlurFadeCard index={1}>
+                <button
+                  type="button"
+                  disabled={isLoading}
+                  onClick={() => handleQuickLogin('traveler')}
+                  className="w-full text-left p-4 rounded-xl border border-slate-200 hover:border-blue-600 bg-slate-50 hover:bg-blue-50/50 transition-all flex items-center gap-3.5 group cursor-pointer"
+                >
+                  <img
+                    src={USER_AVATAR}
+                    alt="Sarah Mehta"
+                    className="w-12 h-12 rounded-full object-cover ring-2 ring-emerald-500/20 shrink-0"
+                  />
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm font-bold text-slate-900 group-hover:text-blue-600 transition-colors">
+                        Sarah Mehta
+                      </span>
+                      <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800">
+                        Traveler
+                      </span>
+                    </div>
+                    <p className="text-xs text-slate-600 truncate font-medium">
+                      Concierge Elite Member • sarah.mehta@concierge.tripflow.io
+                    </p>
+                    <p className="text-[11px] text-slate-400 mt-0.5">
+                      Kerala Monsoon Whispers booking & active travel vault
+                    </p>
                   </div>
-                  <p className="text-xs text-slate-600 truncate font-medium">
-                    Concierge Elite Member • sarah.mehta@concierge.tripflow.io
-                  </p>
-                  <p className="text-[11px] text-slate-400 mt-0.5">
-                    Kerala Monsoon Whispers booking & active travel vault
-                  </p>
-                </div>
-              </button>
+                </button>
+              </BlurFadeCard>
             </div>
           )}
 
@@ -576,7 +594,9 @@ export const AuthModal: React.FC<AuthModalProps> = ({
             </form>
           )}
         </div>
-      </div>
-    </div>
+          </motion.div>
+        </motion.div>
+      )}
+    </AnimatePresence>
   );
 };

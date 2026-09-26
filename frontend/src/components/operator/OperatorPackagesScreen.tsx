@@ -518,9 +518,10 @@ export const OperatorPackagesScreen: React.FC<OperatorPackagesScreenProps> = ({
           {/* VIEW: GRID LAYOUT (Matches Traveler Discover Page with tight, clean gaps) */}
           {viewLayout === 'grid' && (
             <div className="grid grid-cols-1 sm:grid-cols-[repeat(auto-fill,minmax(280px,320px))] gap-4 sm:gap-5 justify-items-center sm:justify-items-start">
-              {filteredPackages.map(pkg => (
+              {filteredPackages.map((pkg, idx) => (
                 <div key={pkg.id} className="relative group w-full max-w-[320px]">
                   <LuxuryCard
+                    index={idx}
                     id={pkg.id}
                     title={pkg.title}
                     description={`${pkg.days} Days · ${pkg.destination} · Curated by ${pkg.operator.name}`}

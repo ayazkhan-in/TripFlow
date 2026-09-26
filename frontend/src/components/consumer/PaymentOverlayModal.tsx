@@ -1,7 +1,9 @@
 import React, { useState, useMemo, useEffect } from 'react';
+import { motion } from 'framer-motion';
 import { TripItinerary } from '../../types/itinerary';
 import { BookedTrip, PaymentDetails, PaymentPlanType, GroupMemberPayment } from '../../types/travel';
 import { formatCurrency } from '../../utils/pricing';
+import { BlurFadeCard } from '../ui/MotionComponents';
 
 interface PaymentOverlayModalProps {
   isOpen: boolean;
@@ -325,8 +327,14 @@ export const PaymentOverlayModal: React.FC<PaymentOverlayModalProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-slate-950/75 backdrop-blur-md animate-in fade-in duration-200 overflow-y-auto font-sans">
-      <div className="relative w-full max-w-4xl max-h-[92dvh] flex flex-col bg-white rounded-3xl shadow-2xl border border-slate-200/80 overflow-hidden my-auto animate-in zoom-in-95 duration-200 text-left">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-slate-950/75 backdrop-blur-md overflow-y-auto font-sans" onClick={onClose}>
+      <motion.div
+        initial={{ opacity: 0, scale: 0.96, y: 20, filter: 'blur(10px)' }}
+        animate={{ opacity: 1, scale: 1, y: 0, filter: 'blur(0px)' }}
+        transition={{ duration: 0.35, ease: [0.16, 1, 0.3, 1] }}
+        className="relative w-full max-w-4xl max-h-[92dvh] flex flex-col bg-white rounded-3xl shadow-2xl border border-slate-200/80 overflow-hidden my-auto text-left"
+        onClick={e => e.stopPropagation()}
+      >
         
         {/* ========================================================= */}
         {/* MODAL HEADER WITH LUXURY GRADIENT & PROGRESS              */}
@@ -1278,7 +1286,7 @@ export const PaymentOverlayModal: React.FC<PaymentOverlayModalProps> = ({
           </div>
         )}
 
-      </div>
+      </motion.div>
     </div>
   );
 };
