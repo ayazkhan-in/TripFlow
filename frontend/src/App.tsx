@@ -54,6 +54,7 @@ import {
 import { OperatorProvider, useOperator } from './context/OperatorContext';
 import { CreateTourPackageModal } from './components/operator/CreateTourPackageModal';
 import { OperatorPackagesScreen } from './components/operator/OperatorPackagesScreen';
+import { ThemedToast } from './components/common/ThemedToast';
 
 function BookitApp() {
   // Navigation & Route State ('landing' is the default route on "/")
@@ -457,6 +458,8 @@ function BookitApp() {
         <AuthScreen
           onLogin={handleLogin}
           onBackToLanding={() => setCurrentRoute('landing')}
+          initialRole={authModalRole}
+          initialMode={authModalRole === 'operator' ? 'signup' : 'signin'}
         />
       )}
 
@@ -838,6 +841,12 @@ function BookitApp() {
         onPackageCreated={pkgTitle => {
           showToast(`🚀 "${pkgTitle}" published live to Discover!`);
         }}
+      />
+
+      {/* Global Bookit Themed Toast Notification */}
+      <ThemedToast
+        message={toastNotification}
+        onClose={() => setToastNotification(null)}
       />
     </div>
   );

@@ -59,6 +59,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({
             playsInline
             className="w-full h-full object-cover object-center"
           >
+            <source src="/hero4k.mp4" type="video/mp4" />
             <source src="/hero2.webm" type="video/webm" />
           </video>
         </div>
@@ -107,7 +108,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({
             </button>
             <button
               type="button"
-              onClick={onExploreDemo}
+              onClick={() => onOpenAuth('operator')}
               className="px-6 py-2.5 rounded-full bg-black text-white hover:bg-slate-800 active:scale-95 text-xs sm:text-sm font-semibold transition-all shadow-md cursor-pointer"
             >
               Register Now

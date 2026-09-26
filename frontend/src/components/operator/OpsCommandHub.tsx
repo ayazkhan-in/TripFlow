@@ -13,6 +13,7 @@ import {
 } from '../../data/mockData';
 import { TripFlowApi } from '../../services/api';
 import { useOperator } from '../../context/OperatorContext';
+import { ThemedToast } from '../common/ThemedToast';
 
 interface OpsCommandHubProps {
   onInspectTour: (tourId: string) => void;
@@ -214,20 +215,11 @@ export const OpsCommandHub: React.FC<OpsCommandHubProps> = ({
       {/* Main Operational Workspace */}
       <main className="p-6 flex-1 flex flex-col gap-6 max-w-[1600px] w-full mx-auto pb-16">
         {/* Toast Alert */}
-        {liveToast && (
-          <div className="p-3 bg-emerald-50 border border-emerald-200 rounded-lg text-emerald-800 text-xs font-medium flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <span className="material-symbols-outlined text-base">check_circle</span>
-              <span>{liveToast}</span>
-            </div>
-            <button
-              onClick={() => setLiveToast(null)}
-              className="text-emerald-700 hover:text-emerald-900"
-            >
-              ✕
-            </button>
-          </div>
-        )}
+        <ThemedToast
+          message={liveToast}
+          onClose={() => setLiveToast(null)}
+          title="Ops Command Hub"
+        />
 
         {/* Welcome & Context Header */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">

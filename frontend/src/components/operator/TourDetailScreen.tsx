@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { ViewMode } from '../../types/travel';
+import { ThemedToast } from '../common/ThemedToast';
 
 interface TourDetailScreenProps {
   onBackToOverview: () => void;
@@ -180,16 +181,12 @@ export const TourDetailScreen: React.FC<TourDetailScreenProps> = ({
 
       {/* ====== MAIN BODY ====== */}
       <main className="flex-1 p-6 lg:p-8 max-w-7xl mx-auto w-full pb-16">
-        {/* Toast */}
-        {toastMessage && (
-          <div className="mb-5 p-3 bg-emerald-50 border border-emerald-200 rounded-lg text-emerald-800 text-xs font-medium flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <span className="material-symbols-outlined text-sm">verified</span>
-              {toastMessage}
-            </div>
-            <button onClick={() => setToastMessage(null)} className="text-emerald-600 hover:text-emerald-900 ml-4">✕</button>
-          </div>
-        )}
+        {/* Themed Toast */}
+        <ThemedToast
+          message={toastMessage}
+          onClose={() => setToastMessage(null)}
+          title="Tour Dispatch System"
+        />
 
         {/* ======== OVERVIEW TAB ======== */}
         {activeSubTab === 'overview' && (
