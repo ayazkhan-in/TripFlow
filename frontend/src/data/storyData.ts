@@ -42,13 +42,13 @@ export interface TravelStory {
 }
 
 export function getStoryVideoUrl(filename: string): string {
-  return `/src/story/${encodeURIComponent(filename)}`;
+  return `/story/${encodeURIComponent(filename)}`;
 }
 
 export const TRAVEL_STORIES: TravelStory[] = [
   {
     id: 'story-himachal-4d',
-    filename: '4-Day Himachal Itinerary 🏔️ Shimla Manali Tour Plan 2025.mp4',
+    filename: 'himachal-4d.mp4',
     title: '4-Day Himachal Tour Plan 2025: Shimla & Manali',
     destination: 'Himachal Pradesh',
     region: 'himachal',
@@ -98,7 +98,7 @@ export const TRAVEL_STORIES: TravelStory[] = [
   },
   {
     id: 'story-kashmir-family-5d',
-    filename: '5 Days Kashmir Tour Package for Family amazing deals.mp4',
+    filename: 'kashmir-family-5d.mp4',
     title: '5 Days Kashmir Family Haven: Dal Lake & Gulmarg',
     destination: 'Kashmir',
     region: 'kashmir',
@@ -148,7 +148,7 @@ export const TRAVEL_STORIES: TravelStory[] = [
   },
   {
     id: 'story-kashmir-budget-6d',
-    filename: '6D 5N KASHMIR Trip in just 20,750 ₹ . #kashmir #kashmirtourism #visitkashmir #kashmirvalley.mp4',
+    filename: 'kashmir-budget-6d.mp4',
     title: '6D 5N Kashmir Circuit in Just ₹20,750',
     destination: 'Kashmir',
     region: 'kashmir',
@@ -198,7 +198,7 @@ export const TRAVEL_STORIES: TravelStory[] = [
   },
   {
     id: 'story-kerala-5d',
-    filename: "Kerala Itinerary 5 Days in God's own country #budgettravel #kerala.mp4",
+    filename: 'kerala-5d.mp4',
     title: "Kerala: 5 Days in God's Own Country",
     destination: 'Kerala',
     region: 'kerala',
@@ -248,7 +248,7 @@ export const TRAVEL_STORIES: TravelStory[] = [
   },
   {
     id: 'story-karnataka-nature',
-    filename: 'Most Beautiful Places in Karnataka #travel #adventure#nature#karnatakanature#explore#india.mp4',
+    filename: 'karnataka-nature-5d.mp4',
     title: 'Most Beautiful Places in Karnataka: Western Ghats',
     destination: 'Karnataka',
     region: 'karnataka',
@@ -298,7 +298,7 @@ export const TRAVEL_STORIES: TravelStory[] = [
   },
   {
     id: 'story-kashmir-wazwan',
-    filename: 'My experience in Kashmir as a guest🍁tuba #kashmir #exploring #viralvideos #guest #food.mp4',
+    filename: 'kashmir-wazwan-3d.mp4',
     title: 'Kashmir Through Local Eyes: Hospitality & Wazwan',
     destination: 'Kashmir',
     region: 'kashmir',
@@ -348,7 +348,7 @@ export const TRAVEL_STORIES: TravelStory[] = [
   },
   {
     id: 'story-kashmir-7d-perfect',
-    filename: 'Perfect 7 Days Itinerary for KASHMIR 💕 #shorts #kashmir #kashmirtourism #travel.mp4',
+    filename: 'kashmir-grand-7d.mp4',
     title: 'Perfect 7 Days Itinerary for Kashmir: The Grand Circuit',
     destination: 'Kashmir',
     region: 'kashmir',
@@ -398,7 +398,7 @@ export const TRAVEL_STORIES: TravelStory[] = [
   },
   {
     id: 'story-shimla-tips',
-    filename: 'SHIMLA TRIP TRAVEL TIP ❤️ Tourist places in Shimla Travel Guide Solo Travel in Shimla.mp4',
+    filename: 'shimla-guide-3d.mp4',
     title: 'Shimla Travel Guide & Solo Explorer Secrets',
     destination: 'Himachal Pradesh',
     region: 'himachal',
@@ -448,7 +448,7 @@ export const TRAVEL_STORIES: TravelStory[] = [
   },
   {
     id: 'story-karnataka-top10',
-    filename: 'Top 10 places to visit in Karnataka Top 10 places in Karnataka.mp4',
+    filename: 'karnataka-top10-6d.mp4',
     title: 'Top 10 Places to Visit in Karnataka: Palaces to Beaches',
     destination: 'Karnataka',
     region: 'karnataka',
