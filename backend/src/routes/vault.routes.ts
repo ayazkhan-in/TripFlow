@@ -1,23 +1,10 @@
 import { Router, Request, Response } from 'express';
-import { GoogleGenAI } from '@google/genai';
 import { prisma } from '../config/db.js';
 import { cloudinary } from '../config/cloudinary.js';
 import { optionalAuth, AuthenticatedRequest } from '../middleware/auth.js';
+import { generateContentWithFailover, isGeminiConfigured } from '../config/gemini.js';
 
 const router = Router();
-const apiKey = process.env.GEMINI_API_KEY;
-let aiClient: GoogleGenAI | null = null;
-
-if (apiKey) {
-  aiClient = new GoogleGenAI({
-    apiKey,
-    httpOptions: {
-      headers: {
-        'User-Agent': 'tripflow-backend',
-      },
-    },
-  });
-}
 
 // GET /api/v1/vault/documents - List documents with filters
 router.get('/documents', optionalAuth, async (req: AuthenticatedRequest, res: Response) => {
@@ -64,11 +51,11 @@ router.post('/classify-ai', async (req: Request, res: Response) => {
       return res.status(400).json({ error: 'Missing document image or hint' });
     }
 
-    if (aiClient && imageBase64) {
+    if (isGeminiConfigured && imageBase64) {
       try {
         const base64Data = imageBase64.replace(/^data:[a-zA-Z0-9\/+-]+;base64,/, '');
 
-        const response = await aiClient.models.generateContent({
+        const response = await generateContentWithFailover({
           model: 'gemini-2.5-flash',
           contents: [
             {
@@ -114,7 +101,7 @@ Respond ONLY with valid JSON in this exact structure without markdown backticks:
               ],
             },
           ],
-        });
+        }, { callerContext: 'Vault Document Classifier' });
 
         const rawText = response.text || '';
         const jsonMatch = rawText.match(/\{[\s\S]*\}/);
@@ -123,7 +110,7 @@ Respond ONLY with valid JSON in this exact structure without markdown backticks:
           return res.json({ success: true, aiVerified: true, ...parsed });
         }
       } catch (geminiErr) {
-        console.warn('Gemini vision extraction failed, using heuristic classification:', geminiErr);
+        console.warn('Gemini vision extraction failed across all configured keys, using heuristic classification:', geminiErr);
       }
     }
 

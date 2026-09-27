@@ -12,6 +12,7 @@ interface WordByWordBlurTextProps {
   delay?: number;
   staggerDuration?: number;
   as?: 'h1' | 'h2' | 'h3' | 'h4' | 'p' | 'span' | 'div';
+  animate?: boolean;
 }
 
 export const WordByWordBlurText: React.FC<WordByWordBlurTextProps> = ({
@@ -21,6 +22,7 @@ export const WordByWordBlurText: React.FC<WordByWordBlurTextProps> = ({
   delay = 0.1,
   staggerDuration = 0.07,
   as: Component = 'div',
+  animate = true,
 }) => {
   const words = text.split(/\s+/).filter(Boolean);
 
@@ -58,7 +60,7 @@ export const WordByWordBlurText: React.FC<WordByWordBlurTextProps> = ({
     <MotionComponent
       variants={containerVariants}
       initial="hidden"
-      animate="visible"
+      animate={animate ? 'visible' : 'hidden'}
       className={className}
     >
       {words.map((word, index) => (

@@ -1,46 +1,32 @@
 // TripFlow Concierge Assistant Engine - Verified Prisma Types
 import { Router, Response } from 'express';
-import { GoogleGenAI } from '@google/genai';
 import { prisma } from '../config/db.js';
 import { AuthenticatedRequest, optionalAuth } from '../middleware/auth.js';
+import { generateContentWithFailover, isGeminiConfigured } from '../config/gemini.js';
 
 const router = Router();
-const apiKey = process.env.GEMINI_API_KEY;
-let aiClient: GoogleGenAI | null = null;
-
-if (apiKey) {
-  aiClient = new GoogleGenAI({
-    apiKey,
-    httpOptions: {
-      headers: {
-        'User-Agent': 'tripflow-backend-assistant',
-      },
-    },
-  });
-}
 
 // Model cascade for high availability, sub-3s response, and zero 503 dropouts
 const CANDIDATE_MODELS = ['gemini-3-flash-preview', 'gemini-3.1-pro-preview'];
 
 async function generateWithGeminiCascade(systemPrompt: string): Promise<string | null> {
-  if (!aiClient) return null;
+  if (!isGeminiConfigured) return null;
 
   for (const model of CANDIDATE_MODELS) {
     try {
-      const callPromise = aiClient.models.generateContent({
-        model,
-        contents: [{ role: 'user', parts: [{ text: systemPrompt }] }],
-      });
-      const timeoutPromise = new Promise<null>((_, reject) =>
-        setTimeout(() => reject(new Error('TIMEOUT_EXCEEDED')), 6500)
+      const response = await generateContentWithFailover(
+        {
+          model,
+          contents: [{ role: 'user', parts: [{ text: systemPrompt }] }],
+        },
+        { timeoutMs: 6500, callerContext: `Assistant Cascade (${model})` }
       );
 
-      const response: any = await Promise.race([callPromise, timeoutPromise]);
       const text = response?.text?.trim() || '';
       if (text) return text;
     } catch (err: any) {
       const msg = err?.message || String(err);
-      console.warn(`[Gemini Cascade] Model ${model} skipped or timed out (${msg}), trying next...`);
+      console.warn(`[Gemini Cascade] Model ${model} skipped or timed out across all available keys (${msg}), trying next...`);
     }
   }
   return null;

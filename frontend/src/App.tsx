@@ -191,7 +191,7 @@ function BookitApp() {
 
     const loadBackgroundData = async () => {
       try {
-        // Run parallel tasks: Fonts/Logo asset readiness, Auth check, Catalog items
+        // Run parallel tasks: Fonts/Logo readiness, Hero Video buffering, Auth check, Catalog items
         const assetPromise = Promise.allSettled([
           document.fonts ? document.fonts.ready : Promise.resolve(),
           new Promise(res => {
@@ -201,6 +201,41 @@ function BookitApp() {
           }),
         ]);
 
+        // Preload hero video buffer so it plays seamlessly right after splash screen
+        const heroVideoPromise = new Promise(resolve => {
+          try {
+            const video = document.createElement('video');
+            video.preload = 'auto';
+            video.muted = true;
+            video.playsInline = true;
+            const canWebm = Boolean(video.canPlayType && video.canPlayType('video/webm'));
+            video.src = canWebm ? '/hero2.webm' : '/hero4k.mp4';
+
+            let finished = false;
+            const onReady = () => {
+              if (!finished) {
+                finished = true;
+                video.removeEventListener('canplay', onReady);
+                video.removeEventListener('canplaythrough', onReady);
+                video.removeEventListener('loadeddata', onReady);
+                video.removeEventListener('error', onReady);
+                resolve(true);
+              }
+            };
+
+            video.addEventListener('canplay', onReady);
+            video.addEventListener('canplaythrough', onReady);
+            video.addEventListener('loadeddata', onReady);
+            video.addEventListener('error', onReady);
+
+            // Timeout so slow connections don't block the splash screen
+            setTimeout(onReady, 2200);
+            video.load();
+          } catch {
+            resolve(true);
+          }
+        });
+
         const catalogPromise = TripFlowApi.getCatalogItems().catch(() => []);
         const authUserPromise = TripFlowApi.getMe().catch(() => null);
 
@@ -208,6 +243,7 @@ function BookitApp() {
           assetPromise,
           catalogPromise,
           authUserPromise,
+          heroVideoPromise,
         ]);
 
         if (user && !isCancelled) {
@@ -585,6 +621,7 @@ function BookitApp() {
           onExploreDemo={handleExploreTravelerDemo}
           onExploreOps={handleExploreOpsDemo}
           onOpenBuilder={handleOpenItineraryBuilder}
+          animateHero={!isSplashVisible}
         />
       )}
 

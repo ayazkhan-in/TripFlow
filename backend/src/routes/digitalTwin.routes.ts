@@ -1,41 +1,27 @@
 import { Router, Request, Response } from 'express';
-import { GoogleGenAI } from '@google/genai';
 import { prisma } from '../config/db.js';
+import { generateContentWithFailover, isGeminiConfigured } from '../config/gemini.js';
 
 const router = Router();
-const apiKey = process.env.GEMINI_API_KEY;
-let aiClient: GoogleGenAI | null = null;
-
-if (apiKey) {
-  aiClient = new GoogleGenAI({
-    apiKey,
-    httpOptions: {
-      headers: {
-        'User-Agent': 'tripflow-digital-twin',
-      },
-    },
-  });
-}
 
 // Candidate models for resilient AI generation
 const CANDIDATE_MODELS = ['gemini-3-flash-preview', 'gemini-3.8-flash', 'gemini-2.5-flash'];
 
 async function generateWithGemini(prompt: string): Promise<string | null> {
-  if (!aiClient) return null;
+  if (!isGeminiConfigured) return null;
   for (const model of CANDIDATE_MODELS) {
     try {
-      const timeoutPromise = new Promise<null>((_, reject) =>
-        setTimeout(() => reject(new Error('TIMEOUT')), 7000)
+      const response = await generateContentWithFailover(
+        {
+          model,
+          contents: [{ role: 'user', parts: [{ text: prompt }] }],
+        },
+        { timeoutMs: 7000, callerContext: `Digital Twin AI (${model})` }
       );
-      const callPromise = aiClient.models.generateContent({
-        model,
-        contents: [{ role: 'user', parts: [{ text: prompt }] }],
-      });
-      const response: any = await Promise.race([callPromise, timeoutPromise]);
       const text = response?.text?.trim() || '';
       if (text) return text;
     } catch (err: any) {
-      console.warn(`[Digital Twin AI] Model ${model} skipped (${err?.message}), trying next...`);
+      console.warn(`[Digital Twin AI] Model ${model} skipped across all keys (${err?.message}), trying next...`);
     }
   }
   return null;

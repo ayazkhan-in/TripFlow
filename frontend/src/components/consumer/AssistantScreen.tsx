@@ -7,12 +7,14 @@ import {
   compileFinalItinerary,
   AITripDetails,
   AIGeneratedProposal,
+  AIActivityOption,
 } from '../../utils/aiTripPlanner';
 import { addCustomCatalogItems } from '../../data/itineraryData';
 import { USER_AVATAR } from '../../data/mockData';
 import { TripFlowApi } from '../../services/api';
 import {
   InteractiveQuestionnaireCard,
+  TripSummaryCard,
   QuestionnaireQuestion,
   QuestionnaireOption,
 } from './InteractiveQuestionnaireCard';
@@ -77,7 +79,7 @@ const DEFAULT_WELCOME_SESSION: ChatSession = {
       id: 'msg-welcome',
       sender: 'assistant',
       timestamp: 'Just now',
-      text: `Hello! I am your **Bookit AI Travel Concierge** powered by Gemini.
+      text: `Hello! I am your **Bookit Travel Concierge**.
 
 Where would you like to travel next? You can type your dream destination, dates, and budget (e.g. *"I want to plan an itinerary for 7 days for Turkey with Cappadocia"*), and I will generate an interactive questionnaire, calibrated flight & hotel tiers, and a living day-by-day plan!`,
       quickReplies: [
@@ -517,6 +519,52 @@ export const AssistantScreen: React.FC<AssistantScreenProps> = ({
   const activeSession = useMemo(() => {
     return sessions.find(s => s.id === activeSessionId) || sessions[0] || DEFAULT_WELCOME_SESSION;
   }, [sessions, activeSessionId]);
+
+  // Dedicated Floating Trip Card active data (middle of the page on right side, persists across both questionnaire and proposal phases)
+  const activeQuestionnaireMsg = useMemo(() => {
+    // 1. Look for unsubmitted questionnaire in current session
+    const unsubmitted = activeSession?.messages?.find(
+      m => m.questionnaire && !m.questionnaire.isSubmitted
+    );
+    if (unsubmitted) return unsubmitted;
+
+    // 2. Or the latest questionnaire in this session (even if submitted or proposal is active)
+    const latestQ = activeSession?.messages?.slice().reverse().find(m => m.questionnaire);
+    if (latestQ && latestQ.questionnaire) {
+      return latestQ;
+    }
+
+    // 3. Or if there's a proposal message without questionnaire, synthesize questionnaire-compatible data for the TripSummaryCard
+    const proposalMsg = activeSession?.messages?.slice().reverse().find(m => m.proposal);
+    if (proposalMsg && proposalMsg.proposal) {
+      const p = proposalMsg.proposal;
+      const originAirport = p.flights?.[0]?.origin || p.flights?.[0]?.originCode || 'Mumbai (BOM)';
+      const highlights = (p.extraActivities || []).map((a: AIActivityOption) => a.title).slice(0, 3);
+      return {
+        ...proposalMsg,
+        questionnaire: {
+          id: 'proposal-summary',
+          destination: p.destination || activeSession.destination || 'Destination',
+          days: p.days || 7,
+          travelers: p.travelers || 2,
+          questions: [],
+          answers: {
+            travel_party_pace: p.travelers === 1 ? 'solo_explorer' : p.travelers >= 4 ? 'family_balanced' : 'couple_relaxed',
+            budget_tier: {
+              selectedTier: 'premium',
+              targetAmount: p.basePriceUSD,
+            },
+            departure_city: originAirport,
+            must_do_highlights: highlights,
+          },
+          customTexts: {},
+          isSubmitted: true,
+        },
+      };
+    }
+
+    return null;
+  }, [activeSession]);
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -1079,18 +1127,7 @@ I have calibrated flight routes, luxury accommodations, and private transfers st
         } fixed inset-y-0 left-0 z-50 md:static md:z-20 transition-all duration-300 ease-in-out bg-[#F8F9FA] border-r border-slate-200/80 flex flex-col shrink-0 overflow-hidden shadow-2xl md:shadow-none`}
       >
         <div className="p-3.5 border-b border-slate-200/60 flex items-center justify-between shrink-0">
-          <div className="flex items-center gap-2">
-            <span className="w-7 h-7 rounded-lg bg-slate-900 text-amber-400 flex items-center justify-center shadow-2xs">
-              <span className="material-symbols-outlined text-sm">auto_awesome</span>
-            </span>
-            <div>
-              <h2 className="text-xs font-bold text-slate-900 tracking-tight">AI Concierge</h2>
-              <span className="text-[10px] text-emerald-600 font-medium flex items-center gap-1">
-                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
-                Gemini Active
-              </span>
-            </div>
-          </div>
+          <span className="text-xs font-bold text-slate-800 tracking-tight">Journeys</span>
 
           <button
             type="button"
@@ -1177,12 +1214,7 @@ I have calibrated flight routes, luxury accommodations, and private transfers st
           )}
         </div>
 
-        <div className="p-3 border-t border-slate-200/60 shrink-0 bg-white/60">
-          <div className="flex items-center gap-2 text-[11px] text-slate-500">
-            <span className="material-symbols-outlined text-xs text-emerald-600">cloud_done</span>
-            <span className="truncate">Saved to {currentUser?.name ? `${currentUser.name}'s Account` : 'Secure Neon Database'}</span>
-          </div>
-        </div>
+
       </aside>
 
       {/* 2. MAIN CONVERSATION STREAM */}
@@ -1202,20 +1234,15 @@ I have calibrated flight routes, luxury accommodations, and private transfers st
 
             <div>
               <h1 className="text-sm font-bold text-slate-900 leading-tight">
-                {activeSession?.title || 'Bookit Concierge'}
+                {activeSession?.title || 'Trip Assistant'}
               </h1>
               <p className="text-[10px] text-slate-400">
-                Calibrated living itineraries powered by Gemini
+                Calibrated living itineraries
               </p>
             </div>
           </div>
 
           <div className="flex items-center gap-2">
-            <span className="hidden sm:inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[11px] font-medium bg-emerald-50 text-emerald-700 border border-emerald-200/60">
-              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-              <span>Cloud Synced</span>
-            </span>
-
             <button
               type="button"
               onClick={handleNewChat}
@@ -1226,181 +1253,230 @@ I have calibrated flight routes, luxury accommodations, and private transfers st
           </div>
         </header>
 
-        {/* Message Stream */}
-        <div className="flex-1 overflow-y-auto px-3 sm:px-6 py-4 sm:py-6 space-y-6 custom-scrollbar">
-          <div className="max-w-5xl mx-auto space-y-6">
-            {activeSession?.messages?.map(msg => (
-              <div
-                key={msg.id}
-                className={`flex gap-3 sm:gap-4 ${
-                  msg.sender === 'user' ? 'justify-end' : 'justify-start'
-                }`}
-              >
-                {msg.sender === 'assistant' && (
-                  <div className="w-8 h-8 rounded-xl bg-slate-900 text-amber-400 flex items-center justify-center shrink-0 shadow-2xs mt-0.5">
-                    <span className="material-symbols-outlined text-sm">auto_awesome</span>
-                  </div>
-                )}
+        {/* Content Area: Left Conversation Stream + Right Dedicated Floating Trip Card Section */}
+        <div className="flex-1 flex overflow-hidden bg-slate-50/20 relative">
+          {/* Left: Scrollable Message Stream with Floating Bottom Input Box */}
+          <div className="flex-1 flex flex-col min-w-0 relative h-full">
+            <div className="flex-1 overflow-y-auto px-3 sm:px-6 py-4 sm:py-6 space-y-5 no-scrollbar pb-32 sm:pb-24">
+              <div className={`mx-auto space-y-5 transition-all duration-300 ${activeQuestionnaireMsg ? 'max-w-3xl xl:max-w-4xl' : 'max-w-4xl'}`}>
+                {activeSession?.messages?.map(msg => (
+                  <div
+                    key={msg.id}
+                    className={`flex gap-3 sm:gap-4 ${
+                      msg.sender === 'user' ? 'justify-end' : 'justify-start'
+                    }`}
+                  >
+                    {msg.sender === 'assistant' && (
+                      <div className="w-8 h-8 rounded-xl bg-slate-900 text-amber-400 flex items-center justify-center shrink-0 shadow-2xs mt-0.5">
+                        <span className="material-symbols-outlined text-sm">auto_awesome</span>
+                      </div>
+                    )}
 
-                <div
-                  className={`flex flex-col ${
-                    msg.sender === 'user'
-                      ? 'items-end max-w-[85%] sm:max-w-[75%]'
-                      : 'items-start flex-1 min-w-0'
-                  }`}
-                >
-                  {/* User Bubble */}
-                  {msg.sender === 'user' ? (
-                    <div className="p-3.5 rounded-2xl rounded-tr-xs bg-blue-600 text-white text-sm leading-relaxed shadow-sm">
-                      {msg.text}
-                    </div>
-                  ) : (
-                    /* Assistant Output */
-                    <div className="w-full text-left space-y-4">
-                      {msg.text && <MarkdownText content={msg.text} />}
+                    <div
+                      className={`flex flex-col ${
+                        msg.sender === 'user'
+                          ? 'items-end max-w-[85%] sm:max-w-[75%]'
+                          : 'items-start flex-1 min-w-0'
+                      }`}
+                    >
+                      {/* User Bubble */}
+                      {msg.sender === 'user' ? (
+                        <div className="p-3.5 rounded-2xl rounded-tr-xs bg-blue-600 text-white text-sm leading-relaxed shadow-sm">
+                          {msg.text}
+                        </div>
+                      ) : (
+                        /* Assistant Output */
+                        <div className="w-full text-left space-y-4">
+                          {msg.text && <MarkdownText content={msg.text} />}
 
-                      {/* Quick Replies */}
-                      {msg.quickReplies && msg.quickReplies.length > 0 && (
-                        <div className="flex flex-wrap gap-1.5 pt-1">
-                          {msg.quickReplies.map((reply, rIdx) => (
-                            <button
-                              key={rIdx}
-                              type="button"
-                              onClick={() => handleUserSubmit(reply)}
-                              className="px-3 py-1.5 rounded-full text-xs font-medium bg-white hover:bg-slate-50 border border-slate-200 text-slate-700 hover:text-slate-900 hover:border-slate-300 shadow-2xs transition-all cursor-pointer active:scale-95"
-                            >
-                              {reply}
-                            </button>
-                          ))}
+                          {/* Quick Replies */}
+                          {msg.quickReplies && msg.quickReplies.length > 0 && (
+                            <div className="flex flex-wrap gap-1.5 pt-1">
+                              {msg.quickReplies.map((reply, rIdx) => (
+                                <button
+                                  key={rIdx}
+                                  type="button"
+                                  onClick={() => handleUserSubmit(reply)}
+                                  className="px-3 py-1.5 rounded-full text-xs font-medium bg-white hover:bg-slate-50 border border-slate-200 text-slate-700 hover:text-slate-900 hover:border-slate-300 shadow-2xs transition-all cursor-pointer active:scale-95"
+                                >
+                                  {reply}
+                                </button>
+                              ))}
+                            </div>
+                          )}
+
+                          {/* 1. DYNAMIC STEP-BY-STEP QUESTIONNAIRE FLOW WITH RIGHT TRIP SUMMARY */}
+                          {msg.questionnaire && !msg.questionnaire.isSubmitted && (() => {
+                            const matched = findValidDestination(msg.questionnaire.destination);
+                            return (
+                              <InteractiveQuestionnaireCard
+                                destination={msg.questionnaire.destination}
+                                destinationImage={matched?.heroImage}
+                                countryName={matched?.country || activeSession.destination}
+                                days={msg.questionnaire.days}
+                                travelers={msg.questionnaire.travelers}
+                                questions={msg.questionnaire.questions}
+                                answers={msg.questionnaire.answers}
+                                customTexts={msg.questionnaire.customTexts}
+                                onAnswerChange={(qId, val) => handleAnswerChange(msg.id, qId, val)}
+                                onCustomTextChange={(qId, txt) => handleCustomTextChange(msg.id, qId, txt)}
+                                onSubmit={() => handleQuestionnaireSubmit(msg.id, msg.questionnaire!)}
+                                isLoading={isTyping}
+                                userName={currentUser?.name || 'Traveler'}
+                              />
+                            );
+                          })()}
+
+                          {/* 2. MULTI-OPTION PROPOSAL COMPARISON DECK */}
+                          {msg.proposal && (
+                            <MultiOptionComparisonDeck
+                              proposal={msg.proposal}
+                              targetBudgetUSD={msg.targetBudgetUSD || msg.proposal.basePriceUSD}
+                              selectedFlightId={msg.selectedFlightId || msg.proposal.selectedFlightId}
+                              onSelectFlight={fltId => handleUpdateProposalSelection(msg.id, { selectedFlightId: fltId })}
+                              selectedHotelId={msg.selectedHotelId || msg.proposal.selectedHotelId}
+                              onSelectHotel={htId => handleUpdateProposalSelection(msg.id, { selectedHotelId: htId })}
+                              selectedTransferId={msg.selectedTransferId || msg.proposal.selectedTransferId}
+                              onSelectTransfer={trId => handleUpdateProposalSelection(msg.id, { selectedTransferId: trId })}
+                              selectedActivityIds={msg.selectedActivityIds || []}
+                              onToggleActivity={actId => {
+                                const cur = msg.selectedActivityIds || [];
+                                const updated = cur.includes(actId) ? cur.filter(id => id !== actId) : [...cur, actId];
+                                handleUpdateProposalSelection(msg.id, { selectedActivityIds: updated });
+                              }}
+                              onOpenInBuilder={() => handleOpenProposalInBuilder(msg)}
+                            />
+                          )}
                         </div>
                       )}
-
-                      {/* 1. DYNAMIC STEP-BY-STEP QUESTIONNAIRE FLOW WITH RIGHT TRIP SUMMARY */}
-                      {msg.questionnaire && !msg.questionnaire.isSubmitted && (() => {
-                        const matched = findValidDestination(msg.questionnaire.destination);
-                        return (
-                          <InteractiveQuestionnaireCard
-                            destination={msg.questionnaire.destination}
-                            destinationImage={matched?.heroImage}
-                            countryName={matched?.country || activeSession.destination}
-                            days={msg.questionnaire.days}
-                            travelers={msg.questionnaire.travelers}
-                            questions={msg.questionnaire.questions}
-                            answers={msg.questionnaire.answers}
-                            customTexts={msg.questionnaire.customTexts}
-                            onAnswerChange={(qId, val) => handleAnswerChange(msg.id, qId, val)}
-                            onCustomTextChange={(qId, txt) => handleCustomTextChange(msg.id, qId, txt)}
-                            onSubmit={() => handleQuestionnaireSubmit(msg.id, msg.questionnaire!)}
-                            isLoading={isTyping}
-                            userName={currentUser?.name || 'Traveler'}
-                          />
-                        );
-                      })()}
-
-                      {/* 2. MULTI-OPTION PROPOSAL COMPARISON DECK */}
-                      {msg.proposal && (
-                        <MultiOptionComparisonDeck
-                          proposal={msg.proposal}
-                          targetBudgetUSD={msg.targetBudgetUSD || msg.proposal.basePriceUSD}
-                          selectedFlightId={msg.selectedFlightId || msg.proposal.selectedFlightId}
-                          onSelectFlight={fltId => handleUpdateProposalSelection(msg.id, { selectedFlightId: fltId })}
-                          selectedHotelId={msg.selectedHotelId || msg.proposal.selectedHotelId}
-                          onSelectHotel={htId => handleUpdateProposalSelection(msg.id, { selectedHotelId: htId })}
-                          selectedTransferId={msg.selectedTransferId || msg.proposal.selectedTransferId}
-                          onSelectTransfer={trId => handleUpdateProposalSelection(msg.id, { selectedTransferId: trId })}
-                          selectedActivityIds={msg.selectedActivityIds || []}
-                          onToggleActivity={actId => {
-                            const cur = msg.selectedActivityIds || [];
-                            const updated = cur.includes(actId) ? cur.filter(id => id !== actId) : [...cur, actId];
-                            handleUpdateProposalSelection(msg.id, { selectedActivityIds: updated });
-                          }}
-                          onOpenInBuilder={() => handleOpenProposalInBuilder(msg)}
-                        />
-                      )}
                     </div>
-                  )}
-                </div>
-              </div>
-            ))}
-
-            {isTyping && (
-              <div className="w-full text-left space-y-4 animate-in fade-in duration-300">
-                {loadingType === 'questionnaire' ? (
-                  <div className="space-y-2">
-                    <div className="flex items-center gap-2 text-xs font-semibold text-blue-600 px-1">
-                      <span className="material-symbols-outlined text-sm animate-spin">auto_awesome</span>
-                      <span>Calibrating custom preferences & itinerary questions...</span>
-                    </div>
-                    <QuestionnaireSkeleton destination={activeSession?.destination} />
                   </div>
-                ) : loadingType === 'proposal' ? (
-                  <div className="space-y-2">
-                    <div className="flex items-center gap-2 text-xs font-semibold text-emerald-600 px-1">
-                      <span className="material-symbols-outlined text-sm animate-spin">auto_awesome</span>
-                      <span>Synthesizing live flight routes, 5★ boutique suites & private chauffeur...</span>
-                    </div>
-                    <ProposalDeckSkeleton destination={activeSession?.destination} />
-                  </div>
-                ) : (
-                  <div className="flex gap-3 items-center text-slate-400 text-xs">
-                    <div className="w-8 h-8 rounded-xl bg-slate-900 text-amber-400 flex items-center justify-center shrink-0 shadow-xs">
-                      <span className="material-symbols-outlined text-sm animate-spin">auto_awesome</span>
-                    </div>
-                    <div className="flex items-center gap-1.5 p-3 rounded-2xl bg-white border border-slate-200/80 shadow-2xs">
-                      <span className="w-2 h-2 rounded-full bg-blue-600 animate-bounce" />
-                      <span className="w-2 h-2 rounded-full bg-blue-600 animate-bounce [animation-delay:0.2s]" />
-                      <span className="w-2 h-2 rounded-full bg-blue-600 animate-bounce [animation-delay:0.4s]" />
-                      <span className="text-slate-600 font-medium ml-1">
-                        Bookit AI is typing...
-                      </span>
-                    </div>
+                ))}
+
+                {isTyping && (
+                  <div className="w-full text-left space-y-4 animate-in fade-in duration-300">
+                    {loadingType === 'questionnaire' ? (
+                      <div className="space-y-2">
+                        <div className="flex items-center gap-2 text-xs font-semibold text-blue-600 px-1">
+                          <span className="material-symbols-outlined text-sm animate-spin">auto_awesome</span>
+                          <span>Calibrating custom preferences & itinerary questions...</span>
+                        </div>
+                        <QuestionnaireSkeleton destination={activeSession?.destination} />
+                      </div>
+                    ) : loadingType === 'proposal' ? (
+                      <div className="space-y-2">
+                        <div className="flex items-center gap-2 text-xs font-semibold text-emerald-600 px-1">
+                          <span className="material-symbols-outlined text-sm animate-spin">auto_awesome</span>
+                          <span>Synthesizing live flight routes, 5★ boutique suites & private chauffeur...</span>
+                        </div>
+                        <ProposalDeckSkeleton destination={activeSession?.destination} />
+                      </div>
+                    ) : (
+                      <div className="flex gap-3 items-center text-slate-400 text-xs">
+                        <div className="w-8 h-8 rounded-xl bg-slate-900 text-amber-400 flex items-center justify-center shrink-0 shadow-xs">
+                          <span className="material-symbols-outlined text-sm animate-spin">auto_awesome</span>
+                        </div>
+                        <div className="flex items-center gap-1.5 p-3 rounded-2xl bg-white border border-slate-200/80 shadow-2xs">
+                          <span className="w-2 h-2 rounded-full bg-blue-600 animate-bounce" />
+                          <span className="w-2 h-2 rounded-full bg-blue-600 animate-bounce [animation-delay:0.2s]" />
+                          <span className="w-2 h-2 rounded-full bg-blue-600 animate-bounce [animation-delay:0.4s]" />
+                          <span className="text-slate-600 font-medium ml-1">
+                            Bookit AI is typing...
+                          </span>
+                        </div>
+                      </div>
+                    )}
                   </div>
                 )}
+
+                <div ref={messagesEndRef} />
               </div>
-            )}
+            </div>
 
-            <div ref={messagesEndRef} />
+            {/* Floating Bottom Middle Input Box Without Any Surrounding Text */}
+            <div className="absolute bottom-2 sm:bottom-4 inset-x-0 flex justify-center px-2.5 sm:px-4 pointer-events-none z-30">
+              <div className="w-full max-w-2xl pointer-events-auto rounded-2xl border border-slate-200/90 bg-white/95 backdrop-blur-md p-1.5 sm:p-2 shadow-xl hover:shadow-2xl focus-within:shadow-2xl focus-within:border-blue-500 focus-within:ring-2 focus-within:ring-blue-100 transition-all">
+                <div className="relative flex items-center">
+                  <textarea
+                    ref={textareaRef}
+                    rows={1}
+                    value={inputMessage}
+                    onChange={e => setInputMessage(e.target.value)}
+                    onKeyDown={e => {
+                      if (e.key === 'Enter' && !e.shiftKey) {
+                        e.preventDefault();
+                        handleUserSubmit();
+                      }
+                    }}
+                    placeholder={inputMessage ? '' : typewriterText}
+                    className="w-full pl-3 pr-12 py-1.5 sm:py-2 text-xs sm:text-sm text-slate-800 placeholder:text-slate-400 bg-transparent resize-none focus:outline-none max-h-32"
+                  />
+
+                  <button
+                    type="button"
+                    disabled={!inputMessage.trim() || isTyping}
+                    onClick={() => handleUserSubmit()}
+                    className={`absolute right-1.5 w-8 h-8 rounded-xl flex items-center justify-center transition-all cursor-pointer ${
+                      inputMessage.trim() && !isTyping
+                        ? 'bg-blue-600 hover:bg-blue-700 text-white shadow-xs'
+                        : 'bg-slate-200 text-slate-400 cursor-not-allowed'
+                    }`}
+                  >
+                    <span className="material-symbols-outlined text-base">arrow_upward</span>
+                  </button>
+                </div>
+              </div>
+            </div>
           </div>
-        </div>
 
-        {/* 3. INPUT BAR */}
-        <div className="p-3 sm:p-5 border-t border-slate-100 bg-white">
-          <div className="max-w-3xl mx-auto">
-            <div className="relative rounded-2xl border border-slate-200/90 bg-slate-50/70 p-2 shadow-2xs focus-within:border-blue-500 focus-within:bg-white focus-within:ring-2 focus-within:ring-blue-100 transition-all">
-              <textarea
-                ref={textareaRef}
-                rows={1}
-                value={inputMessage}
-                onChange={e => setInputMessage(e.target.value)}
-                onKeyDown={e => {
-                  if (e.key === 'Enter' && !e.shiftKey) {
-                    e.preventDefault();
-                    handleUserSubmit();
-                  }
-                }}
-                placeholder={inputMessage ? '' : typewriterText}
-                className="w-full pl-3 pr-12 py-1.5 text-xs sm:text-sm text-slate-800 placeholder:text-slate-400 bg-transparent resize-none focus:outline-none max-h-32"
-              />
+          {/* Right: Dedicated Section of its own for the Floating Trip Card (middle of the page, blending in seamlessly) */}
+          {activeQuestionnaireMsg && activeQuestionnaireMsg.questionnaire && (() => {
+            const q = activeQuestionnaireMsg.questionnaire;
+            const matched = findValidDestination(q.destination);
 
-              <button
-                type="button"
-                disabled={!inputMessage.trim() || isTyping}
-                onClick={() => handleUserSubmit()}
-                className={`absolute right-2.5 bottom-2.5 w-8 h-8 rounded-xl flex items-center justify-center transition-all cursor-pointer ${
-                  inputMessage.trim() && !isTyping
-                    ? 'bg-blue-600 hover:bg-blue-700 text-white shadow-xs'
-                    : 'bg-slate-200 text-slate-400 cursor-not-allowed'
-                }`}
+            // Compute live proposal total if an active proposal exists in the session
+            const proposalMsg = activeSession?.messages?.slice().reverse().find(m => m.proposal);
+            let liveTotal: number | undefined;
+            if (proposalMsg && proposalMsg.proposal) {
+              const p = proposalMsg.proposal;
+              const activeFlt = p.flights?.find(f => f.id === (proposalMsg.selectedFlightId || p.selectedFlightId)) || p.flights?.[0];
+              const activeHt = p.hotels?.find(h => h.id === (proposalMsg.selectedHotelId || p.selectedHotelId)) || p.hotels?.[0];
+              const activeTr = p.transfers?.find(t => t.id === (proposalMsg.selectedTransferId || p.selectedTransferId)) || p.transfers?.[0];
+              const nights = Math.max(1, p.days - 1);
+              const fltTotal = (activeFlt?.priceUSD || 0) * p.travelers;
+              const htTotal = (activeHt?.pricePerNightUSD || 0) * nights;
+              const trDelta = activeTr?.priceDeltaUSD || 0;
+              const baseAct = 3500 * p.days;
+              const extraAct = (p.extraActivities || [])
+                .filter(act => (proposalMsg.selectedActivityIds || []).includes(act.id))
+                .reduce((s, a) => s + a.price, 0);
+              liveTotal = fltTotal + htTotal + trDelta + baseAct + extraAct;
+            }
+
+            return (
+              <aside
+                aria-label="Trip Summary Section"
+                className="hidden lg:flex flex-col justify-center items-center w-84 xl:w-96 shrink-0 p-4 xl:p-6 bg-transparent overflow-y-auto no-scrollbar"
               >
-                <span className="material-symbols-outlined text-base">arrow_upward</span>
-              </button>
-            </div>
-            <div className="flex items-center justify-between text-[11px] text-slate-400 mt-1.5 px-1">
-              <span>Press Enter to send inquiry</span>
-              <span className="hidden sm:inline">Bookit AI · Instant Budget-Calibrated Travel Curation</span>
-            </div>
-          </div>
+                <div className="w-full my-auto animate-in fade-in duration-300">
+                  <TripSummaryCard
+                    destination={q.destination}
+                    destinationImage={matched?.heroImage}
+                    countryName={matched?.country || activeSession.destination}
+                    days={q.days}
+                    travelers={q.travelers}
+                    answers={q.answers}
+                    customTexts={q.customTexts}
+                    questions={q.questions}
+                    liveProposalTotal={liveTotal}
+                  />
+                </div>
+              </aside>
+            );
+          })()}
         </div>
+
+
       </main>
 
       {/* ============================================================= */}

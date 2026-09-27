@@ -1,4 +1,19 @@
 import React, { useState, useRef, useEffect } from 'react';
+import { motion } from 'framer-motion';
+import {
+  Home,
+  Compass,
+  PlayCircle,
+  Sparkles,
+  Route,
+  Briefcase,
+  ShieldCheck,
+  Bell,
+  ChevronDown,
+  User,
+  LogOut,
+  ExternalLink,
+} from 'lucide-react';
 import { ConsumerTab } from '../../types/travel';
 import { USER_AVATAR } from '../../data/mockData';
 import { AuthUser } from '../auth/AuthModal';
@@ -14,6 +29,22 @@ interface TopNavProps {
   onGoToLanding?: () => void;
   vaultCount?: number;
 }
+
+interface NavItem {
+  id: ConsumerTab;
+  label: string;
+  icon: React.ComponentType<{ className?: string }>;
+}
+
+const NAV_ITEMS: NavItem[] = [
+  { id: 'home', label: 'Home', icon: Home },
+  { id: 'discover', label: 'Discover', icon: Compass },
+  { id: 'story', label: 'Story', icon: PlayCircle },
+  { id: 'assistant', label: 'AI Assistant', icon: Sparkles },
+  { id: 'builder', label: 'Itinerary Builder', icon: Route },
+  { id: 'trips', label: 'Trips & Bookings', icon: Briefcase },
+  { id: 'vault', label: 'Vault', icon: ShieldCheck },
+];
 
 export const TopNav: React.FC<TopNavProps> = ({
   activeTab,
@@ -52,8 +83,15 @@ export const TopNav: React.FC<TopNavProps> = ({
     }
   };
 
+  const isTabActive = (tabId: ConsumerTab) => {
+    if (tabId === 'trips') {
+      return activeTab === 'trips' || activeTab === 'bookings';
+    }
+    return activeTab === tabId;
+  };
+
   return (
-    <header className="relative bg-white border-b border-[#E5E7EB] shadow-xs flex justify-between items-center w-full px-4 sm:px-6 h-14 pt-[env(safe-area-inset-top,0px)] sticky top-0 z-40 max-w-full select-none">
+    <header className="relative bg-white/95 backdrop-blur-md border-b border-[#E5E7EB] shadow-xs flex justify-between items-center w-full px-4 sm:px-6 h-14 pt-[env(safe-area-inset-top,0px)] sticky top-0 z-40 max-w-full select-none">
       {/* Brand Anchor on Left */}
       <div className="flex items-center shrink-0">
         <a
@@ -80,119 +118,54 @@ export const TopNav: React.FC<TopNavProps> = ({
         </a>
       </div>
 
-      {/* Navigation Tabs Centered in Topbar (Flow: Home -> Discover -> Builder -> Trips & Bookings -> Vault) */}
-      <nav className="hidden md:flex items-center gap-4 lg:gap-6 absolute left-1/2 -translate-x-1/2">
-        <a
-          href="/home"
-          onClick={e => {
-            e.preventDefault();
-            onTabChange('home');
-          }}
-          className={`font-medium text-xs py-2 transition-colors cursor-pointer flex items-center gap-1.5 focus:outline-none active:outline-none ${
-            activeTab === 'home'
-              ? 'text-[#004AC6] font-semibold'
-              : 'text-[#434655] hover:text-[#151c27]'
-          }`}
-        >
-          <span className="material-symbols-outlined text-sm">home</span>
-          <span>Home</span>
-        </a>
+      {/* Navigation Tabs Centered in Topbar with Low-Opacity Blue Rectangle Click Effect */}
+      <nav className="hidden md:flex items-center gap-1 p-1 bg-slate-100/75 border border-slate-200/80 rounded-xl absolute left-1/2 -translate-x-1/2 shadow-2xs">
+        {NAV_ITEMS.map(item => {
+          const active = isTabActive(item.id);
+          const Icon = item.icon;
+          const displayCount = item.id === 'vault' && vaultCount > 0 ? vaultCount : null;
 
-        <a
-          href="/discover"
-          onClick={e => {
-            e.preventDefault();
-            onTabChange('discover');
-          }}
-          className={`font-medium text-xs py-2 transition-colors cursor-pointer flex items-center gap-1.5 focus:outline-none active:outline-none ${
-            activeTab === 'discover'
-              ? 'text-[#004AC6] font-semibold'
-              : 'text-[#434655] hover:text-[#151c27]'
-          }`}
-        >
-          <span className="material-symbols-outlined text-sm">explore</span>
-          <span>Discover</span>
-        </a>
+          return (
+            <button
+              key={item.id}
+              type="button"
+              onClick={() => onTabChange(item.id)}
+              className={`relative px-3 py-1.5 rounded-lg text-xs font-medium transition-colors duration-150 flex items-center gap-1.5 select-none focus:outline-none cursor-pointer active:scale-95 ${
+                active
+                  ? 'text-[#004AC6] font-semibold'
+                  : 'text-slate-600 hover:text-slate-900 hover:bg-slate-200/50'
+              }`}
+            >
+              {/* Selected Low-Opacity Blue Rectangle following the system theme */}
+              {active && (
+                <motion.div
+                  layoutId="travelerTopNavActive"
+                  className="absolute inset-0 bg-[#004AC6]/10 border border-[#004AC6]/20 rounded-lg pointer-events-none"
+                  transition={{ type: 'spring', stiffness: 450, damping: 32 }}
+                />
+              )}
 
-        <a
-          href="/story"
-          onClick={e => {
-            e.preventDefault();
-            onTabChange('story');
-          }}
-          className={`font-medium text-xs py-2 transition-colors cursor-pointer flex items-center gap-1.5 focus:outline-none active:outline-none ${
-            activeTab === 'story'
-              ? 'text-[#004AC6] font-semibold'
-              : 'text-[#434655] hover:text-[#151c27]'
-          }`}
-        >
-          <span className="material-symbols-outlined text-sm">play_circle</span>
-          <span>Story</span>
-        </a>
+              <Icon
+                className={`w-3.5 h-3.5 relative z-10 transition-colors ${
+                  active ? 'text-[#004AC6]' : 'text-slate-500'
+                }`}
+              />
+              <span className="relative z-10">{item.label}</span>
 
-        <a
-          href="/assistant"
-          onClick={e => {
-            e.preventDefault();
-            onTabChange('assistant');
-          }}
-          className={`font-medium text-xs py-2 transition-colors cursor-pointer flex items-center gap-1.5 focus:outline-none active:outline-none ${
-            activeTab === 'assistant'
-              ? 'text-[#004AC6] font-semibold'
-              : 'text-[#434655] hover:text-[#151c27]'
-          }`}
-        >
-          <span className="material-symbols-outlined text-sm text-indigo-600">auto_awesome</span>
-          <span>AI Assistant</span>
-        </a>
-
-        <a
-          href="/builder"
-          onClick={e => {
-            e.preventDefault();
-            onTabChange('builder');
-          }}
-          className={`font-medium text-xs py-2 transition-colors cursor-pointer flex items-center gap-1.5 focus:outline-none active:outline-none ${
-            activeTab === 'builder'
-              ? 'text-[#004AC6] font-semibold'
-              : 'text-[#434655] hover:text-[#151c27]'
-          }`}
-        >
-          <span className="material-symbols-outlined text-sm">dashboard_customize</span>
-          <span>Itinerary Builder</span>
-        </a>
-
-        <a
-          href="/trips"
-          onClick={e => {
-            e.preventDefault();
-            onTabChange('trips');
-          }}
-          className={`font-medium text-xs py-2 transition-colors cursor-pointer flex items-center gap-1.5 focus:outline-none active:outline-none ${
-            activeTab === 'trips' || activeTab === 'bookings'
-              ? 'text-[#004AC6] font-semibold'
-              : 'text-[#434655] hover:text-[#151c27]'
-          }`}
-        >
-          <span className="material-symbols-outlined text-sm">luggage</span>
-          <span>Trips & Bookings</span>
-        </a>
-
-        <a
-          href="/vault"
-          onClick={e => {
-            e.preventDefault();
-            onTabChange('vault');
-          }}
-          className={`font-medium text-xs py-2 transition-colors cursor-pointer flex items-center gap-1.5 focus:outline-none active:outline-none ${
-            activeTab === 'vault'
-              ? 'text-[#004AC6] font-semibold'
-              : 'text-[#434655] hover:text-[#151c27]'
-          }`}
-        >
-          <span className="material-symbols-outlined text-sm">lock</span>
-          <span>Vault</span>
-        </a>
+              {displayCount !== null && (
+                <span
+                  className={`relative z-10 text-[10px] font-bold px-1.5 py-0.5 rounded-full leading-none ${
+                    active
+                      ? 'bg-[#004AC6]/20 text-[#004AC6]'
+                      : 'bg-slate-200 text-slate-700'
+                  }`}
+                >
+                  {displayCount}
+                </span>
+              )}
+            </button>
+          );
+        })}
       </nav>
 
       {/* Trailing Cluster: Notifications + Profile Icon & Dropdown */}
@@ -201,12 +174,12 @@ export const TopNav: React.FC<TopNavProps> = ({
         <div className="flex items-center gap-1 pr-1">
           <button
             onClick={onOpenNotifications}
-            className="relative p-2 rounded-full text-[#434655] hover:bg-[#F0F3FF] transition-colors cursor-pointer"
+            className="relative p-2 rounded-lg text-slate-600 hover:text-slate-900 hover:bg-slate-100 transition-colors cursor-pointer active:scale-95 focus:outline-none"
             title="Notifications"
           >
-            <span className="material-symbols-outlined text-lg">notifications</span>
+            <Bell className="w-4 h-4" />
             {unreadCount > 0 && (
-              <span className="absolute top-1 right-1 w-2 h-2 bg-[#2563EB] rounded-full ring-2 ring-white"></span>
+              <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-[#2563EB] rounded-full ring-2 ring-white"></span>
             )}
           </button>
         </div>
@@ -234,9 +207,7 @@ export const TopNav: React.FC<TopNavProps> = ({
                 {userMembership}
               </span>
             </div>
-            <span className="material-symbols-outlined text-[#737686] text-sm hidden sm:block">
-              expand_more
-            </span>
+            <ChevronDown className="w-3.5 h-3.5 text-[#737686] hidden sm:block group-hover:text-slate-900 transition-colors" />
           </div>
 
           {/* Profile Menu Dropdown */}
@@ -262,7 +233,7 @@ export const TopNav: React.FC<TopNavProps> = ({
                   onClick={handleProfileClick}
                   className="w-full px-4 py-2 text-left text-xs text-[#374151] hover:bg-[#F0F3FF] hover:text-[#004AC6] flex items-center gap-2.5 cursor-pointer font-medium"
                 >
-                  <span className="material-symbols-outlined text-base text-[#2563EB]">account_circle</span>
+                  <User className="w-4 h-4 text-[#2563EB]" />
                   <span>Open Full Traveler Profile</span>
                 </button>
 
@@ -275,7 +246,7 @@ export const TopNav: React.FC<TopNavProps> = ({
                   }}
                   className="w-full px-4 py-2 text-left text-xs text-[#374151] hover:bg-[#F0F3FF] hover:text-[#004AC6] flex items-center gap-2.5 cursor-pointer font-medium"
                 >
-                  <span className="material-symbols-outlined text-base text-[#737686]">luggage</span>
+                  <Briefcase className="w-4 h-4 text-[#737686]" />
                   <span>Active Circuit & Bookings</span>
                 </a>
 
@@ -288,7 +259,7 @@ export const TopNav: React.FC<TopNavProps> = ({
                   }}
                   className="w-full px-4 py-2 text-left text-xs text-[#374151] hover:bg-[#F0F3FF] hover:text-[#004AC6] flex items-center gap-2.5 cursor-pointer font-medium"
                 >
-                  <span className="material-symbols-outlined text-base text-[#737686]">lock</span>
+                  <ShieldCheck className="w-4 h-4 text-[#737686]" />
                   <span>Travel Vault ({vaultCount} Document{vaultCount === 1 ? '' : 's'})</span>
                 </a>
 
@@ -302,7 +273,7 @@ export const TopNav: React.FC<TopNavProps> = ({
                     }}
                     className="w-full px-4 py-2 text-left text-xs text-[#374151] hover:bg-[#F0F3FF] hover:text-[#004AC6] flex items-center gap-2.5 cursor-pointer font-medium"
                   >
-                    <span className="material-symbols-outlined text-base text-[#737686]">home</span>
+                    <ExternalLink className="w-4 h-4 text-[#737686]" />
                     <span>Bookit Landing Page</span>
                   </a>
                 )}
@@ -317,7 +288,7 @@ export const TopNav: React.FC<TopNavProps> = ({
                     }}
                     className="w-full px-4 py-2 text-left text-xs text-rose-600 hover:bg-rose-50 flex items-center gap-2.5 cursor-pointer font-medium"
                   >
-                    <span className="material-symbols-outlined text-base">logout</span>
+                    <LogOut className="w-4 h-4 text-rose-500" />
                     <span>Sign Out</span>
                   </button>
                 </div>

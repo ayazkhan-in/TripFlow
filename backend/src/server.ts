@@ -14,6 +14,7 @@ import operatorRoutes from './routes/operator.routes.js';
 import mediaRoutes from './routes/media.routes.js';
 import assistantRoutes from './routes/assistant.routes.js';
 import digitalTwinRoutes from './routes/digitalTwin.routes.js';
+import { isGeminiConfigured, hasBackupGeminiKey, geminiClients } from './config/gemini.js';
 
 process.on('uncaughtException', (err) => {
   console.error('Uncaught Exception:', err);
@@ -36,7 +37,9 @@ app.get(['/', '/health', '/api/health', '/api/v1/health'], (_req, res) => {
     status: 'ok',
     service: 'TripFlow Backend API',
     database: 'Neon PostgreSQL Connected',
-    geminiConfigured: Boolean(process.env.GEMINI_API_KEY),
+    geminiConfigured: isGeminiConfigured,
+    geminiKeysActive: geminiClients.length,
+    geminiBackupConfigured: hasBackupGeminiKey,
     cloudinaryConfigured: Boolean(process.env.CLOUDINARY_API_KEY),
     timestamp: new Date().toISOString(),
   });
@@ -75,7 +78,7 @@ if (!process.env.VERCEL) {
   const server = app.listen(PORT, '0.0.0.0', () => {
     console.log(`🚀 TripFlow Backend running on http://localhost:${PORT}`);
     console.log(`📦 Database: Neon PostgreSQL Connected`);
-    console.log(`✨ AI Services: Gemini Flash Optical Vision & Trip Planner Active`);
+    console.log(`✨ AI Services: Gemini Flash Optical Vision & Trip Planner Active (${geminiClients.length} key${geminiClients.length === 1 ? '' : 's'}${hasBackupGeminiKey ? ' · spare key failover enabled' : ''})`);
   });
 
   server.on('error', (err: any) => {

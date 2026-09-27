@@ -1,21 +1,8 @@
 import { Router, Request, Response } from 'express';
-import { GoogleGenAI } from '@google/genai';
 import { prisma } from '../config/db.js';
+import { generateContentWithFailover, isGeminiConfigured } from '../config/gemini.js';
 
 const router = Router();
-const apiKey = process.env.GEMINI_API_KEY;
-let aiClient: GoogleGenAI | null = null;
-
-if (apiKey) {
-  aiClient = new GoogleGenAI({
-    apiKey,
-    httpOptions: {
-      headers: {
-        'User-Agent': 'tripflow-backend',
-      },
-    },
-  });
-}
 
 // GET /api/v1/discover/premade - Get all premade circuits
 router.get('/premade', async (_req: Request, res: Response) => {
@@ -122,7 +109,7 @@ router.post('/ai-generate', async (req: Request, res: Response) => {
       return res.status(400).json({ error: 'Destination is required' });
     }
 
-    if (aiClient) {
+    if (isGeminiConfigured) {
       try {
         const prompt = `You are the lead travel concierge director at TripFlow luxury travel platform.
 Create a rich, verified ${days}-day luxury travel itinerary for:
@@ -173,10 +160,10 @@ Return a strict, valid JSON object without markdown fences, matching this struct
   ]
 }`;
 
-        const geminiRes = await aiClient.models.generateContent({
+        const geminiRes = await generateContentWithFailover({
           model: 'gemini-2.5-flash',
           contents: [{ role: 'user', parts: [{ text: prompt }] }],
-        });
+        }, { callerContext: 'Discover Itinerary Generator' });
 
         const rawText = geminiRes.text || '';
         const jsonMatch = rawText.match(/\{[\s\S]*\}/);
@@ -185,7 +172,7 @@ Return a strict, valid JSON object without markdown fences, matching this struct
           return res.json({ success: true, aiGenerated: true, itinerary: generatedPlan });
         }
       } catch (geminiErr) {
-        console.warn('Gemini API call failed, falling back to heuristic builder:', geminiErr);
+        console.warn('Gemini API call failed across all configured keys, falling back to heuristic builder:', geminiErr);
       }
     }
 

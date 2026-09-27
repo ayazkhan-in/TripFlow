@@ -12,19 +12,70 @@ const app = express();
 const PORT = Number(process.env.PORT) || 3000;
 
 
-// Initialize GoogleGenAI if key is present
-const apiKey = process.env.GEMINI_API_KEY;
-let aiClient: GoogleGenAI | null = null;
+// Initialize GoogleGenAI clients with spare / backup key failover support
+function resolveFrontendGeminiKeys() {
+  const keys: { label: string; key: string }[] = [];
+  const seen = new Set<string>();
 
-if (apiKey) {
-  aiClient = new GoogleGenAI({
-    apiKey,
+  const add = (label: string, raw?: string) => {
+    if (!raw) return;
+    const clean = raw.trim().replace(/^["']|["']$/g, '');
+    if (clean && !seen.has(clean)) {
+      seen.add(clean);
+      keys.push({ label, key: clean });
+    }
+  };
+
+  add('Primary Key', process.env.GEMINI_API_KEY);
+  add('Backup Key 1', process.env.GEMINI_API_KEY_BACKUP);
+  add('Backup Key 2', process.env.GEMINI_BACKUP_API_KEY);
+  add('Spare Key', process.env.GEMINI_API_KEY_SPARE);
+  add('Spare Key Alias', process.env.GEMINI_SPARE_API_KEY);
+
+  if (process.env.GEMINI_API_KEYS) {
+    process.env.GEMINI_API_KEYS.split(',').forEach((k, i) => add(`Additional Key #${i + 1}`, k));
+  }
+  return keys;
+}
+
+const geminiClientEntries = resolveFrontendGeminiKeys().map(({ label, key }) => ({
+  label,
+  client: new GoogleGenAI({
+    apiKey: key,
     httpOptions: {
       headers: {
         'User-Agent': 'aistudio-build',
       },
     },
-  });
+  }),
+}));
+
+async function executeFrontendGeminiFailover<T>(
+  operation: (client: GoogleGenAI, label: string) => Promise<T>,
+  callerTag: string
+): Promise<T> {
+  if (geminiClientEntries.length === 0) {
+    throw new Error(`[${callerTag}] No Gemini API key configured.`);
+  }
+
+  let lastError: any = null;
+  for (let i = 0; i < geminiClientEntries.length; i++) {
+    const entry = geminiClientEntries[i];
+    try {
+      const result = await operation(entry.client, entry.label);
+      if (i > 0) {
+        console.log(`✨ [${callerTag}] Recovered successfully with spare key (${entry.label})`);
+      }
+      return result;
+    } catch (err: any) {
+      lastError = err;
+      console.warn(`⚠️ [${callerTag}] Key #${i + 1} (${entry.label}) failed: ${err?.message || err}`);
+      if (i + 1 < geminiClientEntries.length) {
+        console.info(`🔄 [${callerTag}] Switching to spare key (${geminiClientEntries[i + 1].label})...`);
+      }
+    }
+  }
+  throw lastError || new Error(`[${callerTag}] All Gemini API keys failed.`);
 }
 
 
@@ -38,24 +89,25 @@ app.post('/api/classify-document', express.json({ limit: '25mb' }), async (req, 
       return res.status(400).json({ error: 'Missing document image data' });
     }
 
-    if (aiClient && imageBase64) {
+    if (geminiClientEntries.length > 0 && imageBase64) {
       // Strip base64 prefix if present
       const base64Data = imageBase64.replace(/^data:[a-zA-Z0-9\/+-]+;base64,/, '');
 
-      const response = await aiClient.models.generateContent({
-        model: 'gemini-3.8-flash',
-        contents: [
-          {
-            role: 'user',
-            parts: [
-              {
-                inlineData: {
-                  mimeType,
-                  data: base64Data,
+      const response = await executeFrontendGeminiFailover((client) =>
+        client.models.generateContent({
+          model: 'gemini-3.8-flash',
+          contents: [
+            {
+              role: 'user',
+              parts: [
+                {
+                  inlineData: {
+                    mimeType,
+                    data: base64Data,
+                  },
                 },
-              },
-              {
-                text: `You are an expert travel document classification AI for luxury travel concierge platform TripFlow.
+                {
+                  text: `You are an expert travel document classification AI for luxury travel concierge platform TripFlow.
 Analyze the attached document capture carefully.
 Classify it into EXACTLY ONE of these categories:
 - 'passport' (Personal or biometric passport)
@@ -87,11 +139,13 @@ Extract key fields accurately. Return a JSON object with this EXACT structure (v
   },
   "notes": "Concise summary of document contents and validity."
 }`,
-              },
-            ],
-          },
-        ],
-      });
+                },
+              ],
+            },
+          ],
+        }),
+        'Frontend Document Scanner'
+      );
 
       const responseText = response.text?.trim() || '';
       const jsonMatch = responseText.match(/\{[\s\S]*\}/);
@@ -118,7 +172,7 @@ app.post('/api/itinerary-ai', express.json({ limit: '25mb' }), async (req, res) 
       return res.status(400).json({ error: 'Prompt is required' });
     }
 
-    if (aiClient) {
+    if (geminiClientEntries.length > 0) {
       const systemInstruction = `You are TripFlow AI, an intelligent luxury travel concierge and itinerary architect.
 The user wants to modify their day-based itinerary via natural language.
 Analyze the current itinerary and the user request: "${prompt}".
@@ -132,19 +186,22 @@ Return a strict JSON object with:
 }
 Do not wrap in markdown quotes if possible, output pure JSON.`;
 
-      const response = await aiClient.models.generateContent({
-        model: 'gemini-3.8-flash',
-        contents: [
-          {
-            role: 'user',
-            parts: [
-              {
-                text: `${systemInstruction}\n\nCURRENT ITINERARY:\n${JSON.stringify(currentItinerary, null, 2)}\n\nAVAILABLE CATALOG ITEMS FOR INSPIRATION:\n${JSON.stringify((catalog || []).slice(0, 15), null, 2)}\n\nUSER PROMPT: ${prompt}`,
-              },
-            ],
-          },
-        ],
-      });
+      const response = await executeFrontendGeminiFailover((client) =>
+        client.models.generateContent({
+          model: 'gemini-3.8-flash',
+          contents: [
+            {
+              role: 'user',
+              parts: [
+                {
+                  text: `${systemInstruction}\n\nCURRENT ITINERARY:\n${JSON.stringify(currentItinerary, null, 2)}\n\nAVAILABLE CATALOG ITEMS FOR INSPIRATION:\n${JSON.stringify((catalog || []).slice(0, 15), null, 2)}\n\nUSER PROMPT: ${prompt}`,
+                },
+              ],
+            },
+          ],
+        }),
+        'Frontend Itinerary AI'
+      );
 
       const responseText = response.text || '';
       const jsonMatch = responseText.match(/\{[\s\S]*\}/);

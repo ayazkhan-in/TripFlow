@@ -64,13 +64,6 @@ export const QuestionnaireSkeleton: React.FC<{ destination?: string }> = ({
           <Skeleton className="w-6 h-1.5 rounded-full" />
           <Skeleton className="w-6 h-1.5 rounded-full" />
           <Skeleton className="w-6 h-1.5 rounded-full" />
-          <Skeleton className="w-6 h-1.5 rounded-full" />
-        </div>
-
-        {/* Powered by Gemini badge skeleton */}
-        <div className="flex items-center gap-2 px-3 py-1.5 bg-white border border-slate-200 rounded-full">
-          <Skeleton className="w-4 h-4 rounded-full" />
-          <Skeleton className="w-28 h-3" />
         </div>
       </div>
 

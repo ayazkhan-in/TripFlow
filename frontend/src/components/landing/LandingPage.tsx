@@ -18,6 +18,7 @@ interface LandingPageProps {
   onExploreDemo: () => void;
   onExploreOps: () => void;
   onOpenBuilder?: () => void;
+  animateHero?: boolean;
 }
 
 export const LandingPage: React.FC<LandingPageProps> = ({
@@ -25,6 +26,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({
   onExploreDemo,
   onExploreOps,
   onOpenBuilder,
+  animateHero = true,
 }) => {
   const [activeFaq, setActiveFaq] = useState<number | null>(null);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -35,11 +37,13 @@ export const LandingPage: React.FC<LandingPageProps> = ({
     if (video) {
       video.defaultMuted = true;
       video.muted = true;
-      video.play().catch(err => {
-        console.warn('Video autoPlay prevented:', err);
-      });
+      if (animateHero) {
+        video.play().catch(err => {
+          console.warn('Video autoPlay prevented:', err);
+        });
+      }
     }
-  }, []);
+  }, [animateHero]);
 
   const toggleFaq = (index: number) => {
     setActiveFaq(activeFaq === index ? null : index);
@@ -52,22 +56,34 @@ export const LandingPage: React.FC<LandingPageProps> = ({
       {/* ------------------------------------------------------------- */}
       <section className="relative min-h-screen flex flex-col justify-between text-white overflow-hidden isolate font-sans">
         {/* Background Media with Hero Video */}
-        <div className="absolute inset-0 pointer-events-none overflow-hidden select-none z-0">
+        <motion.div
+          initial={{ opacity: 0, scale: 1.05 }}
+          animate={animateHero ? { opacity: 1, scale: 1 } : { opacity: 0, scale: 1.05 }}
+          transition={{ duration: 1.1, ease: [0.22, 1, 0.36, 1] }}
+          className="absolute inset-0 pointer-events-none overflow-hidden select-none z-0"
+        >
           <video
             ref={videoRef}
             autoPlay
             loop
             muted
             playsInline
+            preload="auto"
+            poster="/hero.jpg"
             className="w-full h-full object-cover object-center"
           >
-            <source src="/hero4k.mp4" type="video/mp4" />
             <source src="/hero2.webm" type="video/webm" />
+            <source src="/hero4k.mp4" type="video/mp4" />
           </video>
-        </div>
+        </motion.div>
 
         {/* TOP: Floating Transparent Navigation Header */}
-        <header className="relative z-30 w-full px-4 sm:px-12 lg:px-16 py-6 sm:py-8 flex items-center justify-between select-none">
+        <motion.header
+          initial={{ opacity: 0, y: -16 }}
+          animate={animateHero ? { opacity: 1, y: 0 } : { opacity: 0, y: -16 }}
+          transition={{ duration: 0.6, delay: 0.12, ease: [0.22, 1, 0.36, 1] }}
+          className="relative z-30 w-full px-4 sm:px-12 lg:px-16 py-6 sm:py-8 flex items-center justify-between select-none"
+        >
           {/* Brand Anchor on Left (Matching DOLANAN style) */}
           <div className="flex items-center gap-2.5 text-xl sm:text-2xl font-black tracking-wider text-black uppercase select-none">
             <img src="/bookit-white.png" alt="Bookit" className="w-8 h-8 sm:w-9 sm:h-9 object-contain" />
@@ -205,30 +221,32 @@ export const LandingPage: React.FC<LandingPageProps> = ({
               </div>
             </div>
           )}
-        </header>
+        </motion.header>
 
         {/* MIDDLE: Left-Aligned Large Display Headline & Get Started Button */}
         <div className="relative z-20 px-4 sm:px-12 lg:px-16 my-auto py-8 sm:py-12 max-w-4xl text-left">
           <WordByWordBlurText
             text="Personalized Luxury Journeys."
             as="h1"
-            delay={0.12}
-            staggerDuration={0.14}
+            delay={0.16}
+            staggerDuration={0.12}
+            animate={animateHero}
             className="text-4xl sm:text-6xl lg:text-[5.5rem] font-bold text-white tracking-tight leading-[1.04] drop-shadow-[0_2px_12px_rgba(0,0,0,0.6)]"
           />
 
           <WordByWordBlurText
             text="Bespoke, hand-crafted private itineraries that automatically adapt to flight delays, weather shifts, and chauffeur tracking in real time."
             as="p"
-            delay={0.65}
-            staggerDuration={0.035}
+            delay={0.55}
+            staggerDuration={0.03}
+            animate={animateHero}
             className="text-base sm:text-lg text-white/95 leading-relaxed max-w-xl mt-5 font-normal drop-shadow-[0_1px_8px_rgba(0,0,0,0.6)]"
           />
 
           <motion.div
             initial={{ opacity: 0, y: 20, filter: 'blur(10px)' }}
-            animate={{ opacity: 1, y: 0, filter: 'blur(0px)' }}
-            transition={{ delay: 1.15, duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
+            animate={animateHero ? { opacity: 1, y: 0, filter: 'blur(0px)' } : { opacity: 0, y: 20, filter: 'blur(10px)' }}
+            transition={{ delay: 0.95, duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
             className="pt-6"
           >
             <motion.button
@@ -252,8 +270,8 @@ export const LandingPage: React.FC<LandingPageProps> = ({
         {/* BOTTOM: Social Proof Avatars & Category Pills */}
         <motion.div
           initial={{ opacity: 0, y: 20, filter: 'blur(10px)' }}
-          animate={{ opacity: 1, y: 0, filter: 'blur(0px)' }}
-          transition={{ delay: 1.3, duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
+          animate={animateHero ? { opacity: 1, y: 0, filter: 'blur(0px)' } : { opacity: 0, y: 20, filter: 'blur(10px)' }}
+          transition={{ delay: 1.15, duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
           className="relative z-20 px-4 sm:px-12 lg:px-16 pb-8 sm:pb-10 pt-4 flex flex-col sm:flex-row items-start sm:items-end justify-between gap-6"
         >
           {/* Bottom Left: Avatar Stack */}
