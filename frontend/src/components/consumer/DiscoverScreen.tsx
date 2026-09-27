@@ -24,7 +24,7 @@ import {
 import { addCustomCatalogItems } from '../../data/itineraryData';
 import { formatCurrency } from '../../utils/pricing';
 import { USER_AVATAR } from '../../data/mockData';
-import { DEPARTURE_CITIES, DepartureCity, findValidDestination, VALID_DESTINATIONS, TravelDestination } from '../../data/citiesData';
+import { DEPARTURE_CITIES, DepartureCity, findValidDestination, resolveDestinationOrCountry, VALID_DESTINATIONS, TravelDestination } from '../../data/citiesData';
 import { LuxuryCard } from '../common/LuxuryCard';
 import { getPackageAmenities } from '../../data/operatorPackagesData';
 import { WordByWordBlurText, BlurFadeCard } from '../ui/MotionComponents';
@@ -561,14 +561,13 @@ export const DiscoverScreen: React.FC<DiscoverScreenProps> = ({
       return;
     }
 
-    // STRICT VALIDATION: Ensure user input references a valid travel destination without guessing
-    const validDest = findValidDestination(raw);
-    if (!validDest) {
-      // Trigger real-time alert popup and stop processing immediately
+    // Universal validation: Allow any city or country
+    const resolution = resolveDestinationOrCountry(raw);
+    if (resolution.kind === 'invalid') {
       setInvalidPromptModal({
         isOpen: true,
         rawInput: raw,
-        message: `We couldn't find a valid travel destination for "${raw}". Please specify a city or region you want to visit so our AI can plan without guessing.`,
+        message: resolution.message,
       });
       return;
     }
@@ -576,13 +575,21 @@ export const DiscoverScreen: React.FC<DiscoverScreenProps> = ({
     const originLabel = `${selectedCity.name} (${selectedCity.iataCode})`;
     const finalPrompt = `${raw} (Departing from ${originLabel})`;
 
-    // Also update aiDetails originCity & destination
-    setAiDetails(prev => ({
-      ...prev,
-      destination: validDest.name,
-      country: validDest.country,
-      originCity: originLabel,
-    }));
+    if (resolution.kind === 'city') {
+      setAiDetails(prev => ({
+        ...prev,
+        destination: resolution.destination.name,
+        country: resolution.destination.country,
+        originCity: originLabel,
+      }));
+    } else if (resolution.kind === 'country') {
+      setAiDetails(prev => ({
+        ...prev,
+        destination: '',
+        country: resolution.country,
+        originCity: originLabel,
+      }));
+    }
 
     // Instantly navigate to the AI Assistant page with the prompt
     if (onOpenAssistantWithPrompt) {

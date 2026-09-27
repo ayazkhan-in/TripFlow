@@ -126,9 +126,9 @@ const SAMPLE_SCAN_PRESETS: SampleScanPreset[] = [
     documentNumber: 'Policy #AZ-99420-KL',
     issueDate: 'Oct 02, 2025',
     expiryDate: 'Oct 25, 2025',
-    notes: '$500,000 Zero-deductible medical and flight delay reimbursement.',
+    notes: '₹4.25 Cr Zero-deductible medical and flight delay reimbursement.',
     fields: {
-      'Coverage Limit': '$500,000 USD (Cashless Admission)',
+      'Coverage Limit': '₹4,25,00,000 (Cashless Admission)',
       'SOS Hotline': '+1 (800) 555-0199 / +91 124 434 5000',
       'Hospital Partner': 'Aster Medcity Kochi Pre-Approved',
     },

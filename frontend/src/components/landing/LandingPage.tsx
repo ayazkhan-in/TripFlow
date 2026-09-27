@@ -69,7 +69,6 @@ export const LandingPage: React.FC<LandingPageProps> = ({
             muted
             playsInline
             preload="auto"
-            poster="/hero.jpg"
             className="w-full h-full object-cover object-center"
           >
             <source src="/hero2.webm" type="video/webm" />
@@ -836,7 +835,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({
                 Insurance & Emergency Fast-Dial
               </h3>
               <p className="text-xs sm:text-sm text-[#4B5563] leading-relaxed">
-                Comprehensive Allianz $500k medical travel policy certificates, 1-tap dialer for Aster Medcity
+                Comprehensive Allianz ₹4.25 Cr medical travel policy certificates, 1-tap dialer for Aster Medcity
                 trauma hospital, regional tourist police, and your assigned 24/7 concierge.
               </p>
             </div>

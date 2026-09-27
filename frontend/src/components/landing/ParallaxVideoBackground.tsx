@@ -2,7 +2,7 @@ import React, { useEffect, useRef, useState } from 'react';
 
 interface ParallaxVideoBackgroundProps {
   videoSrc: string;
-  posterSrc: string;
+  posterSrc?: string;
   speed?: number; // Parallax speed multiplier (default: 0.35)
   overlayClassName?: string;
   className?: string;
@@ -115,12 +115,6 @@ export const ParallaxVideoBackground: React.FC<ParallaxVideoBackgroundProps> = (
       >
         <source src={videoSrc} type="video/mp4" />
       </video>
-
-      {/* Fallback image layer behind in case of network throttle */}
-      <div
-        className="absolute inset-0 bg-cover bg-center -z-10 opacity-70"
-        style={{ backgroundImage: `url(${posterSrc})` }}
-      />
 
       {/* Custom gradient overlays for contrast and luxury typography readability */}
       {overlayClassName && <div className={`absolute inset-0 ${overlayClassName}`} />}

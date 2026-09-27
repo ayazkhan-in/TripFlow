@@ -200,7 +200,7 @@ export const CardDetailOverlay: React.FC<CardDetailOverlayProps> = ({
                 </div>
                 <div>
                   <label className="block text-[10px] font-semibold text-neutral-500 uppercase">
-                    Price ($)
+                    Price (₹)
                   </label>
                   <input
                     type="number"

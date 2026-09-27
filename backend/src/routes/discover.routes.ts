@@ -116,7 +116,7 @@ Create a rich, verified ${days}-day luxury travel itinerary for:
 - Starting Origin / Departure City: ${originCity}
 - Target Destination: ${destination} (${subLocations || ''})
 - Style: ${travelStyle}
-- Budget per person: $${budget} USD
+- Budget per person: ₹${budget} INR
 - Group size: ${travelers} travelers
 - Interests: ${interests.join(', ')}
 - Ensure Day 1 starts with a realistic flight/transit departing from ${originCity} to ${destination}.
@@ -129,7 +129,7 @@ Return a strict, valid JSON object without markdown fences, matching this struct
   "dates": "${days} Days · Personalized Circuit",
   "startDate": "${startDate}",
   "travelers": ${travelers},
-  "currency": "USD",
+  "currency": "INR",
   "totalPrice": ${budget},
   "heroImage": "High quality Unsplash image URL relevant to destination",
   "routeStops": [
@@ -184,7 +184,7 @@ Return a strict, valid JSON object without markdown fences, matching this struct
       dates: `${days} Days · Personalized Circuit`,
       startDate,
       travelers,
-      currency: 'USD',
+      currency: 'INR',
       totalPrice: budget,
       heroImage: 'https://images.unsplash.com/photo-1507525428034-b723cf961d3e?auto=format&fit=crop&w=1200&q=80',
       routeStops: [

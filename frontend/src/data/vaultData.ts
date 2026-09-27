@@ -242,9 +242,9 @@ export const INITIAL_VAULT_DOCUMENTS: VaultDocument[] = [
     verifiedBy: 'Allianz Global Assistance',
     offlineReady: true,
     fields: {
-      'Emergency Medical Cover': '$500,000 USD (Zero Deductible)',
-      'Trip Interruption / Delay': 'Up to $15,000 USD',
-      'Lost / Delayed Luggage': '$3,500 USD',
+      'Emergency Medical Cover': '₹4,25,00,000 (Zero Deductible)',
+      'Trip Interruption / Delay': 'Up to ₹12,50,000',
+      'Lost / Delayed Luggage': '₹3,00,000',
       '24/7 Global SOS Line': '+1 (800) 555-0199 / +91 124 434 5000',
     },
     notes: 'Includes full cashless admission at Aster Medcity Kochi and all major regional specialty hospitals.',

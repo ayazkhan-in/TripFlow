@@ -139,7 +139,7 @@ export const CustomItemModal: React.FC<CustomItemModalProps> = ({
 
           <div className="grid grid-cols-3 gap-2">
             <div>
-              <label className="block text-xs font-semibold text-slate-700 mb-1">Price ($)</label>
+              <label className="block text-xs font-semibold text-slate-700 mb-1">Price (₹)</label>
               <input
                 type="number"
                 min="0"

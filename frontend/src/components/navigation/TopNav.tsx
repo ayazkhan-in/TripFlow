@@ -33,6 +33,7 @@ interface TopNavProps {
 interface NavItem {
   id: ConsumerTab;
   label: string;
+  compactLabel?: string;
   icon: React.ComponentType<{ className?: string }>;
 }
 
@@ -40,9 +41,9 @@ const NAV_ITEMS: NavItem[] = [
   { id: 'home', label: 'Home', icon: Home },
   { id: 'discover', label: 'Discover', icon: Compass },
   { id: 'story', label: 'Story', icon: PlayCircle },
-  { id: 'assistant', label: 'AI Assistant', icon: Sparkles },
-  { id: 'builder', label: 'Itinerary Builder', icon: Route },
-  { id: 'trips', label: 'Trips & Bookings', icon: Briefcase },
+  { id: 'assistant', label: 'AI Assistant', compactLabel: 'Assistant', icon: Sparkles },
+  { id: 'builder', label: 'Itinerary Builder', compactLabel: 'Builder', icon: Route },
+  { id: 'trips', label: 'Trips & Bookings', compactLabel: 'Trips', icon: Briefcase },
   { id: 'vault', label: 'Vault', icon: ShieldCheck },
 ];
 
@@ -91,7 +92,7 @@ export const TopNav: React.FC<TopNavProps> = ({
   };
 
   return (
-    <header className="relative bg-white/95 backdrop-blur-md border-b border-[#E5E7EB] shadow-xs flex justify-between items-center w-full px-4 sm:px-6 h-14 pt-[env(safe-area-inset-top,0px)] sticky top-0 z-40 max-w-full select-none">
+    <header className="relative bg-white/95 backdrop-blur-md border-b border-[#E5E7EB] shadow-xs flex justify-between items-center w-full px-3 sm:px-6 h-14 min-h-[3.5rem] pt-[env(safe-area-inset-top,0px)] sticky top-0 z-40 max-w-full select-none">
       {/* Brand Anchor on Left */}
       <div className="flex items-center shrink-0">
         <a
@@ -119,7 +120,7 @@ export const TopNav: React.FC<TopNavProps> = ({
       </div>
 
       {/* Navigation Tabs Centered in Topbar with Low-Opacity Blue Rectangle Click Effect */}
-      <nav className="hidden md:flex items-center gap-1 p-1 bg-slate-100/75 border border-slate-200/80 rounded-xl absolute left-1/2 -translate-x-1/2 shadow-2xs">
+      <nav className="hidden md:flex items-center gap-0.5 xl:gap-1 p-1 bg-slate-100/75 border border-slate-200/80 rounded-xl shadow-2xs xl:absolute xl:left-1/2 xl:-translate-x-1/2 shrink-0">
         {NAV_ITEMS.map(item => {
           const active = isTabActive(item.id);
           const Icon = item.icon;
@@ -130,7 +131,7 @@ export const TopNav: React.FC<TopNavProps> = ({
               key={item.id}
               type="button"
               onClick={() => onTabChange(item.id)}
-              className={`relative px-3 py-1.5 rounded-lg text-xs font-medium transition-colors duration-150 flex items-center gap-1.5 select-none focus:outline-none cursor-pointer active:scale-95 ${
+              className={`relative px-2.5 xl:px-3 py-1.5 rounded-lg text-xs font-medium transition-colors duration-150 flex items-center gap-1.5 select-none focus:outline-none cursor-pointer active:scale-95 whitespace-nowrap shrink-0 ${
                 active
                   ? 'text-[#004AC6] font-semibold'
                   : 'text-slate-600 hover:text-slate-900 hover:bg-slate-200/50'
@@ -146,15 +147,24 @@ export const TopNav: React.FC<TopNavProps> = ({
               )}
 
               <Icon
-                className={`w-3.5 h-3.5 relative z-10 transition-colors ${
+                className={`w-3.5 h-3.5 relative z-10 transition-colors shrink-0 ${
                   active ? 'text-[#004AC6]' : 'text-slate-500'
                 }`}
               />
-              <span className="relative z-10">{item.label}</span>
+              <span className="relative z-10 whitespace-nowrap">
+                {item.compactLabel ? (
+                  <>
+                    <span className="hidden xl:inline">{item.label}</span>
+                    <span className="xl:hidden">{item.compactLabel}</span>
+                  </>
+                ) : (
+                  item.label
+                )}
+              </span>
 
               {displayCount !== null && (
                 <span
-                  className={`relative z-10 text-[10px] font-bold px-1.5 py-0.5 rounded-full leading-none ${
+                  className={`relative z-10 text-[10px] font-bold px-1.5 py-0.5 rounded-full leading-none shrink-0 ${
                     active
                       ? 'bg-[#004AC6]/20 text-[#004AC6]'
                       : 'bg-slate-200 text-slate-700'
@@ -169,7 +179,7 @@ export const TopNav: React.FC<TopNavProps> = ({
       </nav>
 
       {/* Trailing Cluster: Notifications + Profile Icon & Dropdown */}
-      <div className="flex items-center gap-2 sm:gap-3">
+      <div className="flex items-center gap-2 sm:gap-3 shrink-0">
         {/* Action Utility Icons */}
         <div className="flex items-center gap-1 pr-1">
           <button
@@ -191,7 +201,7 @@ export const TopNav: React.FC<TopNavProps> = ({
             className="flex items-center gap-2 pl-2 border-l border-[#E5E7EB] cursor-pointer group"
             title="Click to view Traveler Profile"
           >
-            <div className="relative">
+            <div className="relative shrink-0">
               <img
                 alt={userName}
                 className="w-8 h-8 rounded-full object-cover ring-1 ring-[#C3C6D7]/60 group-hover:ring-[#2563EB] transition-all"
@@ -199,7 +209,7 @@ export const TopNav: React.FC<TopNavProps> = ({
               />
               <span className="absolute bottom-0 right-0 w-2.5 h-2.5 bg-emerald-500 rounded-full ring-2 ring-white"></span>
             </div>
-            <div className="hidden sm:flex flex-col text-left">
+            <div className="hidden xl:flex flex-col text-left">
               <span className="text-xs text-[#151c27] font-semibold leading-tight">
                 {userName}
               </span>
@@ -207,7 +217,7 @@ export const TopNav: React.FC<TopNavProps> = ({
                 {userMembership}
               </span>
             </div>
-            <ChevronDown className="w-3.5 h-3.5 text-[#737686] hidden sm:block group-hover:text-slate-900 transition-colors" />
+            <ChevronDown className="w-3.5 h-3.5 text-[#737686] hidden xl:block group-hover:text-slate-900 transition-colors" />
           </div>
 
           {/* Profile Menu Dropdown */}

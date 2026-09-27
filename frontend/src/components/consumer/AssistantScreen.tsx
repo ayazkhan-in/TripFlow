@@ -19,7 +19,7 @@ import {
   QuestionnaireOption,
 } from './InteractiveQuestionnaireCard';
 import { MultiOptionComparisonDeck } from './MultiOptionComparisonDeck';
-import { findValidDestination, VALID_DESTINATIONS, TravelDestination } from '../../data/citiesData';
+import { findValidDestination, resolveDestinationOrCountry, cleanDestinationPrompt, VALID_DESTINATIONS, TravelDestination } from '../../data/citiesData';
 import {
   QuestionnaireSkeleton,
   ProposalDeckSkeleton,
@@ -232,7 +232,11 @@ function buildDefaultQuestionnaire(
     },
   ];
 
-  const questions: QuestionnaireQuestion[] = (clarifyData?.questions && clarifyData.questions.length > 0)
+  const isClarifyDestinationMatching = clarifyData?.destination &&
+    (clarifyData.destination.toLowerCase().includes(destination.toLowerCase()) ||
+     destination.toLowerCase().includes(clarifyData.destination.toLowerCase().split(',')[0].trim()));
+
+  const questions: QuestionnaireQuestion[] = (isClarifyDestinationMatching && clarifyData?.questions && clarifyData.questions.length > 0)
     ? clarifyData.questions
     : fallbackQuestions;
 
@@ -443,6 +447,7 @@ export const AssistantScreen: React.FC<AssistantScreenProps> = ({
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const handledInitialPromptRef = useRef<string | null>(null);
+  const pendingCountryRef = useRef<{ country: string; days?: number; travelers?: number } | null>(null);
 
   // Helper to persist session to Neon PostgreSQL
   const persistSessionToDb = (session: ChatSession) => {
@@ -627,20 +632,18 @@ export const AssistantScreen: React.FC<AssistantScreenProps> = ({
       if (handledInitialPromptRef.current === promptText) return;
       handledInitialPromptRef.current = promptText;
 
-      // Check destination validity
-      const validDest = findValidDestination(promptText);
-      if (!validDest) {
+      const resolution = resolveDestinationOrCountry(promptText);
+      if (resolution.kind === 'invalid') {
         setInvalidModal({
           isOpen: true,
           rawInput: promptText,
-          message: `We couldn't identify a valid travel destination for "${promptText}". Please specify a city or region (e.g. Tokyo, Dubai, Paris, Kerala, New Delhi) to plan without guessing.`,
+          message: resolution.message,
         });
         if (onClearInitialPrompt) onClearInitialPrompt();
         return;
       }
 
       const details = parseInitialPrompt(promptText);
-
       const newSessionId = `session-${Date.now()}`;
       const userMsg: ChatMessage = {
         id: `msg-user-${Date.now()}`,
@@ -649,6 +652,40 @@ export const AssistantScreen: React.FC<AssistantScreenProps> = ({
         text: promptText,
       };
 
+      if (resolution.kind === 'country') {
+        pendingCountryRef.current = {
+          country: resolution.country,
+          days: details.days,
+          travelers: details.travelers,
+        };
+
+        const assistantCountryMsg: ChatMessage = {
+          id: `msg-asst-country-${Date.now()}`,
+          sender: 'assistant',
+          timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+          text: resolution.message,
+          quickReplies: resolution.topCities,
+        };
+
+        const newSession: ChatSession = {
+          id: newSessionId,
+          title: `${resolution.country} Exploration`,
+          destination: resolution.country,
+          updatedAt: 'Just now',
+          messages: [userMsg, assistantCountryMsg],
+        };
+
+        setSessions(prev => [newSession, ...prev]);
+        setActiveSessionId(newSessionId);
+        setInputMessage('');
+        persistSessionToDb(newSession);
+
+        if (onClearInitialPrompt) onClearInitialPrompt();
+        return;
+      }
+
+      // resolution.kind === 'city'
+      const validDest = resolution.destination;
       const newSession: ChatSession = {
         id: newSessionId,
         title: `${validDest.name} Journey`,
@@ -667,7 +704,7 @@ export const AssistantScreen: React.FC<AssistantScreenProps> = ({
       setIsTyping(true);
       setLoadingType('questionnaire');
 
-      TripFlowApi.getAssistantClarification(promptText).then(clarifyData => {
+      TripFlowApi.getAssistantClarification(promptText, validDest.name).then(clarifyData => {
         setIsTyping(false);
         setLoadingType(null);
 
@@ -683,7 +720,7 @@ export const AssistantScreen: React.FC<AssistantScreenProps> = ({
           id: `msg-asst-quest-${Date.now()}`,
           sender: 'assistant',
           timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-          text: `I'd love to curate a bespoke journey to **${questionnaire.destination}** for you! Please answer these preferences so our AI can calibrate flights, stays, and daily plans to your budget:`,
+          text: `Splendid choice! Let's tailor your journey to **${questionnaire.destination}, ${validDest.country}**. Please confirm your travel details and preferences below:`,
           questionnaire,
         };
 
@@ -761,14 +798,15 @@ export const AssistantScreen: React.FC<AssistantScreenProps> = ({
 
     setInputMessage('');
 
-    // STRICT DESTINATION VALIDATION (No guessing game)
-    const validDest = findValidDestination(textToSend);
-    if (!validDest) {
+    // UNIVERSAL DESTINATION & COUNTRY RESOLUTION
+    const resolution = resolveDestinationOrCountry(textToSend);
+
+    if (resolution.kind === 'invalid') {
       // Trigger real-time popup modal
       setInvalidModal({
         isOpen: true,
         rawInput: textToSend,
-        message: `We couldn't identify a valid travel destination for "${textToSend}". Please specify a city or region you want to visit so our AI can plan without guessing.`,
+        message: resolution.message,
       });
 
       // Also append clarification bubble directly into active chat
@@ -783,13 +821,13 @@ export const AssistantScreen: React.FC<AssistantScreenProps> = ({
         id: `msg-asst-clarify-${Date.now()}`,
         sender: 'assistant',
         timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-        text: `I noticed you mentioned **"${textToSend}"**, but I couldn't identify a real travel destination city. Could you please specify which city or country you would like to explore? (e.g. *Tokyo*, *Paris*, *Dubai*, *Kerala*, *New Delhi*, *Turkey*)`,
+        text: `I noticed you mentioned **"${textToSend}"**, but I couldn't identify a real travel destination city or country. Could you please specify which city or country you would like to explore? (e.g. *Tokyo*, *Paris*, *Dubai*, *Kerala*, *Rome*, *Turkey*, *Japan*)`,
         quickReplies: [
           '5 days in Tokyo & Kyoto',
           '7 days in Turkey with Cappadocia',
           '5 days in Dubai luxury',
           '6 days in Kerala backwaters',
-          '4 days in New Delhi heritage',
+          '5 days in Rome & Florence',
         ],
       };
 
@@ -805,14 +843,55 @@ export const AssistantScreen: React.FC<AssistantScreenProps> = ({
       text: textToSend,
     };
 
+    if (resolution.kind === 'country') {
+      const details = parseInitialPrompt(textToSend);
+      pendingCountryRef.current = {
+        country: resolution.country,
+        days: details.days,
+        travelers: details.travelers,
+      };
+
+      const asstCountryMsg: ChatMessage = {
+        id: `msg-asst-country-${Date.now()}`,
+        sender: 'assistant',
+        timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+        text: resolution.message,
+        quickReplies: resolution.topCities,
+      };
+
+      const updated = [...(activeSession?.messages || []), userMsg, asstCountryMsg];
+      updateCurrentSessionMessages(updated, `${resolution.country} Exploration`);
+      return;
+    }
+
+    // resolution.kind === 'city'
+    let validDest = resolution.destination;
+    const details = parseInitialPrompt(textToSend);
+
+    // If there was a pending country context, link it
+    if (pendingCountryRef.current) {
+      if (validDest.country === 'International') {
+        validDest = {
+          ...validDest,
+          country: pendingCountryRef.current.country,
+        };
+      }
+      if (pendingCountryRef.current.days && pendingCountryRef.current.days !== 5 && details.days === 5) {
+        details.days = pendingCountryRef.current.days;
+      }
+      if (pendingCountryRef.current.travelers && details.travelers === 2) {
+        details.travelers = pendingCountryRef.current.travelers;
+      }
+      pendingCountryRef.current = null;
+    }
+
     const updatedMessages = [...(activeSession?.messages || []), userMsg];
     updateCurrentSessionMessages(updatedMessages);
 
     setIsTyping(true);
     setLoadingType('questionnaire');
 
-    const details = parseInitialPrompt(textToSend);
-    const clarifyData = await TripFlowApi.getAssistantClarification(textToSend);
+    const clarifyData = await TripFlowApi.getAssistantClarification(textToSend, validDest.name);
 
     setIsTyping(false);
     setLoadingType(null);
@@ -829,7 +908,7 @@ export const AssistantScreen: React.FC<AssistantScreenProps> = ({
       id: `msg-asst-quest-${Date.now()}`,
       sender: 'assistant',
       timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-      text: `I'd love to curate a bespoke journey to **${questionnaire.destination}** for you! Please answer these preferences so our AI can calibrate flights, stays, and daily plans to your budget:`,
+      text: `Splendid choice! Let's tailor your journey to **${questionnaire.destination}, ${validDest.country}**. Please confirm your travel details and preferences below:`,
       questionnaire,
     };
 
@@ -1333,13 +1412,13 @@ I have calibrated flight routes, luxury accommodations, and private transfers st
                               proposal={msg.proposal}
                               targetBudgetUSD={msg.targetBudgetUSD || msg.proposal.basePriceUSD}
                               selectedFlightId={msg.selectedFlightId || msg.proposal.selectedFlightId}
-                              onSelectFlight={fltId => handleUpdateProposalSelection(msg.id, { selectedFlightId: fltId })}
+                              onSelectFlight={(fltId: string) => handleUpdateProposalSelection(msg.id, { selectedFlightId: fltId })}
                               selectedHotelId={msg.selectedHotelId || msg.proposal.selectedHotelId}
-                              onSelectHotel={htId => handleUpdateProposalSelection(msg.id, { selectedHotelId: htId })}
+                              onSelectHotel={(htId: string) => handleUpdateProposalSelection(msg.id, { selectedHotelId: htId })}
                               selectedTransferId={msg.selectedTransferId || msg.proposal.selectedTransferId}
-                              onSelectTransfer={trId => handleUpdateProposalSelection(msg.id, { selectedTransferId: trId })}
+                              onSelectTransfer={(trId: string) => handleUpdateProposalSelection(msg.id, { selectedTransferId: trId })}
                               selectedActivityIds={msg.selectedActivityIds || []}
-                              onToggleActivity={actId => {
+                              onToggleActivity={(actId: string) => {
                                 const cur = msg.selectedActivityIds || [];
                                 const updated = cur.includes(actId) ? cur.filter(id => id !== actId) : [...cur, actId];
                                 handleUpdateProposalSelection(msg.id, { selectedActivityIds: updated });

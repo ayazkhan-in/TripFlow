@@ -584,7 +584,7 @@ export class TripFlowApi {
   // AI CONCIERGE ASSISTANT WORKFLOW
   // --------------------------------------------------------------------------
 
-  static async getAssistantClarification(prompt: string): Promise<{
+  static async getAssistantClarification(prompt: string, destination?: string): Promise<{
     destination: string;
     days: number;
     travelers: number;
@@ -594,7 +594,7 @@ export class TripFlowApi {
       const res = await fetchWithTimeout(`${API_BASE}/assistant/clarify`, {
         method: 'POST',
         headers: this.getHeaders(),
-        body: JSON.stringify({ prompt }),
+        body: JSON.stringify({ prompt, destination }),
       }, 10000);
       if (!res.ok) {
         if (res.status === 422) {

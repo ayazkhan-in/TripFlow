@@ -233,7 +233,7 @@ router.post('/checkout', optionalAuth, async (req: AuthenticatedRequest, res: Re
         duration: `${itinerary.days?.length || 5} Days`,
         travelers: Number(itinerary.travelers || 2),
         totalPrice: Number(totalPrice),
-        currency: 'USD',
+        currency: 'INR',
         status: 'CONFIRMED',
         heroImageUrl:
           itinerary.heroImage ||
@@ -253,7 +253,7 @@ router.post('/checkout', optionalAuth, async (req: AuthenticatedRequest, res: Re
                 : 'Stripe / Amex Concierge Checkout',
             type: 'inbound',
             amount: Number(paymentDetails?.amountPaid || totalPrice),
-            currency: 'USD',
+            currency: 'INR',
             status: 'SETTLED',
             paymentMethod: paymentMethod || 'Amex Concierge Card',
             description: `Payment confirmed for ${itinerary.title} (${paymentDetails?.type || 'full'})`,

@@ -89,7 +89,7 @@ model TripItinerary {
   dates           String
   startDate       DateTime
   travelers       Int             @default(2)
-  currency        String          @default("USD")
+  currency        String          @default("INR")
   totalPrice      Decimal         @db.Decimal(12, 2)
   heroImageUrl    String?
   isPremade       Boolean         @default(false)
@@ -179,7 +179,7 @@ model BookedTrip {
   duration        String
   travelers       Int
   totalPrice      Decimal         @db.Decimal(12, 2)
-  currency        String          @default("USD")
+  currency        String          @default("INR")
   operatorId      String?
   status          TripStatus      @default(CONFIRMED)
   bookedAt        DateTime        @default(now())
@@ -345,7 +345,7 @@ model PaymentTransaction {
   party           String
   type            String          // inbound | outbound | escrow
   amount          Decimal         @db.Decimal(12, 2)
-  currency        String          @default("USD")
+  currency        String          @default("INR")
   status          PaymentStatus   @default(SETTLED)
   paymentMethod   String
   description     String

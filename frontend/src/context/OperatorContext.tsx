@@ -305,7 +305,7 @@ export const OperatorProvider: React.FC<{ children: React.ReactNode }> = ({ chil
               party: t.party,
               type: (t.type === 'outbound' || t.type === 'escrow') ? t.type : 'inbound',
               amount: Number(t.amount || 0),
-              currency: t.currency || 'USD',
+              currency: t.currency || 'INR',
               status: t.status === 'SETTLED' ? 'Settled' : 'Processing',
               date: new Date(t.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
               paymentMethod: t.paymentMethod,

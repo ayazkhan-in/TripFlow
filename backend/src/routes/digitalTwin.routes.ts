@@ -483,8 +483,8 @@ router.post('/simulate', async (req: Request, res: Response) => {
       90,
       Math.round((transitDelayMins > 60 ? 50 + (transitDelayMins - 60) * 0.6 : 10))
     );
-    const estimatedFinancialRiskUsd = Math.round(
-      transitDelayMins * 14 + outdoorAttractionClosurePct * 12 + hotelLobbyBacklogPct * 8
+    const estimatedFinancialRiskInr = Math.round(
+      (transitDelayMins * 14 + outdoorAttractionClosurePct * 12 + hotelLobbyBacklogPct * 8) * 85
     );
 
     // Ecosystem resilience health score (0-100)
@@ -650,10 +650,10 @@ router.post('/simulate', async (req: Request, res: Response) => {
         order: 3,
         title: 'Guest Itinerary CSAT Exposure',
         affectedDomain: 'revenue' as const,
-        description: `Projected financial buffer of ~$${estimatedFinancialRiskUsd.toLocaleString()} in proactive dining/spa credits to safeguard guest satisfaction.`,
+        description: `Projected financial buffer of ~₹${estimatedFinancialRiskInr.toLocaleString('en-IN')} in proactive dining/spa credits to safeguard guest satisfaction.`,
         probability: 0.79,
         uncertaintyRange: '±10%',
-        severity: estimatedFinancialRiskUsd > 1000 ? 'high' as const : 'low' as const,
+        severity: estimatedFinancialRiskInr > 80000 ? 'high' as const : 'low' as const,
         mitigationAction: 'Push complimentary spa credits and personalized update to traveler concierge',
       },
     ];
@@ -725,7 +725,7 @@ Write a 2-sentence crisp, operational briefing explaining:
       ecosystemHealth,
       riskLevel,
       aggregateDelaysMinutes: transitDelayMins,
-      financialRiskEstimate: estimatedFinancialRiskUsd,
+      financialRiskEstimate: estimatedFinancialRiskInr,
       entitiesAffectedCount: entities.filter(e => e.simulatedState.status !== 'optimal').length,
       totalEntitiesTracked: entities.length,
       entities,

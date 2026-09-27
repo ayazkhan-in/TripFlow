@@ -114,7 +114,7 @@ export const PaymentOverlayModal: React.FC<PaymentOverlayModalProps> = ({
     const nextSize = Math.max(2, Math.min(10, groupSize + delta));
     setGroupSize(nextSize);
     if (nextSize > groupMembers.length) {
-      const added = [];
+      const added: Array<{ id: string; name: string; email: string; phone: string }> = [];
       for (let i = groupMembers.length + 1; i <= nextSize; i++) {
         added.push({ id: `gm-${i}`, name: `Companion ${i}`, email: `companion${i}@travelgroup.io`, phone: `+91 98000 ${10000 + i}` });
       }

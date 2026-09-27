@@ -149,16 +149,35 @@ function getDestinationProfile(destination: string): DestinationProfile {
   };
 }
 
-function parseDestinationAndDays(text: string): { destination: string | null; days: number; travelers: number; isInvalid: boolean; reason?: string } {
-  const lower = text.toLowerCase();
+function cleanPromptText(raw: string): string {
+  let text = (raw || '').trim();
+  // Strip parenthetical origin e.g. (Departing from Mumbai (BOM)) or (from Mumbai (BOM))
+  text = text.replace(/\((?:departing\s+from|flying\s+from|starting\s+from|from|origin:?)\s+([A-Za-z\s,.\-]+(?:\s*\([A-Za-z0-9\s/–—\-]+\))?)\s*\)/gi, ' ');
+  // Strip "from <City> to <City>"
+  text = text.replace(/\b(?:flying\s+from|departing\s+from|from)\s+[A-Za-z\s()]+\s+(?:to|towards)\s+/gi, ' to ');
+  // Strip trailing "departing from <City>"
+  text = text.replace(/\b(?:departing\s+from|flying\s+from|starting\s+from|leaving\s+from)\s+[A-Za-z\s()]+(?:\s+(?:for|with|in|\d+)|$)/gi, ' ');
+  // Strip "to <Dest> from <Origin>"
+  text = text.replace(/\s+from\s+[A-Za-z\s()]+$/gi, ' ');
+  text = text.replace(/^[()\s]+|[()\s]+$/g, '').trim();
+  return text.replace(/\s{2,}/g, ' ').trim();
+}
+
+function parseDestinationAndDays(
+  text: string,
+  directDestination?: string
+): { destination: string | null; days: number; travelers: number; isInvalid: boolean; reason?: string } {
+  const cleaned = cleanPromptText(text);
+  const lower = cleaned.toLowerCase();
+
   let days = 5;
-  const daysMatch = lower.match(/(\d+)\s*(?:day|days|d)/);
+  const daysMatch = (text + ' ' + cleaned).toLowerCase().match(/(\d+)\s*(?:day|days|d)/);
   if (daysMatch) {
     days = Math.min(21, Math.max(2, parseInt(daysMatch[1], 10)));
   }
 
   let travelers = 2;
-  const paxMatch = lower.match(/(\d+)\s*(?:traveler|travelers|pax|people|person|persons)/);
+  const paxMatch = (text + ' ' + cleaned).toLowerCase().match(/(\d+)\s*(?:traveler|travelers|pax|people|person|persons)/);
   if (paxMatch) {
     travelers = Math.max(1, parseInt(paxMatch[1], 10));
   } else if (lower.includes('solo') || lower.includes('alone')) {
@@ -183,46 +202,72 @@ function parseDestinationAndDays(text: string): { destination: string | null; da
   }
 
   let destination: string | null = null;
-  const destKeywords: Record<string, string> = {
-    turkey: 'Turkey',
-    istanbul: 'Turkey',
-    cappadocia: 'Turkey',
-    antalya: 'Turkey',
-    japan: 'Japan',
-    tokyo: 'Japan',
-    kyoto: 'Japan',
-    kerala: 'Kerala, India',
-    rajasthan: 'Rajasthan, India',
-    jaipur: 'Rajasthan, India',
-    goa: 'Goa, India',
-    delhi: 'New Delhi, India',
-    'new delhi': 'New Delhi, India',
-    switzerland: 'Switzerland',
-    alps: 'Switzerland',
-    france: 'France',
-    paris: 'France',
-    italy: 'Italy',
-    rome: 'Italy',
-    dubai: 'Dubai, UAE',
-    uae: 'Dubai, UAE',
-    riyadh: 'Riyadh, Saudi Arabia',
-    saudi: 'Riyadh, Saudi Arabia',
-    'new york': 'New York, USA',
-    nyc: 'New York, USA',
-    london: 'London, UK',
-    singapore: 'Singapore',
-    bali: 'Bali, Indonesia',
-    thailand: 'Thailand',
-    bangkok: 'Bangkok, Thailand',
-    maldives: 'Maldives',
-    seoul: 'Seoul, South Korea',
-    mumbai: 'Mumbai, India',
-  };
 
-  for (const [key, val] of Object.entries(destKeywords)) {
-    if (lower.includes(key)) {
-      destination = val;
-      break;
+  // 1. If destination explicitly provided by caller, use it directly!
+  if (directDestination && directDestination.trim().length >= 2) {
+    destination = directDestination.trim();
+  }
+
+  // 2. Otherwise match from keywords
+  if (!destination) {
+    const destKeywords: Record<string, string> = {
+      turkey: 'Turkey',
+      istanbul: 'Turkey',
+      cappadocia: 'Turkey',
+      antalya: 'Turkey',
+      japan: 'Japan',
+      tokyo: 'Japan',
+      kyoto: 'Japan',
+      kerala: 'Kerala, India',
+      rajasthan: 'Rajasthan, India',
+      jaipur: 'Rajasthan, India',
+      goa: 'Goa, India',
+      delhi: 'New Delhi, India',
+      'new delhi': 'New Delhi, India',
+      switzerland: 'Switzerland',
+      alps: 'Switzerland',
+      zurich: 'Switzerland',
+      france: 'France',
+      paris: 'France',
+      italy: 'Italy',
+      rome: 'Italy',
+      venice: 'Italy',
+      milan: 'Italy',
+      florence: 'Italy',
+      spain: 'Spain',
+      barcelona: 'Spain',
+      madrid: 'Spain',
+      dubai: 'Dubai, UAE',
+      uae: 'Dubai, UAE',
+      riyadh: 'Riyadh, Saudi Arabia',
+      saudi: 'Riyadh, Saudi Arabia',
+      'new york': 'New York, USA',
+      nyc: 'New York, USA',
+      london: 'London, UK',
+      singapore: 'Singapore',
+      bali: 'Bali, Indonesia',
+      thailand: 'Thailand',
+      bangkok: 'Bangkok, Thailand',
+      maldives: 'Maldives',
+      seoul: 'Seoul, South Korea',
+      mumbai: 'Mumbai, India',
+    };
+
+    for (const [key, val] of Object.entries(destKeywords)) {
+      const kwRegex = new RegExp(`\\b${key}\\b`, 'i');
+      if (kwRegex.test(lower)) {
+        destination = val;
+        break;
+      }
+    }
+  }
+
+  // 3. Fallback: Extract candidate destination from clean prompt
+  if (!destination) {
+    let candidate = cleaned.replace(/(?:plan\s+(?:an?\s+)?itinerary\s+(?:for|in)|itinerary\s+(?:for|in)|trip\s+(?:to|in)|travel\s+(?:to|in)|vacation\s+(?:to|in)|holiday\s+(?:to|in)|visit|explore|going\s+to|days\s+(?:in|for)|nights\s+(?:in|for)|\d+\s+days?|\d+\s+nights?|for\s+\d+\s+people|with\s+(?:family|friends|couple|wife|husband|kids)|from\s+[a-zA-Z\s()]+)/gi, '').trim();
+    candidate = candidate.replace(/^[,\-–—\s]+|[,\-–—\s]+$/g, '');
+    if (candidate.length >= 2 && candidate.length <= 40) {
+      destination = candidate.split(/\s+/).map(w => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase()).join(' ');
     }
   }
 
@@ -234,12 +279,17 @@ function parseDestinationAndDays(text: string): { destination: string | null; da
 // ============================================================================
 router.post('/clarify', async (req: AuthenticatedRequest, res: Response) => {
   try {
-    const { prompt = '' } = req.body;
-    if (!prompt.trim()) {
-      return res.status(400).json({ error: 'Prompt is required' });
+    const { prompt = '', destination: directDest, days: directDays, travelers: directTravelers } = req.body;
+    if (!prompt.trim() && !directDest) {
+      return res.status(400).json({ error: 'Prompt or destination is required' });
     }
 
-    const { destination, days, travelers, isInvalid, reason } = parseDestinationAndDays(prompt);
+    const parsed = parseDestinationAndDays(prompt, directDest);
+    const destination = parsed.destination;
+    const days = directDays ? Math.min(21, Math.max(2, Number(directDays))) : parsed.days;
+    const travelers = directTravelers ? Math.max(1, Number(directTravelers)) : parsed.travelers;
+    const isInvalid = parsed.isInvalid;
+    const reason = parsed.reason;
 
     if (isInvalid || !destination) {
       return res.status(422).json({

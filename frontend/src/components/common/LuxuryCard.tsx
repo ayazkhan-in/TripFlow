@@ -17,7 +17,7 @@ export interface LuxuryCardProps {
   isFavorite?: boolean;
   onToggleFavorite?: (e: React.MouseEvent) => void;
   amenities?: CardAmenity[];
-  price?: string | number; // e.g. '₹14,500' or '$180'
+  price?: string | number; // e.g. '₹14,500'
   pricePeriod?: string; // e.g. '/night' or '/trip' or '/person'
   kicker?: string;
   badge?: string;

@@ -1,5 +1,5 @@
 import { CatalogItem, ItineraryCategory, ItineraryDay, ItineraryItem, RouteStop, TripItinerary } from '../types/itinerary';
-import { findValidDestination } from '../data/citiesData';
+import { findValidDestination, resolveDestinationOrCountry, cleanDestinationPrompt } from '../data/citiesData';
 
 export interface AIFlightOption {
   id: string;
@@ -144,21 +144,26 @@ export function parseInitialPrompt(text: string): AITripDetails {
   }
 
   // Detect Destination & Country strictly with zero guesswork
-  const detectedDest = findValidDestination(text);
-  let destination = detectedDest ? detectedDest.name : '';
-  let country = detectedDest ? detectedDest.country : '';
+  const { cleanPrompt, extractedOrigin } = cleanDestinationPrompt(text);
+  const detectedRes = resolveDestinationOrCountry(cleanPrompt);
+  let destination = '';
+  let country = '';
 
-  if (!destination) {
-    // If not matched directly, check if text has a valid geographic destination or leave empty
+  if (detectedRes.kind === 'city') {
+    destination = detectedRes.destination.name;
+    country = detectedRes.destination.country;
+  } else if (detectedRes.kind === 'country') {
     destination = '';
-    country = '';
+    country = detectedRes.country;
   }
 
   // Detect Origin/Departure city if specified in prompt (e.g. "from Mumbai", "departing from Delhi", etc.)
-  let originCity: string | undefined = undefined;
-  const originMatch = text.match(/(?:from|departing\s+from|flying\s+from|starting\s+from)\s+([A-Za-z\s()]+?)(?:\s+to|\s+for|\s+with|\s+in|\s*$)/i);
-  if (originMatch && originMatch[1]) {
-    originCity = originMatch[1].trim();
+  let originCity: string | undefined = extractedOrigin || undefined;
+  if (!originCity) {
+    const originMatch = text.match(/(?:from|departing\s+from|flying\s+from|starting\s+from)\s+([A-Za-z\s()]+?)(?:\s+to|\s+for|\s+with|\s+in|\s*$)/i);
+    if (originMatch && originMatch[1]) {
+      originCity = originMatch[1].trim();
+    }
   }
 
   // Default start date: 20 days from now
