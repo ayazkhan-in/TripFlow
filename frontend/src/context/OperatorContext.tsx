@@ -119,7 +119,15 @@ export const OperatorProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   const [packageBookings, setPackageBookings] = useState<BookingItem[]>(() => {
     try {
       const saved = localStorage.getItem(STORAGE_KEYS.BOOKINGS);
-      if (saved) return JSON.parse(saved);
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed)) {
+          return parsed.map((b: any) => ({
+            ...b,
+            amount: Number(b.amount) || 0,
+          }));
+        }
+      }
     } catch (e) {
       console.warn('Error reading bookings from storage:', e);
     }
@@ -445,7 +453,7 @@ export const OperatorProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       dates: trip.dates,
       guestsCount: trip.travelers || 2,
       status: 'Pending',
-      amount: trip.totalPrice || 2450,
+      amount: Number(trip.totalPrice) || 2450,
       roomsAllocated: trip.hotelCheckIn?.hotelName || 'Luxury Suite Requested',
       flightAllocated: `${trip.flightDetails?.airline || 'Air India'} (Held - Operator Allocation Needed)`,
       vipStatus: true,
@@ -456,9 +464,9 @@ export const OperatorProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       customization: customization || {
         isCustomized: true,
         basePackageTitle: trip.title,
-        basePrice: Math.round(trip.totalPrice * 0.8),
-        customPrice: trip.totalPrice,
-        deltaPrice: Math.round(trip.totalPrice * 0.2),
+        basePrice: Math.round((Number(trip.totalPrice) || 2450) * 0.8),
+        customPrice: Number(trip.totalPrice) || 2450,
+        deltaPrice: Math.round((Number(trip.totalPrice) || 2450) * 0.2),
         customRequests: 'Vegetarian gourmet meals requested. High floor quiet room. Dedicated English-speaking chauffeur.',
         fulfillmentStatus: {
           hotelBooked: false,

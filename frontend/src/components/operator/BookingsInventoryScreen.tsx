@@ -63,8 +63,15 @@ export const BookingsInventoryScreen: React.FC<BookingsInventoryScreenProps> = (
         list.push(db);
       }
     }
-    return list;
+    return list.map(b => ({
+      ...b,
+      amount: Number(b.amount) || 0,
+    }));
   }, [packageBookings, dbBookings]);
+
+  const totalGrossBookedValue = useMemo(() => {
+    return allBookings.reduce((acc, b) => acc + (Number(b.amount) || 0), 0);
+  }, [allBookings]);
 
   // If there's a highlighted booking, find it
   const highlightedBooking = useMemo(() => {
@@ -90,7 +97,7 @@ export const BookingsInventoryScreen: React.FC<BookingsInventoryScreenProps> = (
         b.destination.toLowerCase().includes(q);
       return matchesStatus && matchesSearch;
     });
-  }, [packageBookings, statusFilter, searchQuery]);
+  }, [allBookings, statusFilter, searchQuery]);
 
   return (
     <div className="flex-1 bg-slate-50/50 min-h-screen p-6 sm:p-8 space-y-6 select-none">
@@ -174,40 +181,41 @@ export const BookingsInventoryScreen: React.FC<BookingsInventoryScreenProps> = (
 
       {/* KPI Cards Row - Clean and Minimal */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-        <div className="bg-white border border-slate-200/80 rounded-xl p-4">
-          <span className="text-[11px] font-medium text-slate-400 uppercase tracking-wider">
+        <div className="bg-white border border-slate-200/80 rounded-xl p-4 shadow-2xs">
+          <span className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider">
             Total Active Bookings
           </span>
           <div className="text-2xl font-bold text-slate-900 mt-1">
-            {packageBookings.length} Bookings
+            {allBookings.length} Bookings
           </div>
           <div className="text-[11px] text-slate-400 mt-0.5">
-            {packageBookings.filter(b => b.isCustomized).length} customized circuits
+            {allBookings.filter(b => b.isCustomized).length} customized circuits
           </div>
         </div>
 
-        <div className="bg-white border border-slate-200/80 rounded-xl p-4">
-          <span className="text-[11px] font-medium text-slate-400 uppercase tracking-wider">
+        <div className="bg-white border border-slate-200/80 rounded-xl p-4 shadow-2xs">
+          <span className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider">
             Capacity Utilization
           </span>
           <div className="text-2xl font-bold text-slate-900 mt-1">91.2%</div>
           <div className="text-[11px] text-slate-400 mt-0.5">Optimal load across circuits</div>
         </div>
 
-        <div className="bg-white border border-slate-200/80 rounded-xl p-4">
-          <span className="text-[11px] font-medium text-slate-400 uppercase tracking-wider">
+        <div className="bg-white border border-slate-200/80 rounded-xl p-4 shadow-2xs">
+          <span className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider">
             Gross Booked Value
           </span>
-          <div className="text-2xl font-bold text-slate-900 mt-1">
-            ${packageBookings.reduce((acc, b) => acc + (b.amount || 0), 0).toLocaleString()}
+          <div className="text-2xl font-bold text-slate-900 mt-1 truncate" title={formatCurrency(totalGrossBookedValue)}>
+            {formatCurrency(totalGrossBookedValue)}
           </div>
-          <div className="text-[11px] text-emerald-600 font-semibold mt-0.5">
-            100% Escrow Cleared
+          <div className="text-[11px] text-emerald-600 font-semibold mt-0.5 flex items-center gap-1">
+            <span className="material-symbols-outlined text-[13px]">verified</span>
+            <span>100% Escrow Cleared</span>
           </div>
         </div>
 
-        <div className="bg-white border border-slate-200/80 rounded-xl p-4">
-          <span className="text-[11px] font-medium text-slate-400 uppercase tracking-wider">
+        <div className="bg-white border border-slate-200/80 rounded-xl p-4 shadow-2xs">
+          <span className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider">
             Pending Fulfillment
           </span>
           <div className={`text-2xl font-bold mt-1 ${pendingCustomizedCount > 0 ? 'text-amber-600' : 'text-slate-900'}`}>
@@ -241,7 +249,7 @@ export const BookingsInventoryScreen: React.FC<BookingsInventoryScreenProps> = (
               key={st}
               type="button"
               onClick={() => setStatusFilter(st)}
-              className={`px-3 py-1 rounded-md text-xs font-medium transition-colors whitespace-nowrap ${
+              className={`px-3 py-1 rounded-md text-xs font-medium transition-colors whitespace-nowrap cursor-pointer ${
                 statusFilter === st
                   ? 'bg-white text-slate-900 font-semibold shadow-2xs'
                   : 'text-slate-600 hover:text-slate-900'
@@ -255,160 +263,185 @@ export const BookingsInventoryScreen: React.FC<BookingsInventoryScreenProps> = (
 
       {/* Bookings Table Card */}
       {isLoading ? (
-        <TableSkeleton rows={5} columns={8} />
+        <TableSkeleton rows={5} columns={6} />
       ) : (
         <div className="bg-white border border-slate-200/80 rounded-xl overflow-hidden shadow-xs">
-        <div className="overflow-x-auto">
-          <table className="w-full text-left border-collapse text-xs">
-            <thead>
-              <tr className="border-b border-slate-200 bg-slate-50 text-slate-500 font-medium text-[11px]">
-                <th className="py-3 px-4">Ref</th>
-                <th className="py-3 px-4">Lead Guest</th>
-                <th className="py-3 px-4">Tour Circuit</th>
-                <th className="py-3 px-4">Dates & Pax</th>
-                <th className="py-3 px-4">Inventory Allocated</th>
-                <th className="py-3 px-4">Amount</th>
-                <th className="py-3 px-4">Status & Telemetry</th>
-                <th className="py-3 px-4 text-right">Actions</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-slate-100 text-slate-700">
-              {filteredBookings.length === 0 ? (
-                <tr>
-                  <td colSpan={8} className="py-8 text-center text-slate-400">
-                    No bookings found matching filters.
-                  </td>
+          <div className="overflow-x-auto">
+            <table className="w-full text-left border-collapse text-xs">
+              <thead>
+                <tr className="border-b border-slate-200 bg-slate-50/80 text-slate-500 font-semibold text-[11px] uppercase tracking-wider">
+                  <th className="py-3 px-3.5 sm:px-4 w-[125px] whitespace-nowrap">Ref</th>
+                  <th className="py-3 px-3.5 sm:px-4 w-[170px]">Lead Guest</th>
+                  <th className="py-3 px-3.5 sm:px-4">Tour Circuit & Schedule</th>
+                  <th className="py-3 px-3.5 sm:px-4 w-[110px] whitespace-nowrap">Amount</th>
+                  <th className="py-3 px-3.5 sm:px-4 w-[140px] whitespace-nowrap">Status</th>
+                  <th className="py-3 px-3.5 sm:px-4 text-right w-[145px] whitespace-nowrap">Actions</th>
                 </tr>
-              ) : (
-                filteredBookings.map(b => (
-                  <tr
-                    key={b.id}
-                    className={`hover:bg-slate-50/80 transition-colors cursor-pointer group ${
-                      b.needsFulfillment ? 'bg-amber-50/30' : ''
-                    }`}
-                    onClick={() => {
-                      if (b.isCustomized) {
-                        setCustomizedModalBooking(b);
-                      } else {
-                        setSelectedBooking(b);
-                      }
-                    }}
-                  >
-                    <td className="py-3.5 px-4 font-mono font-medium text-slate-900">
-                      <div className="flex items-center gap-1.5">
-                        <span>{b.ref}</span>
-                        {b.isCustomized && (
-                          <span
-                            className="inline-block w-2 h-2 rounded-full bg-amber-500"
-                            title="Customized by Traveler"
-                          />
-                        )}
-                      </div>
-                    </td>
-
-                    <td className="py-3.5 px-4">
-                      <div className="font-semibold text-slate-900 flex items-center gap-1.5">
-                        <span>{b.guestName}</span>
-                        {b.vipStatus && (
-                          <span className="text-[10px] text-amber-600 font-medium">★ VIP</span>
-                        )}
-                      </div>
-                      <div className="text-[11px] text-slate-400 truncate max-w-[180px]">
-                        {b.guestEmail}
-                      </div>
-                    </td>
-
-                    <td className="py-3.5 px-4 text-slate-900">
-                      <div className="line-clamp-1 font-semibold">{b.tourTitle}</div>
-                      <div className="text-[11px] text-slate-400">{b.destination}</div>
-                    </td>
-
-                    <td className="py-3.5 px-4 whitespace-nowrap">
-                      <div>{b.dates}</div>
-                      <div className="text-[11px] text-slate-400">{b.guestsCount} Travelers</div>
-                    </td>
-
-                    <td className="py-3.5 px-4 text-slate-600 max-w-[200px]">
-                      <div className="truncate font-medium">{b.roomsAllocated}</div>
-                      <div className="text-[10px] text-slate-400 truncate">{b.flightAllocated}</div>
-                    </td>
-
-                    <td className="py-3.5 px-4 font-bold text-slate-900 whitespace-nowrap">
-                      {formatCurrency(b.amount)}
-                    </td>
-
-                    <td className="py-3.5 px-4 whitespace-nowrap">
-                      <div className="flex flex-col gap-1">
-                        <div className="flex items-center gap-1.5 text-xs text-slate-700">
-                          <span
-                            className={`w-1.5 h-1.5 rounded-full ${
-                              b.status === 'Confirmed'
-                                ? 'bg-emerald-500'
-                                : b.status === 'Pending'
-                                ? 'bg-amber-500'
-                                : 'bg-indigo-500'
-                            }`}
-                          />
-                          <span className="font-semibold">{b.status}</span>
-                        </div>
-                        {b.isCustomized && (
-                          <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded w-fit ${
-                            b.needsFulfillment
-                              ? 'bg-amber-100 text-amber-800'
-                              : 'bg-emerald-100 text-emerald-800'
-                          }`}>
-                            {b.needsFulfillment ? '⚡ Needs Fulfillment' : '✓ Fulfilled'}
-                          </span>
-                        )}
-                      </div>
-                    </td>
-
-                    <td className="py-3.5 px-4 text-right whitespace-nowrap" onClick={e => e.stopPropagation()}>
-                      <div className="flex items-center justify-end gap-1.5">
-                        {b.isCustomized ? (
-                          <button
-                            type="button"
-                            onClick={() => setCustomizedModalBooking(b)}
-                            className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all shadow-xs flex items-center gap-1 cursor-pointer ${
-                              b.needsFulfillment
-                                ? 'bg-blue-600 hover:bg-blue-700 text-white'
-                                : 'bg-slate-100 hover:bg-slate-200 text-slate-700'
-                            }`}
-                          >
-                            <span className="material-symbols-outlined text-xs">
-                              {b.needsFulfillment ? 'auto_fix_high' : 'visibility'}
-                            </span>
-                            <span>{b.needsFulfillment ? 'Review & Fulfill' : 'View Customizations'}</span>
-                          </button>
-                        ) : (
-                          <>
-                            {b.status === 'Pending' && (
-                              <button
-                                type="button"
-                                onClick={() => showToast(`Booking ${b.ref} confirmed.`)}
-                                className="px-2.5 py-1 bg-slate-900 hover:bg-slate-800 text-white rounded-md text-xs font-medium transition-colors"
-                              >
-                                Confirm
-                              </button>
-                            )}
-                            <button
-                              type="button"
-                              onClick={() => onInspectTour('#1024')}
-                              className="px-2.5 py-1 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-md text-xs font-medium transition-colors"
-                            >
-                              View Tour
-                            </button>
-                          </>
-                        )}
-                      </div>
+              </thead>
+              <tbody className="divide-y divide-slate-100 text-slate-700">
+                {filteredBookings.length === 0 ? (
+                  <tr>
+                    <td colSpan={6} className="py-8 text-center text-slate-400">
+                      No bookings found matching filters.
                     </td>
                   </tr>
-                ))
-              )}
-            </tbody>
-          </table>
+                ) : (
+                  filteredBookings.map(b => (
+                    <tr
+                      key={b.id}
+                      className={`hover:bg-slate-50/80 transition-colors cursor-pointer group ${
+                        highlightedBooking?.id === b.id
+                          ? 'bg-blue-50/50 ring-1 ring-blue-400/40 ring-inset'
+                          : b.needsFulfillment
+                          ? 'bg-amber-50/25'
+                          : ''
+                      }`}
+                      onClick={() => {
+                        if (b.isCustomized) {
+                          setCustomizedModalBooking(b);
+                        } else {
+                          setSelectedBooking(b);
+                        }
+                      }}
+                    >
+                      <td className="py-3 px-3.5 sm:px-4 font-mono font-medium text-slate-900 whitespace-nowrap">
+                        <div className="flex items-center gap-1.5">
+                          <span className="font-semibold text-slate-900 tracking-tight">{b.ref}</span>
+                          {b.isCustomized && (
+                            <span
+                              className="w-2 h-2 rounded-full bg-amber-500 shrink-0 ring-2 ring-amber-100"
+                              title="Customized by Traveler"
+                            />
+                          )}
+                        </div>
+                      </td>
+
+                      <td className="py-3 px-3.5 sm:px-4">
+                        <div className="font-semibold text-slate-900 flex items-center gap-1.5 whitespace-nowrap">
+                          <span className="truncate max-w-[130px] sm:max-w-none">{b.guestName}</span>
+                          {b.vipStatus && (
+                            <span className="text-[9px] font-bold text-amber-700 bg-amber-50 border border-amber-200/60 px-1 py-0.2 rounded shrink-0">
+                              VIP
+                            </span>
+                          )}
+                        </div>
+                        <div className="text-[11px] text-slate-400 truncate max-w-[150px] sm:max-w-[180px] mt-0.5" title={b.guestEmail}>
+                          {b.guestEmail}
+                        </div>
+                      </td>
+
+                      <td className="py-3 px-3.5 sm:px-4">
+                        <div className="font-semibold text-slate-900 truncate" title={b.tourTitle}>
+                          {b.tourTitle}
+                        </div>
+                        <div className="text-[11px] text-slate-500 flex items-center gap-1.5 mt-0.5 whitespace-nowrap">
+                          <span className="truncate font-medium text-slate-600">{b.destination}</span>
+                          <span className="text-slate-300">·</span>
+                          <span className="text-slate-500">{b.dates}</span>
+                          <span className="text-slate-300">·</span>
+                          <span className="text-slate-400 font-medium">{b.guestsCount} Travelers</span>
+                        </div>
+                      </td>
+
+                      <td className="py-3 px-3.5 sm:px-4 font-bold text-slate-900 whitespace-nowrap">
+                        <span className="text-xs font-bold text-slate-900">
+                          {formatCurrency(Number(b.amount) || 0)}
+                        </span>
+                      </td>
+
+                      <td className="py-3 px-3.5 sm:px-4 whitespace-nowrap">
+                        <div className="flex flex-col gap-1 items-start">
+                          <div className="flex items-center gap-1.5 text-xs text-slate-700">
+                            <span
+                              className={`w-1.5 h-1.5 rounded-full shrink-0 ${
+                                b.status === 'Confirmed'
+                                  ? 'bg-emerald-500'
+                                  : b.status === 'Pending'
+                                  ? 'bg-amber-500'
+                                  : 'bg-indigo-500'
+                              }`}
+                            />
+                            <span className="font-semibold">{b.status}</span>
+                          </div>
+                          {b.isCustomized && (
+                            <span className={`text-[10px] font-bold px-2 py-0.2 rounded-full inline-flex items-center gap-0.5 border ${
+                              b.needsFulfillment
+                                ? 'bg-amber-50 text-amber-800 border-amber-200'
+                                : 'bg-emerald-50 text-emerald-800 border-emerald-200'
+                            }`}>
+                              <span className="material-symbols-outlined text-[10px]">
+                                {b.needsFulfillment ? 'bolt' : 'check'}
+                              </span>
+                              <span>{b.needsFulfillment ? 'Needs Fulfillment' : 'Fulfilled'}</span>
+                            </span>
+                          )}
+                        </div>
+                      </td>
+
+                      <td className="py-3 px-3.5 sm:px-4 text-right whitespace-nowrap" onClick={e => e.stopPropagation()}>
+                        <div className="flex items-center justify-end gap-1.5">
+                          {b.isCustomized ? (
+                            <button
+                              type="button"
+                              onClick={() => setCustomizedModalBooking(b)}
+                              className={`px-2.5 py-1.5 rounded-lg text-xs font-bold transition-all shadow-xs flex items-center gap-1 cursor-pointer active:scale-95 ${
+                                b.needsFulfillment
+                                  ? 'bg-blue-600 hover:bg-blue-700 text-white shadow-blue-500/20'
+                                  : 'bg-slate-100 hover:bg-slate-200 text-slate-700'
+                              }`}
+                            >
+                              <span className="material-symbols-outlined text-xs">
+                                {b.needsFulfillment ? 'auto_fix_high' : 'visibility'}
+                              </span>
+                              <span>{b.needsFulfillment ? 'Review & Fulfill' : 'Details'}</span>
+                            </button>
+                          ) : (
+                            <>
+                              {b.status === 'Pending' && (
+                                <button
+                                  type="button"
+                                  onClick={() => showToast(`Booking ${b.ref} confirmed.`)}
+                                  className="px-2.5 py-1.5 bg-slate-900 hover:bg-slate-800 text-white rounded-lg text-xs font-medium transition-colors cursor-pointer"
+                                >
+                                  Confirm
+                                </button>
+                              )}
+                              <button
+                                type="button"
+                                onClick={() => onInspectTour('#1024')}
+                                className="px-2.5 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg text-xs font-medium transition-colors cursor-pointer"
+                              >
+                                View Tour
+                              </button>
+                            </>
+                          )}
+                        </div>
+                      </td>
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
+          </div>
+
+          {/* Table Footer Summary */}
+          <div className="px-4 py-3 bg-slate-50/80 border-t border-slate-200 flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-xs text-slate-500">
+            <div>
+              Showing <strong className="text-slate-800 font-semibold">{filteredBookings.length}</strong> of{' '}
+              <strong className="text-slate-800 font-semibold">{allBookings.length}</strong> total bookings
+            </div>
+            <div className="flex items-center gap-3 text-[11px] text-slate-400">
+              <span className="flex items-center gap-1">
+                <span className="w-2 h-2 rounded-full bg-amber-500 inline-block" />
+                Customized by Traveler
+              </span>
+              <span className="flex items-center gap-1">
+                <span className="w-2 h-2 rounded-full bg-emerald-500 inline-block" />
+                Confirmed
+              </span>
+            </div>
+          </div>
         </div>
-      </div>
       )}
 
       {/* Modal 1: Create Tour Package Modal */}
