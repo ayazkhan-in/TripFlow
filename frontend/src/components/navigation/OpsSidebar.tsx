@@ -151,6 +151,40 @@ export const OpsSidebar: React.FC<OpsSidebarProps> = ({
             <span className="truncate">Overview</span>
           </a>
 
+          {/* 1b. Digital Twin & Weather Simulation (HackCelestial Enhancement) */}
+          <a
+            href="/operator/digital-twin"
+            onClick={e => {
+              e.preventDefault();
+              onTabChange('digital_twin');
+            }}
+            className={`w-full text-left transition-all duration-150 cursor-pointer px-3.5 py-2.5 rounded-2xl text-sm flex items-center justify-between group ${
+              currentTab === 'digital_twin'
+                ? 'bg-blue-50 text-blue-600 font-semibold shadow-xs'
+                : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50 font-medium'
+            }`}
+          >
+            <div className="flex items-center gap-3 min-w-0">
+              <span
+                className={`material-symbols-outlined text-[20px] shrink-0 transition-colors ${
+                  currentTab === 'digital_twin' ? 'text-blue-600' : 'text-blue-500 group-hover:text-blue-700'
+                }`}
+              >
+                model_training
+              </span>
+              <span className="truncate">Digital Twin</span>
+            </div>
+            <span
+              className={`px-1.5 py-0.5 rounded-full text-[9px] font-black uppercase tracking-wider transition-colors ${
+                currentTab === 'digital_twin'
+                  ? 'bg-blue-600 text-white'
+                  : 'bg-blue-100 text-blue-700 group-hover:bg-blue-200'
+              }`}
+            >
+              AI Twin
+            </span>
+          </a>
+
           {/* 2. Tour Packages & Creator Studio */}
           <a
             href="/operator/packages"

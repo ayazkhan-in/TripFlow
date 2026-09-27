@@ -38,6 +38,7 @@ import { TourGuidesScreen } from './components/operator/TourGuidesScreen';
 import { ItineraryAlertsScreen } from './components/operator/ItineraryAlertsScreen';
 import { PaymentsLedgerScreen } from './components/operator/PaymentsLedgerScreen';
 import { GlobalCalendarScreen } from './components/operator/GlobalCalendarScreen';
+import { DigitalTwinScreen } from './components/operator/DigitalTwinScreen';
 import { LandingPage } from './components/landing/LandingPage';
 import { AuthModal, AuthUser } from './components/auth/AuthModal';
 import { AuthScreen } from './components/auth/AuthScreen';
@@ -811,6 +812,15 @@ function BookitApp() {
                         onOpenCommandPalette={() => setIsCommandPaletteOpen(true)}
                         isDisruptionResolved={isDisruptionResolved}
                         onResolveDisruption={handleResolveDisruption}
+                      />
+                    )}
+
+                    {operatorTab === 'digital_twin' && (
+                      <DigitalTwinScreen
+                        showToast={showToast}
+                        onNavigateTab={tab => {
+                          navigateTo({ route: 'app', mode: 'operator', operatorTab: tab, tourId: null });
+                        }}
                       />
                     )}
 

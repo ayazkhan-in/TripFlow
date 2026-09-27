@@ -92,6 +92,16 @@ export function parseUrlPath(pathname: string): RouteState {
     };
   }
 
+  if (cleanPath === '/operator/digital-twin' || cleanPath === '/operator/twin' || cleanPath === '/operator/simulation') {
+    return {
+      currentRoute: 'app',
+      viewMode: 'operator',
+      consumerTab: 'home',
+      operatorTab: 'digital_twin',
+      operatorTourId: null,
+    };
+  }
+
   if (cleanPath === '/operator/bookings' || cleanPath === '/operator/package-bookings') {
     return {
       currentRoute: 'app',
@@ -321,6 +331,8 @@ export function formatUrlPath(state: {
       case 'overview':
       case 'operations':
         return '/operator';
+      case 'digital_twin':
+        return '/operator/digital-twin';
       case 'packages':
         return '/operator/packages';
       case 'bookings':

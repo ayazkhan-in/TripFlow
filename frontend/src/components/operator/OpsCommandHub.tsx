@@ -278,6 +278,17 @@ export const OpsCommandHub: React.FC<OpsCommandHubProps> = ({
               <span className="material-symbols-outlined text-[16px] text-slate-400">refresh</span>
               <span>Live Sync</span>
             </button>
+            {onNavigateToTab && (
+              <button
+                type="button"
+                onClick={() => onNavigateToTab('digital_twin')}
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-blue-50 border border-blue-200 text-xs font-semibold text-blue-700 hover:bg-blue-100 transition-colors cursor-pointer"
+                title="Open Weather-Driven Digital Twin Simulator"
+              >
+                <span className="material-symbols-outlined text-[16px] text-blue-600">model_training</span>
+                <span>Digital Twin</span>
+              </button>
+            )}
           </div>
         </div>
 
@@ -315,7 +326,6 @@ export const OpsCommandHub: React.FC<OpsCommandHubProps> = ({
             )}
           </div>
         )}
-
 
         {/* Key Metrics Row (5 Clean Cards with Compact Visual Indicators) */}
         <section className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3">

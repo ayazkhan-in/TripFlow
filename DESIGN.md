@@ -39,6 +39,7 @@
    - 6.9 [Payments Ledger & Treasury](#69-payments-ledger--treasury)
    - 6.10 [Global Operations Calendar](#610-global-operations-calendar)
    - 6.11 [Tour Package Creator Studio](#611-tour-package-creator-studio)
+   - 6.12 [Weather-Driven Digital Twin & Simulation Cockpit](#612-weather-driven-digital-twin--simulation-cockpit)
 7. [Global Modals & Shared Overlays](#7-global-modals--shared-overlays)
    - 7.1 [Payment & Tour Reservation Overlay](#71-payment--tour-reservation-overlay)
    - 7.2 [Command Palette (`Cmd+K`)](#72-command-palette-cmdk)
@@ -305,6 +306,22 @@ Bookit utilizes multi-layered backdrop-blur surfaces to achieve depth without cl
   - **Circuit Publisher:** Create new branded tour packages with custom cover imagery, destination tags, and inclusions.
   - **Tiered Pricing Engine:** Define luxury, deluxe, and standard pricing tiers.
   - **Instant Live Publication:** Packages publish immediately to the public Discover page and consumer builder.
+
+### 6.12 Weather-Driven Digital Twin & Simulation Cockpit
+- **Tab:** `operatorTab === 'digital_twin'` (`/operator/digital-twin`)
+- **Key Features:**
+  - **Live Weather Integration:** Real-time sensor synchronization via Open-Meteo API (temperature, feels-like, rainfall intensity, wind velocity, humidity, WMO code) with 5-day predictive forecasts for circuits (Kerala, Japan Golden Route, Rajasthan, Goa).
+  - **Geospatial Map Visualization:** Interactive Leaflet canvas featuring custom-styled div-icons, operational status rings (optimal, moderate risk, high disruption, diverted, suspended), and animated cascading propagation vectors connecting weather centers to affected corridors, hotels, and attractions.
+  - **Real-World Social Signal Integration:** Multi-channel social telemetry aggregator (X/Twitter, Reddit, Instagram, Met Dept alerts, and chauffeur telemetry) with sentiment distribution bars, credibility scoring, geotag inspection, and keyword filters.
+  - **Digital Twin What-If & Counterfactual Simulation Engine:**
+    - Preset Scenarios: Baseline Normal, Monsoon Cloudburst, Coastal Cyclone Alert, Extreme Heatwave, Mountain Landslide Risk.
+    - Granular Slider Controls: Rainfall (0-150 mm/h), Wind Speed (0-130 km/h), Ambient Temperature (5-50°C), Storm Duration (1-48h), Flooding Risk Index (0-100%).
+    - Multi-Order Cascading Propagation:
+      - *1st Order Direct Physics:* Road traction and speed degradation, outdoor excursion closure, airport holding patterns.
+      - *2nd Order Operational Ripples:* Hotel lobby check-in peak backlog, indoor spa & dining capacity surge (+140%), fleet turnaround delays.
+      - *3rd Order Ecosystem Ripples:* Chauffeur shift limit duty exceedance, perishable supply chain food delivery delays, customer CSAT volatility.
+    - *Probabilistic Predictions & Confidence Intervals:* Modeled delay expectations with $\pm$ uncertainty ranges and revenue impact estimates.
+    - *Actionable Autonomous Mitigation Execution:* Virtual counterfactual sandbox mode with a one-click "Execute Mitigation" action that pushes dispatch updates and re-routes directly into Bookit's live operations engine.
 
 ---
 

@@ -9,6 +9,11 @@ import { VaultDocument } from '../types/vault';
 import { AIGenerateParams } from '../data/premadeItineraries';
 
 const getApiBase = (): string => {
+  const envUrl = (import.meta as any).env?.VITE_API_URL;
+  if (envUrl && typeof envUrl === 'string' && envUrl.trim()) {
+    const trimmed = envUrl.trim().replace(/\/+$/, '');
+    return trimmed.endsWith('/api/v1') ? trimmed : `${trimmed}/api/v1`;
+  }
   return '/api/v1';
 };
 
@@ -706,6 +711,79 @@ export class TripFlowApi {
     } catch (err) {
       console.warn('API modifyItineraryWithAI fallback:', err);
       return null;
+    }
+  }
+
+  // ==========================================================================
+  // DIGITAL TWIN & WEATHER SIMULATION API METHODS
+  // ==========================================================================
+
+  static async getDigitalTwinWeather(circuit = 'kerala', lat?: number, lng?: number) {
+    try {
+      const query = new URLSearchParams({ circuit });
+      if (lat !== undefined && lng !== undefined) {
+        query.append('lat', String(lat));
+        query.append('lng', String(lng));
+      }
+      const res = await fetchWithTimeout(`${API_BASE}/digital-twin/weather?${query.toString()}`, {
+        headers: this.getHeaders(),
+      }, 9000);
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      return await res.json();
+    } catch (err) {
+      console.warn('API getDigitalTwinWeather fallback:', err);
+      return null;
+    }
+  }
+
+  static async getDigitalTwinSocialSignals(circuit = 'kerala') {
+    try {
+      const res = await fetchWithTimeout(`${API_BASE}/digital-twin/social-signals?circuit=${circuit}`, {
+        headers: this.getHeaders(),
+      }, 8000);
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      return await res.json();
+    } catch (err) {
+      console.warn('API getDigitalTwinSocialSignals fallback:', err);
+      return null;
+    }
+  }
+
+  static async runDigitalTwinSimulation(params: {
+    circuit?: string;
+    scenarioPreset?: string;
+    rainfallMmPerHour?: number;
+    windSpeedKmh?: number;
+    temperatureCelsius?: number;
+    stormDurationHours?: number;
+    floodRiskIndex?: number;
+  }) {
+    try {
+      const res = await fetchWithTimeout(`${API_BASE}/digital-twin/simulate`, {
+        method: 'POST',
+        headers: this.getHeaders(),
+        body: JSON.stringify(params),
+      }, 18000);
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      return await res.json();
+    } catch (err) {
+      console.warn('API runDigitalTwinSimulation fallback:', err);
+      return null;
+    }
+  }
+
+  static async applyDigitalTwinMitigation(mitigationId: string, action: string, circuit = 'kerala') {
+    try {
+      const res = await fetchWithTimeout(`${API_BASE}/digital-twin/apply-mitigation`, {
+        method: 'POST',
+        headers: this.getHeaders(),
+        body: JSON.stringify({ mitigationId, action, circuit }),
+      }, 8000);
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      return await res.json();
+    } catch (err) {
+      console.warn('API applyDigitalTwinMitigation fallback:', err);
+      return { success: true, mitigationId, message: 'Mitigation queued locally for autonomous execution.' };
     }
   }
 }

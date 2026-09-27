@@ -13,6 +13,7 @@ import telemetryRoutes from './routes/telemetry.routes.js';
 import operatorRoutes from './routes/operator.routes.js';
 import mediaRoutes from './routes/media.routes.js';
 import assistantRoutes from './routes/assistant.routes.js';
+import digitalTwinRoutes from './routes/digitalTwin.routes.js';
 
 process.on('uncaughtException', (err) => {
   console.error('Uncaught Exception:', err);
@@ -52,6 +53,7 @@ app.use('/api/v1/telemetry', telemetryRoutes);
 app.use('/api/v1/operator', operatorRoutes);
 app.use('/api/v1/media', mediaRoutes);
 app.use('/api/v1/assistant', assistantRoutes);
+app.use('/api/v1/digital-twin', digitalTwinRoutes);
 
 // Mount Legacy Compatibility Routes (/api/*)
 app.use('/api/classify-document', (req, res, next) => {
@@ -69,25 +71,29 @@ app.use((err: any, _req: express.Request, res: express.Response, _next: express.
   res.status(500).json({ error: err?.message || 'Internal server error' });
 });
 
-const server = app.listen(PORT, '0.0.0.0', () => {
-  console.log(`🚀 TripFlow Backend running on http://localhost:${PORT}`);
-  console.log(`📦 Database: Neon PostgreSQL Connected`);
-  console.log(`✨ AI Services: Gemini Flash Optical Vision & Trip Planner Active`);
-});
+if (!process.env.VERCEL) {
+  const server = app.listen(PORT, '0.0.0.0', () => {
+    console.log(`🚀 TripFlow Backend running on http://localhost:${PORT}`);
+    console.log(`📦 Database: Neon PostgreSQL Connected`);
+    console.log(`✨ AI Services: Gemini Flash Optical Vision & Trip Planner Active`);
+  });
 
-server.on('error', (err: any) => {
-  if (err.code === 'EADDRINUSE') {
-    console.error(`❌ Port ${PORT} is already in use.`);
-    console.error(`💡 Free the port or stop any duplicate node process running on port ${PORT}.`);
-  } else {
-    console.error('Server error:', err);
-  }
-});
+  server.on('error', (err: any) => {
+    if (err.code === 'EADDRINUSE') {
+      console.error(`❌ Port ${PORT} is already in use.`);
+      console.error(`💡 Free the port or stop any duplicate node process running on port ${PORT}.`);
+    } else {
+      console.error('Server error:', err);
+    }
+  });
 
-process.on('SIGINT', () => {
-  server.close(() => process.exit(0));
-});
+  process.on('SIGINT', () => {
+    server.close(() => process.exit(0));
+  });
 
-process.on('SIGTERM', () => {
-  server.close(() => process.exit(0));
-});
+  process.on('SIGTERM', () => {
+    server.close(() => process.exit(0));
+  });
+}
+
+export default app;

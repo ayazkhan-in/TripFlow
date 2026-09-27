@@ -110,6 +110,7 @@ export interface PaymentDetails {
 
 export type OperatorTab =
   | 'hub'
+  | 'digital_twin'
   | 'packages'
   | 'bookings'
   | 'flight_bookings'
@@ -392,4 +393,129 @@ export interface RealtimeFeedEvent {
   icon: string;
   iconBg: string;
   iconColor: string;
+}
+
+// ============================================================================
+// DIGITAL TWIN & WEATHER CASCAFE SIMULATION SPECIFICATION
+// ============================================================================
+
+export interface WeatherObservation {
+  isLive: boolean;
+  circuit: string;
+  circuitName: string;
+  coordinates: { lat: number; lng: number };
+  timestamp: string;
+  temperatureCelsius: number;
+  feelsLikeCelsius: number;
+  humidityPercent: number;
+  precipitationMm: number;
+  rainMmPerHour: number;
+  windSpeedKmh: number;
+  weatherCode: number;
+  condition: string;
+  icon: string;
+  severity: 'clear' | 'moderate' | 'severe';
+  forecast: Array<{
+    date: string;
+    maxTemp: number;
+    minTemp: number;
+    precipitationMm: number;
+    condition: string;
+  }>;
+}
+
+export interface SocialSignal {
+  id: string;
+  platform: 'x' | 'instagram' | 'reddit' | 'concierge_report' | 'met_dept';
+  author: string;
+  authorHandle: string;
+  verified: boolean;
+  content: string;
+  timestamp: string;
+  sentiment: 'positive' | 'neutral' | 'concerned' | 'alarmed';
+  location: string;
+  coordinates?: [number, number];
+  credibilityScore: number;
+  tags: string[];
+  likes?: number;
+  reposts?: number;
+}
+
+export interface DigitalTwinEntity {
+  id: string;
+  name: string;
+  type: 'vehicle' | 'hotel' | 'attraction' | 'airport' | 'cruise';
+  circuit: string;
+  coordinates: [number, number];
+  normalState: {
+    status: string;
+    speedKmh?: number;
+    delayMinutes?: number;
+    occupancyPct?: number;
+    diningLoadPct?: number;
+    visitorDensity?: string;
+    safetyRating?: string;
+    windSafety?: string;
+    guestCount?: number;
+    onTimeRate?: string;
+    avgDelayMins?: number;
+  };
+  simulatedState: {
+    status: 'optimal' | 'moderate_risk' | 'high_disruption' | 'diverted' | 'suspended';
+    speedKmh?: number;
+    delayMinutes?: number;
+    occupancyPct?: number;
+    diningLoadPct?: number;
+    lobbyBacklogPct?: number;
+    visitorDensity?: string;
+    safetyRating?: string;
+    windSafety?: string;
+    onTimeRate?: string;
+    avgDelayMins?: number;
+    confidenceScore: number;
+    cascadingCause?: string;
+    higherOrderImpact?: string;
+  };
+}
+
+export interface CascadingEffectNode {
+  order: 1 | 2 | 3;
+  title: string;
+  affectedDomain: 'transport' | 'hospitality' | 'attraction' | 'workforce' | 'revenue';
+  description: string;
+  probability: number;
+  uncertaintyRange: string;
+  severity: 'low' | 'medium' | 'high' | 'critical';
+  mitigationAction: string;
+}
+
+export interface DigitalTwinSimulationResult {
+  scenarioPreset: string;
+  circuit: string;
+  timestamp: string;
+  weatherParameters: {
+    rainfallMmPerHour: number;
+    windSpeedKmh: number;
+    temperatureCelsius: number;
+    stormDurationHours: number;
+    floodRiskIndex: number;
+  };
+  ecosystemHealth: number; // 0-100%
+  riskLevel: 'NORMAL' | 'ELEVATED' | 'HIGH' | 'CRITICAL';
+  aggregateDelaysMinutes: number;
+  financialRiskEstimate: number;
+  entitiesAffectedCount: number;
+  totalEntitiesTracked: number;
+  entities: DigitalTwinEntity[];
+  firstOrderEffects: CascadingEffectNode[];
+  secondOrderEffects: CascadingEffectNode[];
+  thirdOrderEffects: CascadingEffectNode[];
+  aiExecutiveSummary: string;
+  recommendedMitigations: Array<{
+    id: string;
+    action: string;
+    impactTarget: string;
+    riskReductionPercent: number;
+    status: 'recommended' | 'applied';
+  }>;
 }
