@@ -5,6 +5,7 @@
   "description": "TripFlow Concierge & Operations API Backend",
   "main": "dist/server.js",
   "scripts": {
+    "postinstall": "prisma generate",
     "build": "prisma generate && tsc",
     "start": "node dist/server.js",
     "dev": "tsx watch src/server.ts",
