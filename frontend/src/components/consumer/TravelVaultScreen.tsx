@@ -338,50 +338,6 @@ export const TravelVaultScreen: React.FC<TravelVaultScreenProps> = ({
         <div className="absolute right-0 top-0 w-80 h-full bg-blue-600/15 rounded-full blur-3xl pointer-events-none" />
       </BlurFadeCard>
 
-      {/* ------------------------------------------------------------- */}
-      {/* SECURITY TELEMETRY BENTO STRIP                                */}
-      {/* ------------------------------------------------------------- */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        {/* Metric 1 */}
-        <BlurFadeCard index={0} className="bg-white p-4 rounded-2xl border border-slate-200 shadow-2xs space-y-1">
-          <div className="flex items-center justify-between">
-            <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Encryption Protocol</span>
-            <span className="material-symbols-outlined text-emerald-600 text-base">verified_user</span>
-          </div>
-          <div className="text-base font-extrabold text-slate-900">AES-256 Bit Local</div>
-          <div className="text-[11px] text-slate-500">Zero-knowledge device sandbox</div>
-        </BlurFadeCard>
-
-        {/* Metric 2 */}
-        <BlurFadeCard index={1} className="bg-white p-4 rounded-2xl border border-slate-200 shadow-2xs space-y-1">
-          <div className="flex items-center justify-between">
-            <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Offline Cache</span>
-            <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
-          </div>
-          <div className="text-base font-extrabold text-emerald-700">100% Synchronized</div>
-          <div className="text-[11px] text-slate-500">12 of 12 documents cached offline</div>
-        </BlurFadeCard>
-
-        {/* Metric 3 */}
-        <BlurFadeCard index={2} className="bg-white p-4 rounded-2xl border border-slate-200 shadow-2xs space-y-1">
-          <div className="flex items-center justify-between">
-            <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Credential Validity</span>
-            <span className="material-symbols-outlined text-blue-600 text-base">task_alt</span>
-          </div>
-          <div className="text-base font-extrabold text-slate-900">All Credentials Valid</div>
-          <div className="text-[11px] text-slate-500">Next renewal: Nov 2032 (Passport)</div>
-        </BlurFadeCard>
-
-        {/* Metric 4 */}
-        <BlurFadeCard index={3} className="bg-white p-4 rounded-2xl border border-slate-200 shadow-2xs space-y-1">
-          <div className="flex items-center justify-between">
-            <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Emergency Hotlines</span>
-            <span className="material-symbols-outlined text-rose-600 text-base">emergency</span>
-          </div>
-          <div className="text-base font-extrabold text-slate-900">4 Fast-Dials Verified</div>
-          <div className="text-[11px] text-slate-500">Kerala circuit lead doctor on duty</div>
-        </BlurFadeCard>
-      </div>
 
       {/* ------------------------------------------------------------- */}
       {/* LINKED CIRCUIT SELECTOR                                       */}

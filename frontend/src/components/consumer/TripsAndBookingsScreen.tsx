@@ -1853,97 +1853,60 @@ export const TripsAndBookingsScreen: React.FC<TripsAndBookingsScreenProps> = ({
               </div>
             </div>
           ) : (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
-              {filteredTrips.map(trip => {
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-4 items-start">
+              {filteredTrips.map((trip, idx) => {
                 const isPurchased = trip.source === 'purchased';
                 const heroImg = getHeroImage(trip);
                 return (
-                  <div
+                  <LuxuryCard
                     key={trip.id}
-                    className="group relative bg-white rounded-2xl overflow-hidden border border-slate-200 hover:border-blue-400/60 shadow-xs hover:shadow-md transition-all duration-200 flex flex-col"
-                  >
-                    {/* Hero image */}
-                    <div className="relative h-44 overflow-hidden flex-shrink-0">
-                      <img
-                        src={heroImg}
-                        alt={trip.title}
-                        className="w-full h-full object-cover object-center transition-transform duration-500 group-hover:scale-105"
-                      />
-                      <div className="absolute inset-0 bg-gradient-to-t from-slate-950/70 via-slate-950/20 to-transparent" />
-                      {/* Source badge */}
-                      <div className={`absolute top-3 left-3 px-2.5 py-1 rounded-full text-[11px] font-bold flex items-center gap-1.5 ${
-                        isPurchased
-                          ? 'bg-emerald-500/90 text-white'
-                          : 'bg-violet-600/90 text-white'
-                      }`}>
-                        <span className="material-symbols-outlined text-[13px]">
-                          {isPurchased ? 'verified' : 'auto_awesome'}
-                        </span>
-                        {isPurchased ? 'Confirmed Booking' : 'AI-Crafted Plan'}
-                      </div>
-                      {/* Destination overlay */}
-                      <div className="absolute bottom-3 left-3 right-3">
-                        <h3 className="text-white font-bold text-base leading-tight drop-shadow">
-                          {trip.title}
-                        </h3>
-                        <p className="text-white/80 text-xs mt-0.5">{trip.destination}</p>
-                      </div>
-                    </div>
-
-                    {/* Card body */}
-                    <div className="p-4 flex flex-col gap-3 flex-1">
-                      <div className="flex items-center gap-3 text-xs text-slate-500 flex-wrap">
-                        <span className="flex items-center gap-1">
-                          <span className="material-symbols-outlined text-[14px] text-slate-400">calendar_today</span>
-                          {trip.dates}
-                        </span>
-                        {trip.duration && (
-                          <span className="flex items-center gap-1">
-                            <span className="material-symbols-outlined text-[14px] text-slate-400">schedule</span>
-                            {trip.duration.split('·')[0].trim()}
-                          </span>
-                        )}
-                        <span className="flex items-center gap-1">
-                          <span className="material-symbols-outlined text-[14px] text-slate-400">group</span>
-                          {trip.travelers} Travelers
-                        </span>
-                      </div>
-
-                      {trip.totalPrice && trip.totalPrice > 0 && (
-                        <div className="text-sm font-extrabold text-slate-900">
-                          ₹{trip.totalPrice.toLocaleString('en-IN')}
-                          <span className="text-xs font-normal text-slate-400 ml-1">total</span>
-                        </div>
-                      )}
-
-
-
-                      {/* Primary CTA */}
-                      <button
-                        type="button"
-                        id={`select-trip-${trip.id}`}
-                        onClick={() => {
-                          if (isPurchased && trip.bookedTripRef) {
-                            onSelectTrip?.(trip.bookedTripRef.id);
-                            setSelectedTripInHub(trip.bookedTripRef.id);
-                          } else {
-                            // For AI trips, open the detail view (AI plan mode)
-                            setSelectedTripInHub(trip.id);
-                          }
-                        }}
-                        className={`w-full py-2.5 rounded-xl text-xs font-bold flex items-center justify-center gap-2 transition-all cursor-pointer shadow-xs ${
-                          isPurchased
-                            ? 'bg-slate-900 hover:bg-slate-700 text-white'
-                            : 'bg-slate-100 hover:bg-slate-200 text-slate-800 border border-slate-200'
-                        }`}
-                      >
-                        <span className="material-symbols-outlined text-[15px]">
-                          {isPurchased ? 'open_in_new' : 'visibility'}
-                        </span>
-                        {isPurchased ? 'View Trip & Bookings →' : 'View AI Itinerary →'}
-                      </button>
-                    </div>
-                  </div>
+                    id={trip.id}
+                    index={idx}
+                    compact
+                    title={trip.title}
+                    description={`${trip.dates} · ${trip.travelers} Travelers · ${trip.destination}`}
+                    image={heroImg}
+                    kicker={trip.destination}
+                    badge={isPurchased ? 'Confirmed' : 'AI Plan'}
+                    badgeColor={isPurchased ? 'emerald' : 'dark'}
+                    amenities={
+                      isPurchased
+                        ? [
+                            { icon: 'flight', label: 'Flights' },
+                            { icon: 'hotel', label: 'Hotels' },
+                            { icon: 'directions_car', label: 'Chauffeur' },
+                            { icon: 'restaurant', label: 'Meals' },
+                            { icon: 'lock', label: 'Vault' },
+                            { icon: 'support_agent', label: 'Concierge' },
+                          ]
+                        : [
+                            { icon: 'auto_awesome', label: 'AI Crafted' },
+                            { icon: 'map', label: 'Itinerary' },
+                            { icon: 'calendar_today', label: trip.dates },
+                            { icon: 'group', label: `${trip.travelers} Guests` },
+                            { icon: 'edit', label: 'Editable' },
+                            { icon: 'shopping_cart', label: 'Bookable' },
+                          ]
+                    }
+                    price={
+                      trip.totalPrice && trip.totalPrice > 0
+                        ? `₹${trip.totalPrice.toLocaleString('en-IN')}`
+                        : undefined
+                    }
+                    pricePeriod={trip.totalPrice && trip.totalPrice > 0 ? '/trip' : undefined}
+                    actionVariant="button"
+                    actionLabel={isPurchased ? 'View Details' : 'View Itinerary'}
+                    theme="light"
+                    className="w-full"
+                    onClick={() => {
+                      if (isPurchased && trip.bookedTripRef) {
+                        onSelectTrip?.(trip.bookedTripRef.id);
+                        setSelectedTripInHub(trip.bookedTripRef.id);
+                      } else {
+                        setSelectedTripInHub(trip.id);
+                      }
+                    }}
+                  />
                 );
               })}
             </div>

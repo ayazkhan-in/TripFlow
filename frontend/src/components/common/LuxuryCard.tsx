@@ -34,6 +34,7 @@ export interface LuxuryCardProps {
   children?: React.ReactNode;
   className?: string;
   theme?: 'light' | 'dark';
+  compact?: boolean;
 }
 
 // Default luxury amenities matching reference layout
@@ -71,6 +72,7 @@ export const LuxuryCard: React.FC<LuxuryCardProps> = ({
   children,
   className = '',
   theme = 'light',
+  compact = false,
 }) => {
   const [isFav, setIsFav] = useState(initialFavorite);
 
@@ -101,7 +103,7 @@ export const LuxuryCard: React.FC<LuxuryCardProps> = ({
         delay: calculatedDelay,
         ease: [0.21, 0.47, 0.32, 0.98],
       }}
-      className={`relative ${widthClasses} aspect-[1/1.54] rounded-[26px] sm:rounded-[28px] p-1.5 transition-all duration-300 select-none cursor-pointer border hover:scale-[1.03] hover:-translate-y-1 hover:shadow-xl will-change-transform z-0 hover:z-20 ${
+      className={`relative ${widthClasses} ${compact ? 'aspect-[1/1.42]' : 'aspect-[1/1.54]'} ${compact ? 'rounded-[22px] sm:rounded-[24px] p-1' : 'rounded-[26px] sm:rounded-[28px] p-1.5'} transition-all duration-300 select-none cursor-pointer border hover:scale-[1.03] hover:-translate-y-1 hover:shadow-xl will-change-transform z-0 hover:z-20 ${
         isDark
           ? isSelected
             ? 'bg-[#1e242b] border-slate-400 ring-2 ring-slate-400/40 shadow-none'
